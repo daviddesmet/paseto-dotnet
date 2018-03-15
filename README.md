@@ -1,6 +1,8 @@
 # Paseto.NET, a [Paseto](https://github.com/paragonie/paseto) (Platform-Agnostic Security Tokens) implementation for .NET
 
 [![Build status](https://ci.appveyor.com/api/projects/status/r4ah81nr04qta10w?svg=true)](https://ci.appveyor.com/project/idaviddesmet/paseto-dotnet)
+[![NuGet](https://img.shields.io/nuget/v/Paseto.svg)](https://www.nuget.org/packages/Paseto.Core/)
+[![MyGet](https://img.shields.io/nuget/v/Paseto.svg)](https://www.myget.org/feed/daviddesmet/package/nuget/Paseto.Core)
 
 ## Usage
 ### Building a Paseto
