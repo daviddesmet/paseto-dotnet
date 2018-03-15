@@ -20,7 +20,7 @@ var token = new PasetoBuilder<Version2>()
 ### Decoding a Paseto
 
 ```csharp
-var token = new PasetoBuilder<Version2>()
+var payload = new PasetoBuilder<Version2>()
 		.WithKey(publicKey)
 		.AsPublic() // Purpose
 		.AndVerifySignature()
