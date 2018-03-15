@@ -13,7 +13,7 @@
 
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
 
-    <PackageTags>paseto dotnet netstandard netcore</PackageTags>
+    <PackageTags>paseto dotnet dotnet-core netstandard</PackageTags>
 
     <PackageProjectUrl>https://github.com/idaviddesmet/paseto-dotnet</PackageProjectUrl>
   </PropertyGroup>
