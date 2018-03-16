@@ -1,8 +1,10 @@
 ﻿namespace Paseto.Extensions
 {
     using System;
+    using System.Linq;
     using System.Security.Cryptography;
     using System.Xml;
+    using System.Xml.Linq;
 
     using Newtonsoft.Json;
 
@@ -97,11 +99,11 @@
             rsa.ImportParameters(parameters);
         }
 
-        public static string ToCompatibleXmlString(this RSA rsa, bool includePrivateParameters)
+        public static string ToCompatibleXmlString(this RSA rsa, bool includePrivateParameters, SaveOptions options = SaveOptions.DisableFormatting)
         {
             var parameters = rsa.ExportParameters(includePrivateParameters);
 
-            return string.Format("<RSAKeyValue><Modulus>{0}</Modulus><Exponent>{1}</Exponent><P>{2}</P><Q>{3}</Q><DP>{4}</DP><DQ>{5}</DQ><InverseQ>{6}</InverseQ><D>{7}</D></RSAKeyValue>",
+            var xml = string.Format("<RSAKeyValue><Modulus>{0}</Modulus><Exponent>{1}</Exponent><P>{2}</P><Q>{3}</Q><DP>{4}</DP><DQ>{5}</DQ><InverseQ>{6}</InverseQ><D>{7}</D></RSAKeyValue>",
                   parameters.Modulus != null ? Convert.ToBase64String(parameters.Modulus) : null,
                   parameters.Exponent != null ? Convert.ToBase64String(parameters.Exponent) : null,
                   parameters.P != null ? Convert.ToBase64String(parameters.P) : null,
@@ -110,6 +112,11 @@
                   parameters.DQ != null ? Convert.ToBase64String(parameters.DQ) : null,
                   parameters.InverseQ != null ? Convert.ToBase64String(parameters.InverseQ) : null,
                   parameters.D != null ? Convert.ToBase64String(parameters.D) : null);
+
+            var doc = XElement.Parse(xml);
+            doc.Descendants().Where(e => string.IsNullOrEmpty(e.Value)).Remove();
+
+            return doc.ToString(options);
         }
 
         #endregion
@@ -120,16 +127,22 @@
 
             public string Exponent { get; set; }
 
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public string P { get; set; }
 
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public string Q { get; set; }
 
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public string DP { get; set; }
 
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public string DQ { get; set; }
 
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public string InverseQ { get; set; }
 
+            [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
             public string D { get; set; }
         }
     }

@@ -27,7 +27,7 @@
 
             string key = null;
             using (var rsa = RSA.Create())
-                key = rsa.ToJsonString(true);
+                key = rsa.ToCompatibleXmlString(true);
 
             var sk = GetBytes(key);
 
@@ -50,8 +50,8 @@
             {
                 //rsa.KeySize = 2048; // Default
 
-                key = rsa.ToJsonString(true);
-                pubKey = rsa.ToJsonString(false);
+                key = rsa.ToCompatibleXmlString(true);
+                pubKey = rsa.ToCompatibleXmlString(false);
             }
             var sk = GetBytes(key);
             var pk = GetBytes(pubKey);
@@ -62,6 +62,44 @@
 
             // Assert
             Assert.IsTrue(verified);
+        }
+
+        [Test]
+        public void Version1BuilderTokenGenerationTest()
+        {
+            // Arrange
+            string key = null;
+            using (var rsa = RSA.Create())
+                key = rsa.ToCompatibleXmlString(true);
+
+            // Act
+            var token = new PasetoBuilder<Version1>()
+                              .WithKey(GetBytes(key))
+                              .AddClaim("example", HelloPaseto)
+                              .Expiration(DateTime.UtcNow.AddHours(24))
+                              .AsPublic()
+                              .Build();
+
+            // Assert
+            Assert.IsNotNull(token);
+        }
+
+        [Test]
+        public void Version1BuilderTokenDecodingTest()
+        {
+            // Arrange
+            var publicKey = "<RSAKeyValue><Modulus>2Q3n8GRPEbcxAtT+uwsBnY08hhJF+Fby0MM1v5JbwlnQer7HmjKsaS97tbfnl87BwF15eKkxqHI12ntCSezxozhaUrgXCGVAXnUmZoioXTdtJgapFzBob88tLKhpWuoHdweRu9yGcWW3pD771zdFrRwa3h5alC1MAqAMHNid2D56TTsRj4CAfLSZpSsfmswfmHhDGqX7ZN6g/TND6kXjq4fPceFsb6yaKxy0JmtMomVqVTW3ggbVJhqJFOabwZ83/DjwqWEAJvfldz5g9LjvuislO5mJ9QEHBu7lnogKuX5g9PRTqP3c6Kus0/ldZ8CZvwWpxnxnwMRH10/UZ8TepQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
+            var token = "v1.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEzMDc1MzMifTzjEcgP2a3p_IrMPuU9bH8OvOmV5Olr8DFK3rFu_7SngF_pZ0cU1X9w590YQeZTy37B1bPouoXZDQ9JDYBfalxG0cNn2aP4iKHgYuyrOqHaUTmbNeooKOvDPwwl6CFO3spTTANLK04qgPJnixeb9mvjby2oM7Qpmn28HAwwr_lSoOMPhiUSCKN4u-SA6G6OddQTuXY-PCV1VtgQA83f0J6Yy3x7MGH9vvqonQSuOG6EGLHJ09p5wXllHQyGZcRm_654aKpwh8CXe3w8ol3OfozGCMFF_TLo_EeX0iKSkE8AQxkrQ-Fe-3lP_t7xPkeNhJPnhAa0-DGLSFQIILsL31M";
+
+            // Act
+            var payload = new PasetoBuilder<Version1>()
+                              .WithKey(GetBytes(publicKey))
+                              .AsPublic()
+                              .AndVerifySignature()
+                              .Decode(token);
+
+            // Assert
+            Assert.IsNotNull(payload);
         }
 
         [Test]

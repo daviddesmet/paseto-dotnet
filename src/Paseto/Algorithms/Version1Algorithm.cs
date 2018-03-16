@@ -59,7 +59,7 @@
             using (var rsa = RSA.Create())
             {
                 //rsa.KeySize = 2048; // Default
-                rsa.FromJsonString(GetString(key));
+                rsa.FromCompatibleXmlString(GetString(key));
 
                 return rsa.SignData(message, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
             }
@@ -77,7 +77,7 @@
             using (var rsa = RSA.Create())
             {
                 //rsa.KeySize = 2048; // Default
-                rsa.FromJsonString(GetString(key));
+                rsa.FromCompatibleXmlString(GetString(key));
 
                 return rsa.VerifyData(message, signature, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
             }
