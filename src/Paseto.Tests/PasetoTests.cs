@@ -106,11 +106,11 @@
             RandomNumberGenerator.Create().GetBytes(seed);
             var sk = Ed25519.ExpandedPrivateKeyFromSeed(seed);
 
-            var secret = Convert.ToBase64String(sk); //BitConverter.ToString(sk).Replace("-", string.Empty); // Hex Encoded
+            //var secret = Convert.ToBase64String(sk); //BitConverter.ToString(sk).Replace("-", string.Empty); // Hex Encoded
 
             // Act
             var token = new PasetoBuilder<Version2>()
-                              .WithKey(secret)
+                              .WithKey(sk)
                               .AddClaim("example", HelloPaseto)
                               .Expiration(DateTime.UtcNow.AddHours(24))
                               .AsPublic()
@@ -129,7 +129,7 @@
 
             // Act
             var payload = new PasetoBuilder<Version2>()
-                              .WithKey(publicKey)
+                              .WithKey(Convert.FromBase64String(publicKey))
                               .AsPublic()
                               .AndVerifySignature()
                               .Decode(token);

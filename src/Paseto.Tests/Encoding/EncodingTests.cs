@@ -19,11 +19,11 @@ namespace Paseto.Tests.Encoding
             var value = new List<byte[]>();
 
             // Act
-            var pae1 = PAE(value);
+            //var pae1 = PAE(value);
             var pae2 = PreAuthEncode(value);
 
             // Assert
-            Assert.AreEqual(expected, pae1);
+            //Assert.AreEqual(expected, pae1);
             Assert.AreEqual(expected, pae2);
         }
 
@@ -35,11 +35,11 @@ namespace Paseto.Tests.Encoding
             var value = new List<byte[]>() { Encoding.UTF8.GetBytes(string.Empty) };
 
             // Act
-            var pae1 = PAE(value);
+            //var pae1 = PAE(value);
             var pae2 = PreAuthEncode(value);
 
             // Assert
-            Assert.AreEqual(expected, pae1);
+            //Assert.AreEqual(expected, pae1);
             Assert.AreEqual(expected, pae2);
         }
 
@@ -51,11 +51,11 @@ namespace Paseto.Tests.Encoding
             var value = new List<byte[]>() { Encoding.UTF8.GetBytes("test") };
 
             // Act
-            var pae1 = PAE(value);
+            //var pae1 = PAE(value);
             var pae2 = PreAuthEncode(value);
 
             // Assert
-            Assert.AreEqual(expected, pae1);
+            //Assert.AreEqual(expected, pae1);
             Assert.AreEqual(expected, pae2);
         }
     }

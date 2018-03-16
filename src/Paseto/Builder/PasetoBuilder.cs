@@ -21,16 +21,16 @@
         private IJsonSerializer _serializer = new JsonNetSerializer();
         //private IBase64UrlEncoder _urlEncoder = new Base64UrlEncoder();
 
-        private string _key;
+        private byte[] _key;
         private string _footer;
         private Purpose _purpose;
         private bool _verify;
 
         /// <summary>
-        /// Sets the base64 secret key (for encoding) or the base64 public key (for decoding and validating) to the Paseto.
+        /// Sets the secret key (for encoding) or the public key (for decoding and validating) to the Paseto.
         /// </summary>
         /// <returns>Current builder instance</returns>
-        public PasetoBuilder<TProtocol> WithKey(string key)
+        public PasetoBuilder<TProtocol> WithKey(byte[] key)
         {
             _key = key;
             return this;
@@ -118,11 +118,13 @@
         /// Builds a token using the supplied dependencies.
         /// </summary>
         /// <returns>The generated Paseto.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if either algorithm, serializer, encoder or secret is null.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if either payload or key is null.</exception>
+        /// <exception cref="NotSupportedException">The Local Purpose is not currently supported!</exception>
+        /// <exception cref="NotImplementedException"></exception>
         public string Build()
         {
-            if (string.IsNullOrEmpty(_key))
-                throw new InvalidOperationException("Can't build a token. Check if you have call the 'WithSecret' method.");
+            if (_key is null || _key.Length == 0)
+                throw new InvalidOperationException("Can't build a token. Check if you have call the 'WithKey' method.");
 
             if (_paseto.Payload is null || _paseto.Payload.Count == 0)
                 throw new InvalidOperationException("Can't build a token. Check if you have call the 'AddClaim' method.");
@@ -135,9 +137,9 @@
                 case Purpose.Local:
                     throw new NotSupportedException("The Local Purpose is not currently supported!");
                 case Purpose.Public:
-                    return proto.Sign(Convert.FromBase64String(_key), payload, _footer ?? string.Empty);
+                    return proto.Sign(_key, payload, _footer ?? string.Empty);
                 default:
-                    throw new NotImplementedException($"The Purpose {_purpose} is not defined!");
+                    throw new NotImplementedException($"The {_purpose} Purpose is not defined!");
             }
         }
 
@@ -146,10 +148,14 @@
         /// </summary>
         /// <param name="token">The Paseto token.</param>
         /// <returns>The JSON payload</returns>
+        /// <exception cref="InvalidOperationException">Can't build a token. Check if you have call the 'WithKey' method.</exception>
+        /// <exception cref="NotSupportedException">The Local Purpose is not currently supported!</exception>
+        /// <exception cref="SignatureVerificationException">Invalid signature!</exception>
+        /// <exception cref="NotImplementedException"></exception>
         public string Decode(string token)
         {
-            if (string.IsNullOrEmpty(_key))
-                throw new InvalidOperationException("Can't build a token. Check if you have call the 'WithSecret' method.");
+            if (_key is null || _key.Length == 0)
+                throw new InvalidOperationException("Can't build a token. Check if you have call the 'WithKey' method.");
 
             var proto = new TProtocol();
 
@@ -159,15 +165,15 @@
                     throw new NotSupportedException("The Local Purpose is not currently supported!");
                 case Purpose.Public:
                     if (!_verify)
-                        return proto.Verify(token, Convert.FromBase64String(_key)).Payload;
+                        return proto.Verify(token, _key).Payload;
 
-                    var (valid, payload) = proto.Verify(token, Convert.FromBase64String(_key));
+                    var (valid, payload) = proto.Verify(token, _key);
                     if (!valid)
                         throw new SignatureVerificationException("Invalid signature!");
 
                     return payload;
                 default:
-                    throw new NotImplementedException($"The Purpose {_purpose} is not defined!");
+                    throw new NotImplementedException($"The {_purpose} Purpose is not defined!");
             }
         }
     }

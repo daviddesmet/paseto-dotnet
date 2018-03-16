@@ -62,7 +62,7 @@
 
         #region XML
 
-        public static void FromXmlString(this RSA rsa, string xmlString)
+        public static void FromCompatibleXmlString(this RSA rsa, string xmlString)
         {
             if (string.IsNullOrWhiteSpace(xmlString))
                 throw new ArgumentNullException(nameof(xmlString));
@@ -97,7 +97,7 @@
             rsa.ImportParameters(parameters);
         }
 
-        public static string ToXmlString(this RSA rsa, bool includePrivateParameters)
+        public static string ToCompatibleXmlString(this RSA rsa, bool includePrivateParameters)
         {
             var parameters = rsa.ExportParameters(includePrivateParameters);
 
@@ -117,6 +117,7 @@
         internal class RSAParametersJson
         {
             public string Modulus { get; set; }
+
             public string Exponent { get; set; }
 
             public string P { get; set; }
