@@ -105,7 +105,7 @@
             var seed = new byte[32]; // signingKey
             RandomNumberGenerator.Create().GetBytes(seed);
             var sk = Ed25519.ExpandedPrivateKeyFromSeed(seed);
-            
+
             var secret = Convert.ToBase64String(sk); //BitConverter.ToString(sk).Replace("-", string.Empty); // Hex Encoded
 
             // Act
@@ -124,8 +124,8 @@
         public void Version2BuilderTokenDecodingTest()
         {
             // Arrange
-            var publicKey = "q7PXWC14dlc5iQmHe3NYMUiJa3D1pGgtGExPMpa8j2k=";
-            var token = "v2.Public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyMTcxNDgifXOxpZsv7eLta3jtriLz0bCV-X95o-gso0QoceaPzTNybZD98WINTMg9jsdGlfzAlQT4R3e8pB2nPzH73DPiEwY";
+            var publicKey = "g21uHSdjWR8UHQZOSVdkA1cgn9wVpWjruxZDp90lpXs=";
+            var token = "v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs";
 
             // Act
             var payload = new PasetoBuilder<Version2>()
