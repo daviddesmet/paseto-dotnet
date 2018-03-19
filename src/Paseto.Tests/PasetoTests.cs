@@ -26,8 +26,13 @@
             var paseto = new Version1();
 
             string key = null;
+#if NETSTANDARD2_0
             using (var rsa = RSA.Create())
                 key = rsa.ToCompatibleXmlString(true);
+#elif NET47
+            using (var rsa = new RSACng())
+                key = rsa.ToXmlString(true);
+#endif
 
             var sk = GetBytes(key);
 
@@ -46,6 +51,7 @@
 
             string key = null;
             string pubKey = null;
+#if NETSTANDARD2_0
             using (var rsa = RSA.Create())
             {
                 //rsa.KeySize = 2048; // Default
@@ -53,6 +59,15 @@
                 key = rsa.ToCompatibleXmlString(true);
                 pubKey = rsa.ToCompatibleXmlString(false);
             }
+#elif NET47
+            using (var rsa = new RSACng())
+            {
+                //rsa.KeySize = 2048; // Default
+                
+                key = rsa.ToXmlString(true);
+                pubKey = rsa.ToXmlString(false);
+            }
+#endif
             var sk = GetBytes(key);
             var pk = GetBytes(pubKey);
 

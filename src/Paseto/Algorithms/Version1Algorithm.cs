@@ -67,8 +67,8 @@
 #elif NET47
             using (var rsa = new RSACng())
             {
-                rsa.KeySize = 2048;
-                rsa.FromCompatibleXmlString(GetString(key));
+                //rsa.KeySize = 2048; // Default
+                rsa.FromXmlString(GetString(key));
 
                 return rsa.SignData(message, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
             }
@@ -95,8 +95,8 @@
 #elif NET47
             using (var rsa = new RSACng())
             {
-                rsa.KeySize = 2048;
-                rsa.FromCompatibleXmlString(GetString(key));
+                //rsa.KeySize = 2048; // Default
+                rsa.FromXmlString(GetString(key));
 
                 return rsa.VerifyData(message, signature, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
             }
