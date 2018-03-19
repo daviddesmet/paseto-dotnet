@@ -17,6 +17,15 @@ var token = new PasetoBuilder<Version2>()
 		.Build();
 ```
 
+```csharp
+var encoder = new PasetoEncoder(cfg => cfg.Use<Version2>(sk)); // defaul is public purpose
+var token = encoder.Encode(new PasetoPayload
+{
+	{ "example", HelloPaseto },
+	{ "exp", UnixEpoch.GetSecondsSinceAsString(DateTime.UtcNow.AddHours(24)) }
+});
+```
+
 ### Decoding a Paseto
 
 ```csharp
@@ -25,6 +34,11 @@ var payload = new PasetoBuilder<Version2>()
 		.AsPublic() // Purpose
 		.AndVerifySignature()
 		.Decode(token);
+```
+
+```csharp
+var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(Convert.FromBase64String(publicKey))); // defaul is public purpose
+var payload = decoder.Decode(token);
 ```
 
 ## Roadmap
