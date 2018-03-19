@@ -1,14 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFrameworks>netstandard2.0;net47</TargetFrameworks>
     <Description>A Paseto (Platform-Agnostic Security Tokens) implementation for .NET</Description>
     <Authors>David De Smet</Authors>
     <Company />
     <Copyright>Copyright © 2018 David De Smet</Copyright>
     <PackageTags>paseto dotnet dotnet-core netstandard</PackageTags>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
-    <Version>0.5.3</Version>
+    <Version>0.5.4</Version>
     <PackageProjectUrl>https://github.com/idaviddesmet/paseto-dotnet</PackageProjectUrl>
     <PackageId>Paseto.Core</PackageId>
   </PropertyGroup>
@@ -27,6 +27,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Paseto.Cryptography\Paseto.Cryptography.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net47' ">
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
 </Project>

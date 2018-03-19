@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFrameworks>netcoreapp2.0;net47</TargetFrameworks>
 
     <IsPackable>false</IsPackable>
 
-    <Version>0.5.3</Version>
+    <Version>0.5.4</Version>
 
     <Authors>David De Smet</Authors>
 
@@ -28,6 +28,11 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Paseto\Paseto.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net47' ">
+    <Reference Include="System" />
+    <Reference Include="Microsoft.CSharp" />
   </ItemGroup>
 
 </Project>
