@@ -56,6 +56,7 @@
         /// <returns>System.Byte[].</returns>
         public byte[] Sign(byte[] message, byte[] key)
         {
+#if NETSTANDARD2_0
             using (var rsa = RSA.Create())
             {
                 //rsa.KeySize = 2048; // Default
@@ -63,6 +64,15 @@
 
                 return rsa.SignData(message, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
             }
+#elif NET47
+            using (var rsa = new RSACng())
+            {
+                rsa.KeySize = 2048;
+                rsa.FromCompatibleXmlString(GetString(key));
+
+                return rsa.SignData(message, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
+            }
+#endif
         }
 
         /// <summary>
@@ -74,6 +84,7 @@
         /// <returns><c>true</c> if verified, <c>false</c> otherwise.</returns>
         public bool Verify(byte[] message, byte[] signature, byte[] key)
         {
+#if NETSTANDARD2_0
             using (var rsa = RSA.Create())
             {
                 //rsa.KeySize = 2048; // Default
@@ -81,6 +92,15 @@
 
                 return rsa.VerifyData(message, signature, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
             }
+#elif NET47
+            using (var rsa = new RSACng())
+            {
+                rsa.KeySize = 2048;
+                rsa.FromCompatibleXmlString(GetString(key));
+
+                return rsa.VerifyData(message, signature, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
+            }
+#endif
         }
 
         /// <summary>
