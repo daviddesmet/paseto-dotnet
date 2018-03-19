@@ -26,7 +26,7 @@
             var paseto = new Version1();
 
             string key = null;
-#if NETSTANDARD2_0
+#if NETCOREAPP2_0
             using (var rsa = RSA.Create())
                 key = rsa.ToCompatibleXmlString(true);
 #elif NET47
@@ -51,7 +51,7 @@
 
             string key = null;
             string pubKey = null;
-#if NETSTANDARD2_0
+#if NETCOREAPP2_0
             using (var rsa = RSA.Create())
             {
                 //rsa.KeySize = 2048; // Default
