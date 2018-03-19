@@ -37,7 +37,7 @@ var payload = new PasetoBuilder<Version2>()
 ```
 
 ```csharp
-var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(Convert.FromBase64String(publicKey))); // defaul is public purpose
+var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(publicKey)); // defaul is public purpose
 var payload = decoder.Decode(token);
 ```
 
