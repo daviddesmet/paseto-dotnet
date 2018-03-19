@@ -9,3 +9,10 @@ build:
 only_commits:
   files:
     - src/
+deploy:
+- provider: GitHub
+  auth_token:
+    secure: djcUXsjzGm1mZ4rPTUfn1Zf13ZPNK3ole3tE9cN79ts9SbFIYKU0g2kHM52i3mOh
+  on:
+    branch: master
+    appveyor_repo_tag: true
