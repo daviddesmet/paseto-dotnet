@@ -10,7 +10,7 @@
     /// Paseto Version 2 Algorithm.
     /// </summary>
     /// <seealso cref="Paseto.Algorithms.IPasetoAlgorithm" />
-    public sealed class Version1Algorithm : IPasetoAlgorithm
+    internal sealed class Version1Algorithm : IPasetoAlgorithm
     {
         /// <summary>
         /// Encrypts the specified payload.

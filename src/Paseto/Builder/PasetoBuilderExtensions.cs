@@ -13,10 +13,10 @@
 
         public static PasetoBuilder<TProtocol> Audience<TProtocol>(this PasetoBuilder<TProtocol> builder, string audience) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.Audience, audience);
 
-        public static PasetoBuilder<TProtocol> Expiration<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.ExpirationTime, UnixEpoch.GetSecondsSinceAsString(time));
+        public static PasetoBuilder<TProtocol> Expiration<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.ExpirationTime, UnixEpoch.ToUnixTimeString(time));
 
-        public static PasetoBuilder<TProtocol> NotBefore<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.NotBefore, UnixEpoch.GetSecondsSinceAsString(time));
+        public static PasetoBuilder<TProtocol> NotBefore<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.NotBefore, UnixEpoch.ToUnixTimeString(time));
 
-        public static PasetoBuilder<TProtocol> IssuedAt<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.IssuedAt, UnixEpoch.GetSecondsSinceAsString(time));
+        public static PasetoBuilder<TProtocol> IssuedAt<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.IssuedAt, UnixEpoch.ToUnixTimeString(time));
     }
 }

@@ -9,7 +9,7 @@
     /// The Paseto Configurator.
     /// </summary>
     /// <seealso cref="Paseto.IPasetoConfigurator" />
-    public sealed class PasetoConfigurator : IPasetoConfigurator
+    internal sealed class PasetoConfigurator : IPasetoConfigurator
     {
         private byte[] _key;
 

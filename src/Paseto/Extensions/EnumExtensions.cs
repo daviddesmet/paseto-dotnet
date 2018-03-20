@@ -10,7 +10,7 @@
         /// <summary>
         /// Gets the string representation of a well-known claim name enum
         /// </summary>
-        public static string GetRegisteredClaimName(this RegisteredClaims value) => GetDescription(value);
+        internal static string GetRegisteredClaimName(this RegisteredClaims value) => GetDescription(value);
 
         /// <summary>
         /// Gets the value of the Description Attribute from the enum.
@@ -18,7 +18,7 @@
         /// <typeparam name="T"></typeparam>
         /// <param name="source">La fuente.</param>
         /// <returns>System.String.</returns>
-        public static string ToDescription<T>(this T source) where T : struct => GetDescription(source);
+        internal static string ToDescription<T>(this T source) where T : struct => GetDescription(source);
 
         /// <summary>
         /// Gets the value of the Describtion Attribute from the object.

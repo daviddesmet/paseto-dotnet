@@ -1,14 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace Paseto.Cryptography
+﻿namespace Paseto.Cryptography
 {
+    using System;
     using Internal;
 
     public class Sha512
     {
-        private Array8<UInt64> _state;
+        private Array8<ulong> _state;
         private readonly byte[] _buffer;
         private ulong _totalBytes;
         public const int BlockSize = 128;
@@ -16,7 +13,7 @@ namespace Paseto.Cryptography
 
         public Sha512()
         {
-            _buffer = new byte[BlockSize];//todo: remove allocation
+            _buffer = new byte[BlockSize]; // TODO: remove allocation
             Init();
         }
 

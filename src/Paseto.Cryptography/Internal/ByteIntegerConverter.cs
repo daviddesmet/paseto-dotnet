@@ -324,7 +324,7 @@
             output.x15 = LoadBigEndian64(input, inputOffset + 120);
         }
 
-        // ToDo: Only used in tests. Remove?
+        // TODO: Only used in tests. Remove?
         public static void Array16LoadLittleEndian32(out Array16<uint> output, byte[] input, int inputOffset)
         {
             output.x0 = LoadLittleEndian32(input, inputOffset + 0);

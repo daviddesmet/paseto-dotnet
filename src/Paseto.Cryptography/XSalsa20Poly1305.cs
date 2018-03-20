@@ -212,7 +212,7 @@
             PrepareInternalKey(out Array16<uint> internalKey, key, keyOffset, nonce, nonceOffset);
 
             Array16<uint> temp;
-            var tempBytes = new byte[64];//todo: remove allocation
+            var tempBytes = new byte[64]; // TODO: remove allocation
             Array8<uint> poly1305Key;
 
             // first iteration

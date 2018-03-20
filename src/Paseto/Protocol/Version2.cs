@@ -19,18 +19,7 @@
         private const int KEYBYTES = 32;
         private const int NPUBBYTES = 24; // crypto_aead_xchacha20poly1305_ietf_NPUBBYTES 24
 
-        public Version2()
-        {
-            Algorithm = new Version2Algorithm();
-        }
-
-        public Version2(IPasetoAlgorithm algorithm)
-        {
-            if (algorithm is null)
-                throw new ArgumentNullException(nameof(algorithm));
-
-            Algorithm = algorithm;
-        }
+        public Version2() => Algorithm = new Version2Algorithm();
 
         /// <summary>
         /// Gets the unique header version string with which the protocol can be identified.
@@ -39,14 +28,6 @@
         public string Version => VERSION;
 
         internal IPasetoAlgorithm Algorithm { get; set; }
-
-        public void Init(IPasetoAlgorithm algorithm)
-        {
-            if (algorithm is null)
-                throw new ArgumentNullException(nameof(algorithm));
-
-            Algorithm = algorithm;
-        }
 
         /// <summary>
         /// Encrypt a message using a shared key.

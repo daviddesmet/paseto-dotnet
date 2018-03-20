@@ -8,14 +8,15 @@
     using Extensions;
     using static Utils.EncodingHelper;
 
+    /// <summary>
+    /// Paseto Version 1.
+    /// </summary>
+    /// <seealso cref="Paseto.Protocol.IPasetoProtocol" />
     public sealed class Version1 : IPasetoProtocol
     {
         public const string VERSION = "v1";
 
-        public Version1()
-        {
-            Algorithm = new Version1Algorithm();
-        }
+        public Version1() => Algorithm = new Version1Algorithm();
 
         /// <summary>
         /// Gets the unique header version string with which the protocol can be identified.
@@ -25,6 +26,15 @@
 
         internal IPasetoAlgorithm Algorithm { get; set; }
 
+        /// <summary>
+        /// Encrypt a message using a shared key.
+        /// </summary>
+        /// <param name="key">The symmetric key.</param>
+        /// <param name="nonce">The nonce.</param>
+        /// <param name="payload">The payload.</param>
+        /// <param name="footer">The optional footer.</param>
+        /// <returns>System.String.</returns>
+        /// <exception cref="NotImplementedException"></exception>
         public string Encrypt(byte[] key, byte[] nonce, string payload, string footer = "")
         {
             throw new NotImplementedException();
@@ -51,6 +61,13 @@
              */
         }
 
+        /// <summary>
+        /// Decrypts the specified token.
+        /// </summary>
+        /// <param name="token">The token.</param>
+        /// <param name="key">The symmetric key.</param>
+        /// <returns>System.String.</returns>
+        /// <exception cref="NotImplementedException"></exception>
         public string Decrypt(string token, byte[] key)
         {
             throw new NotImplementedException();

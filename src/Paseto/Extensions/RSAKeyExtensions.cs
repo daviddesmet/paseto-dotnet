@@ -43,7 +43,7 @@
 
         public static string ToJsonString(this RSA rsa, bool includePrivateParameters)
         {
-            RSAParameters parameters = rsa.ExportParameters(includePrivateParameters);
+            var parameters = rsa.ExportParameters(includePrivateParameters);
 
             var parasJson = new RSAParametersJson()
             {

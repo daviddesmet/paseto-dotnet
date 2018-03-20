@@ -61,7 +61,7 @@
 
         internal static void ge_scalarmult_base(out GroupElementP3 h, byte[] a, int offset)
         {
-            // todo: Perhaps remove this allocation
+            // TODO: Perhaps remove this allocation
             var e = new sbyte[64];
             sbyte carry;
             GroupElementP1P1 r;

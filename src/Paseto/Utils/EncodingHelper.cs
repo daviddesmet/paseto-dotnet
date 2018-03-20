@@ -5,6 +5,9 @@
     using System.Linq;
     using System.Text;
 
+    /// <summary>
+    /// The Encoding Helper.
+    /// </summary>
     public static class EncodingHelper
     {
         #region Authentication Padding
@@ -16,14 +19,14 @@
         /// </summary>
         /// <param name="pieces">The pieces.</param>
         /// <returns>System.Byte[].</returns>
-        public static byte[] PreAuthEncode(IReadOnlyList<byte[]> pieces) => BitConverter.GetBytes((long)pieces.Count).Concat(pieces.SelectMany(piece => BitConverter.GetBytes((long)piece.Length).Concat(piece))).ToArray();
+        internal static byte[] PreAuthEncode(IReadOnlyList<byte[]> pieces) => BitConverter.GetBytes((long)pieces.Count).Concat(pieces.SelectMany(piece => BitConverter.GetBytes((long)piece.Length).Concat(piece))).ToArray();
 
         /// <summary>
         /// Pres the authentication encode.
         /// </summary>
         /// <param name="pieces">The pieces.</param>
         /// <returns>System.Byte[].</returns>
-        public static byte[] PreAuthEncode(IReadOnlyList<string> pieces) => PreAuthEncode(pieces.Select(GetBytes).ToArray());
+        internal static byte[] PreAuthEncode(IReadOnlyList<string> pieces) => PreAuthEncode(pieces.Select(GetBytes).ToArray());
 
         /// <summary>
         /// Pre-Authentication Padding.
@@ -31,7 +34,7 @@
         /// <param name="pieces">The pieces.</param>
         /// <returns>System.Byte[].</returns>
         [Obsolete("Use new PreAuthEncode method")]
-        public static byte[] PAE(IReadOnlyList<byte[]> pieces)
+        internal static byte[] PAE(IReadOnlyList<byte[]> pieces)
         {
             var output = LE64(pieces.Count);
             foreach (var piece in pieces)
@@ -71,34 +74,34 @@
         /// </summary>
         /// <param name="input">The input.</param>
         /// <returns>System.Byte[].</returns>
-        public static byte[] GetBytes(string input) => Encoding.UTF8.GetBytes(input);
+        internal static byte[] GetBytes(string input) => Encoding.UTF8.GetBytes(input);
 
         /// <summary>
         /// Decodes all the bytes in the specified byte array into a string.
         /// </summary>
         /// <param name="input">The input.</param>
         /// <returns>System.String.</returns>
-        public static string GetString(byte[] input) => Encoding.UTF8.GetString(input);
+        internal static string GetString(byte[] input) => Encoding.UTF8.GetString(input);
 
         /// <summary>
         /// Base64 URL safe encoding.
         /// </summary>
         /// <param name="input">The input.</param>
         /// <returns>System.String.</returns>
-        public static string ToBase64Url(string input) => new Base64UrlEncoder().Encode(GetBytes(input));
+        internal static string ToBase64Url(string input) => new Base64UrlEncoder().Encode(GetBytes(input));
 
         /// <summary>
         /// Base64 URL safe encoding.
         /// </summary>
         /// <param name="input">The input.</param>
         /// <returns>System.String.</returns>
-        public static string ToBase64Url(IEnumerable<byte> input) => new Base64UrlEncoder().Encode(input.ToArray());
+        internal static string ToBase64Url(IEnumerable<byte> input) => new Base64UrlEncoder().Encode(input.ToArray());
 
         /// <summary>
         /// Base64 URL safe decoding.
         /// </summary>
         /// <param name="input">The input.</param>
         /// <returns>System.Byte[].</returns>
-        public static byte[] FromBase64Url(string input) => new Base64UrlEncoder().Decode(input);
+        internal static byte[] FromBase64Url(string input) => new Base64UrlEncoder().Decode(input);
     }
 }

@@ -21,9 +21,15 @@ var token = new PasetoBuilder<Version2>()
 var encoder = new PasetoEncoder(cfg => cfg.Use<Version2>(sk)); // default is public purpose
 var token = encoder.Encode(new PasetoPayload
 {
-	{ "example", HelloPaseto },
-	{ "exp", UnixEpoch.GetSecondsSinceAsString(DateTime.UtcNow.AddHours(24)) }
+	{ "example", "Hello Paseto!" },
+	{ "exp", UnixEpoch.GetSecondsSince(DateTime.UtcNow.AddHours(24)) }
 });
+```
+
+#### Encoded Token:
+
+```
+v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs
 ```
 
 ### Decoding a Paseto
@@ -39,6 +45,15 @@ var payload = new PasetoBuilder<Version2>()
 ```csharp
 var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(publicKey)); // default is public purpose
 var payload = decoder.Decode(token);
+```
+
+#### Decrypted Payload:
+
+```json
+{
+  "example": "Hello Paseto!",
+  "exp": "1521245450"
+}
 ```
 
 ## Roadmap

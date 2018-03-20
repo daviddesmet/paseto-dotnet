@@ -9,7 +9,7 @@
         Preconditions:
            |f| bounded by 1.1*2^26,1.1*2^25,1.1*2^26,1.1*2^25,etc.
         */
-        // Todo: Discuss this with upstream
+        // TODO: Discuss this with upstream
         // Above comment is from the original code. But I believe the original code returned
         //   0 if f == 0
         //  -1 if f != 0

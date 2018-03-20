@@ -1,7 +1,7 @@
 ﻿namespace Paseto.Utils
 {
     /// <summary>
-    /// Represents a base64 encoder/decoder.
+    /// Represents a base64 url encoder/decoder.
     /// </summary>
     public interface IBase64UrlEncoder
     {
