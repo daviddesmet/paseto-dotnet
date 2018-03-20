@@ -2,17 +2,14 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Text;
 
     using Algorithms;
     using Extensions;
     using Protocol;
     using Serializers;
-    using Utils;
-    using static Utils.EncodingHelper;
 
     /// <summary>
-    /// Build and decode a Paseto with Fluent API.
+    /// Build and decode a Paseto using a Fluent API.
     /// </summary>
     public sealed class PasetoBuilder<TProtocol> where TProtocol : IPasetoProtocol, new()
     {
@@ -37,7 +34,7 @@
         }
 
         /// <summary>
-        /// Adds claim to the Paseto.
+        /// Adds a claim to the Paseto.
         /// </summary>
         /// <param name="name">Claim name</param>
         /// <param name="value">Claim value</param>
@@ -65,7 +62,7 @@
         public PasetoBuilder<TProtocol> AddClaim(RegisteredClaims name, string value) => AddClaim(name.GetRegisteredClaimName(), value);
 
         /// <summary>
-        /// Adds the footer to the Paseto.
+        /// Adds a footer to the Paseto.
         /// </summary>
         /// <param name="footer">The footer.</param>
         /// <returns>PasetoBuilder&lt;TProtocol&gt;.</returns>
