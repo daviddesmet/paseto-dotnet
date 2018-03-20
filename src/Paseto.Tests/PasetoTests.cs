@@ -18,6 +18,10 @@
     public class PasetoTests
     {
         private const string HelloPaseto = "Hello Paseto!";
+        private const string PublicKeyV2 = "g21uHSdjWR8UHQZOSVdkA1cgn9wVpWjruxZDp90lpXs=";
+        private const string TokenV2 = "v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs";
+
+        #region Version 1
 
         [Test]
         public void Version1SignatureTest()
@@ -117,6 +121,10 @@
             Assert.IsNotNull(payload);
         }
 
+        #endregion
+
+        #region Version 2
+
         [Test]
         public void Version2SignatureTest()
         {
@@ -130,6 +138,48 @@
 
             // Assert
             Assert.IsNotNull(signature);
+        }
+
+        [Test]
+        public void Version2SignatureNullSecretFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => paseto.Sign(null, HelloPaseto));
+        }
+
+        [Test]
+        public void Version2SignatureEmptySecretFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => paseto.Sign(new byte[0], HelloPaseto));
+        }
+
+        [Test]
+        public void Version2SignatureNullPayloadFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+            Ed25519.KeyPairFromSeed(out var pk, out var sk, new byte[32]);
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => paseto.Sign(sk, null));
+        }
+
+        [Test]
+        public void Version2SignatureEmptyPayloadFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+            Ed25519.KeyPairFromSeed(out var pk, out var sk, new byte[32]);
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => paseto.Sign(sk, string.Empty));
         }
 
         [Test]
@@ -149,6 +199,86 @@
 
             // Assert
             Assert.IsTrue(verified);
+        }
+
+        [Test]
+        public void Version2SignatureVerificationNullTokenFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => paseto.Verify(null, null));
+        }
+
+        [Test]
+        public void Version2SignatureVerificationEmptyTokenFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => paseto.Verify(string.Empty, null));
+        }
+
+        [Test]
+        public void Version2SignatureVerificationNullPublicKeyFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+
+            // Act & Assert
+            Assert.Throws<ArgumentNullException>(() => paseto.Verify(TokenV2, null));
+        }
+
+        [Test]
+        public void Version2SignatureVerificationEmptyPublicKeyFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => paseto.Verify(TokenV2, new byte[0]));
+        }
+
+        [Test]
+        public void Version2SignatureVerificationInvalidPublicKeyFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+
+            // Act & Assert
+            Assert.Throws<ArgumentException>(() => paseto.Verify(TokenV2, new byte[16]));
+        }
+
+        [Test]
+        public void Version2SignatureVerificationInvalidTokenHeaderVersionFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+
+            // Act & Assert
+            Assert.Throws<NotSupportedException>(() => paseto.Verify("v1.public.", new byte[32]));
+        }
+
+        [Test]
+        public void Version2SignatureVerificationInvalidTokenHeaderFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+
+            // Act & Assert
+            Assert.Throws<NotSupportedException>(() => paseto.Verify("v2.remote.", new byte[32]));
+        }
+
+        [Test]
+        public void Version2SignatureVerificationInvalidTokenBodyFails()
+        {
+            // Arrange
+            var paseto = new Version2();
+
+            // Act & Assert
+            Assert.Throws<NotSupportedException>(() => paseto.Verify("v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZX", new byte[32]));
         }
 
         [Test]
@@ -174,22 +304,51 @@
         }
 
         [Test]
-        public void Version2BuilderTokenDecodingTest()
+        public void Version2BuilderTokenGenerationNullSecretFails() => Assert.Throws<InvalidOperationException>(() => new PasetoBuilder<Version2>().WithKey(null).Build());
+
+        [Test]
+        public void Version2BuilderTokenGenerationEmptySecretFails() => Assert.Throws<InvalidOperationException>(() => new PasetoBuilder<Version2>().WithKey(new byte[0]).Build());
+
+        [Test]
+        public void Version2BuilderTokenGenerationEmptyPayloadFails()
         {
             // Arrange
-            var publicKey = "g21uHSdjWR8UHQZOSVdkA1cgn9wVpWjruxZDp90lpXs=";
-            var token = "v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs";
+            var seed = new byte[32]; // signingKey
+            RandomNumberGenerator.Create().GetBytes(seed);
+            var sk = Ed25519.ExpandedPrivateKeyFromSeed(seed);
 
-            // Act
+            // Act & Assert
+            Assert.Throws<InvalidOperationException>(() => new PasetoBuilder<Version2>().WithKey(sk).Build());
+        }
+
+        [Test]
+        public void Version2BuilderTokenDecodingTest()
+        {
+            // Arrange & Act
             var payload = new PasetoBuilder<Version2>()
-                              .WithKey(Convert.FromBase64String(publicKey))
+                              .WithKey(Convert.FromBase64String(PublicKeyV2))
                               .AsPublic()
                               .AndVerifySignature()
-                              .Decode(token);
+                              .Decode(TokenV2);
 
             // Assert
             Assert.IsNotNull(payload);
         }
+
+        [Test]
+        public void Version2BuilderTokenDecodingNullPublicKeyFails() => Assert.Throws<InvalidOperationException>(() => new PasetoBuilder<Version2>().WithKey(null).Decode(null));
+
+        [Test]
+        public void Version2BuilderTokenDecodingEmptyPublicKeyFails() => Assert.Throws<InvalidOperationException>(() => new PasetoBuilder<Version2>().WithKey(new byte[0]).Decode(null));
+
+        [Test]
+        public void Version2BuilderTokenDecodingNullTokenFails() => Assert.Throws<ArgumentNullException>(() => new PasetoBuilder<Version2>().WithKey(new byte[32]).AsPublic().Decode(null));
+
+        [Test]
+        public void Version2BuilderTokenDecodingEmptyTokenFails() => Assert.Throws<ArgumentNullException>(() => new PasetoBuilder<Version2>().WithKey(new byte[32]).AsPublic().Decode(string.Empty));
+
+        [Test]
+        public void Version2BuilderTokenDecodingInvalidTokenFails() => Assert.Throws<SignatureVerificationException>(() => new PasetoBuilder<Version2>().WithKey(Convert.FromBase64String(PublicKeyV2)).AsPublic().AndVerifySignature().Decode("v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV2cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs"));
 
         [Test]
         public void Version2EncoderTest()
@@ -216,16 +375,14 @@
         [Test]
         public void Version2DecoderTest()
         {
-            // Arrange
-            var publicKey = "g21uHSdjWR8UHQZOSVdkA1cgn9wVpWjruxZDp90lpXs=";
-            var token = "v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs";
-
-            // Act
-            var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(Convert.FromBase64String(publicKey))); // defaul is public purpose
-            var payload = decoder.Decode(token);
+            // Arrange & Act
+            var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(Convert.FromBase64String(PublicKeyV2))); // defaul is public purpose
+            var payload = decoder.Decode(TokenV2);
 
             // Assert
             Assert.IsNotNull(payload);
         }
+
+        #endregion
     }
 }

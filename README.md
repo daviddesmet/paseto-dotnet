@@ -18,7 +18,7 @@ var token = new PasetoBuilder<Version2>()
 ```
 
 ```csharp
-var encoder = new PasetoEncoder(cfg => cfg.Use<Version2>(sk)); // defaul is public purpose
+var encoder = new PasetoEncoder(cfg => cfg.Use<Version2>(sk)); // default is public purpose
 var token = encoder.Encode(new PasetoPayload
 {
 	{ "example", HelloPaseto },
@@ -37,7 +37,7 @@ var payload = new PasetoBuilder<Version2>()
 ```
 
 ```csharp
-var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(publicKey)); // defaul is public purpose
+var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(publicKey)); // default is public purpose
 var payload = decoder.Decode(token);
 ```
 
