@@ -5,15 +5,15 @@
     using System.Linq;
     using System.Numerics;
 
-    using Microsoft.VisualStudio.TestTools.UnitTesting;
+    using NUnit.Framework;
 
     using Cryptography;
 
-    [TestClass]
+    [TestFixture]
     public class Ed25519Tests
     {
-        [AssemblyInitialize]
-        public static void LoadTestVectors(TestContext context)
+        [SetUp]
+        public static void LoadTestVectors()
         {
             Ed25519TestVectors.LoadTestCases();
 
@@ -24,7 +24,7 @@
             Ed25519.Verify(sig, new byte[10], pk);
         }
 
-        [TestMethod]
+        [Test]
         public void KeyPairFromSeed()
         {
             foreach (var testCase in Ed25519TestVectors.TestCases)
@@ -36,7 +36,7 @@
         }
 
 
-        [TestMethod]
+        [Test]
         public void KeyPairFromSeedSegments()
         {
             foreach (var testCase in Ed25519TestVectors.TestCases)
@@ -49,7 +49,7 @@
             }
         }
 
-        [TestMethod]
+        [Test]
         public void Sign()
         {
             foreach (var testCase in Ed25519TestVectors.TestCases)
@@ -60,7 +60,7 @@
             }
         }
 
-        [TestMethod]
+        [Test]
         public void Verify()
         {
             foreach (var testCase in Ed25519TestVectors.TestCases)
@@ -70,7 +70,7 @@
             }
         }
 
-        [TestMethod]
+        [Test]
         public void VerifyFail()
         {
             var message = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
@@ -110,7 +110,7 @@
         // This test serves to document the *is* behaviour, and doesn't define *should* behaviour
         //
         // I consider rejecting signatures with S >= l, but should probably talk to upstream and libsodium before that
-        [TestMethod]
+        [Test]
         public void MalleabilityAddL()
         {
             var message = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
@@ -123,7 +123,7 @@
             Assert.IsFalse(Ed25519.Verify(modifiedSignature2, message, pk));
         }
 
-        [TestMethod]
+        [Test]
         public void VerifySegments()
         {
             foreach (var testCase in Ed25519TestVectors.TestCases)
@@ -133,7 +133,7 @@
             }
         }
 
-        [TestMethod]
+        [Test]
         public void VerifyFailSegments()
         {
             var message = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
