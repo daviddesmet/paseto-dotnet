@@ -22,7 +22,7 @@ var encoder = new PasetoEncoder(cfg => cfg.Use<Version2>(sk)); // default is pub
 var token = encoder.Encode(new PasetoPayload
 {
 	{ "example", "Hello Paseto!" },
-	{ "exp", UnixEpoch.GetSecondsSince(DateTime.UtcNow.AddHours(24)) }
+	{ "exp", UnixEpoch.ToUnixTime(DateTime.UtcNow.AddHours(24)) }
 });
 ```
 

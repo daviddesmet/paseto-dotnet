@@ -30,6 +30,7 @@
 
         /// <summary>
         /// Adds an expiration claim to the Paseto.
+        /// The Utc time will be converted to Unix time.
         /// </summary>
         /// <param name="time">The Utc time.</param>
         /// <returns>Current builder instance</returns>
@@ -37,6 +38,7 @@
 
         /// <summary>
         /// Adds a not before claim to the Paseto.
+        /// The Utc time will be converted to Unix time.
         /// </summary>
         /// <param name="time">The Utc time.</param>
         /// <returns>Current builder instance</returns>
@@ -44,6 +46,7 @@
 
         /// <summary>
         /// Adds an issued claim to the Paseto.
+        /// The Utc time will be converted to Unix time.
         /// </summary>
         /// <param name="time">The Utc time.</param>
         /// <returns>Current builder instance</returns>

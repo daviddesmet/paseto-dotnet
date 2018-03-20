@@ -8,7 +8,7 @@
     <Copyright>Copyright © 2018 David De Smet</Copyright>
     <PackageTags>paseto dotnet dotnet-core netstandard</PackageTags>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
-    <Version>0.5.4</Version>
+    <Version>0.5.5</Version>
     <PackageProjectUrl>https://github.com/idaviddesmet/paseto-dotnet</PackageProjectUrl>
     <PackageId>Paseto.Core</PackageId>
   </PropertyGroup>
