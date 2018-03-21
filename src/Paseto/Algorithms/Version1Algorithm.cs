@@ -84,6 +84,11 @@
         /// <returns><c>true</c> if verified, <c>false</c> otherwise.</returns>
         public bool Verify(byte[] message, byte[] signature, byte[] key)
         {
+            // NOTE: Not Supported in Linux until 2.1
+            //
+            // Enable RSA-OAEP(SHA-2) and RSA-PSS on Unix systems #27394
+            // https://github.com/dotnet/corefx/pull/27394
+            // https://github.com/dotnet/corefx/issues/2522
 #if NETSTANDARD2_0
             using (var rsa = RSA.Create())
             {
