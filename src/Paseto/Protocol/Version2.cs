@@ -60,11 +60,11 @@
              */
 
             // Validate the length of the key
-            if (key == null || key.Length != KEYBYTES)
+            if (key is null || key.Length != KEYBYTES)
                 throw new ArgumentOutOfRangeException(nameof(key), (key == null) ? 0 : key.Length, string.Format("key must be {0} bytes in length.", KEYBYTES));
 
             // Validate nonce or otherwise build it
-            if (nonce == null || nonce.Length != NPUBBYTES)
+            if (nonce is null || nonce.Length != NPUBBYTES)
                 nonce = Algorithm.Hash(payload, NPUBBYTES);
 
             //var snonce = GetString(nonce);
@@ -125,13 +125,14 @@
 
             var bytes = FromBase64Url(parts[2]);
 
-            if (bytes.Length != NPUBBYTES)
+            if (bytes.Length < NPUBBYTES)
                 throw new NotSupportedException("Token size is not supported!");
 
             var nonce = bytes.Take(NPUBBYTES).ToArray();
             var payload = bytes.Skip(NPUBBYTES).ToArray();
 
-            var pack = PreAuthEncode(new[] { header, GetString(nonce), footer }.Select(GetBytes).ToArray());
+            //var pack = PreAuthEncode(new[] { header, GetString(nonce), footer }.Select(GetBytes).ToArray());
+            var pack = PreAuthEncode(new[] { GetBytes(header), nonce, GetBytes(footer) });
 
             return Algorithm.Decrypt(payload, pack, key, nonce);
         }

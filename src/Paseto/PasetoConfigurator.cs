@@ -12,6 +12,7 @@
     internal sealed class PasetoConfigurator : IPasetoConfigurator
     {
         private byte[] _key;
+        private byte[] _nonce;
 
         /// <summary>
         /// Gets the protocol.
@@ -46,6 +47,28 @@
         }
 
         /// <summary>
+        /// Sets the configurator to use the specified key and nonce.
+        /// </summary>
+        /// <typeparam name="TProtocol">The type of the paseto protocol.</typeparam>
+        /// <param name="key">The secret key (for encoding) or the public key (for decoding and validating).</param>
+        /// <param name="nonce">The nonce.</param>
+        /// <param name="purpose">The purpose.</param>
+        /// <returns>IPasetoConfigurator.</returns>
+        /// <exception cref="ArgumentNullException">key</exception>
+        public IPasetoConfigurator Use<TProtocol>(byte[] key, byte[] nonce, Purpose purpose = Purpose.Local) where TProtocol : IPasetoProtocol, new()
+        {
+            if (key is null || key.Length == 0)
+                throw new ArgumentNullException(nameof(key));
+
+            Protocol = new TProtocol();
+            Purpose = purpose;
+            _key = key;
+            _nonce = nonce;
+
+            return this;
+        }
+
+        /// <summary>
         /// Encodes the specified payload and optional footer.
         /// </summary>
         /// <param name="payload">The payload.</param>
@@ -58,7 +81,9 @@
             switch (Purpose)
             {
                 case Purpose.Local:
-                    throw new NotSupportedException("The Local Purpose is not currently supported!");
+                    if (Protocol is Version1)
+                        throw new NotSupportedException("The Local Purpose is not currently supported in the specified Protocol!");
+                    return Protocol.Encrypt(_key, _nonce, payload.SerializeToJson(), footer ?? string.Empty);
                 case Purpose.Public:
                     return Protocol.Sign(_key, payload.SerializeToJson(), footer ?? string.Empty);
                 default:
@@ -79,7 +104,9 @@
             switch (Purpose)
             {
                 case Purpose.Local:
-                    throw new NotSupportedException("The Local Purpose is not currently supported!");
+                    if (Protocol is Version1)
+                        throw new NotSupportedException("The Local Purpose is not currently supported in the specified Protocol!");
+                    return Protocol.Decrypt(token, _key);
                 case Purpose.Public:
                     var (valid, payload) = Protocol.Verify(token, _key);
                     if (!valid)

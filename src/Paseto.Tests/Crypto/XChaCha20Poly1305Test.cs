@@ -13,10 +13,10 @@
     [TestFixture]
     public class XChaCha20Poly1305Test
     {
-        private const string AEADBadTagExceptionMessage = "AEAD Bad Tag Exception";
-        private static byte[] KEY = CryptoBytes.FromHexString("808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f");
-        private static string NONCE = "07000000404142434445464748494a4b0000000000000000";
-        private static byte[] AD = CryptoBytes.FromHexString("50515253c0c1c2c3c4c5c6c7");
+        //private const string AEADBadTagExceptionMessage = "AEAD Bad Tag Exception";
+        //private static byte[] KEY = CryptoBytes.FromHexString("808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9f");
+        //private static string NONCE = "07000000404142434445464748494a4b0000000000000000";
+        //private static byte[] AD = CryptoBytes.FromHexString("50515253c0c1c2c3c4c5c6c7");
 
         [Test]
         public void CreateInstanceWhenKeyLengthIsGreaterThan32Fails()

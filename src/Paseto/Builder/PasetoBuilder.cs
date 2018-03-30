@@ -19,6 +19,7 @@
         //private IBase64UrlEncoder _urlEncoder = new Base64UrlEncoder();
 
         private byte[] _key;
+        private byte[] _nonce;
         private string _footer;
         private Purpose _purpose;
         private bool _verify;
@@ -30,6 +31,16 @@
         public PasetoBuilder<TProtocol> WithKey(byte[] key)
         {
             _key = key;
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the nonce (for encoding) the Paseto.
+        /// </summary>
+        /// <returns>Current builder instance</returns>
+        public PasetoBuilder<TProtocol> WithNonce(byte[] nonce)
+        {
+            _nonce = nonce;
             return this;
         }
 
@@ -132,7 +143,9 @@
             switch (_purpose)
             {
                 case Purpose.Local:
-                    throw new NotSupportedException("The Local Purpose is not currently supported!");
+                    if (proto is Version1)
+                        throw new NotSupportedException("The Local Purpose is not currently supported in the specified Protocol!");
+                    return proto.Encrypt(_key, _nonce, payload, _footer ?? string.Empty);
                 case Purpose.Public:
                     return proto.Sign(_key, payload, _footer ?? string.Empty);
                 default:
@@ -159,7 +172,9 @@
             switch (_purpose)
             {
                 case Purpose.Local:
-                    throw new NotSupportedException("The Local Purpose is not currently supported!");
+                    if (proto is Version1)
+                        throw new NotSupportedException("The Local Purpose is not currently supported in the specified Protocol!");
+                    return proto.Decrypt(token, _key);
                 case Purpose.Public:
                     if (!_verify)
                         return proto.Verify(token, _key).Payload;

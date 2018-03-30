@@ -317,9 +317,7 @@
         public virtual void Final(byte[] hash) //, bool isEndOfLayer)
         {
             if (hash.Length != HashSizeInBytes)
-                throw new ArgumentOutOfRangeException("hash",
-                    string.Format("hash.Length must be {0} HashSizeInBytes",
-                        HashSizeInBytes));
+                throw new ArgumentOutOfRangeException("hash", string.Format("hash.Length must be {0} HashSizeInBytes", HashSizeInBytes));
 
             if (!_isInitialized) Initialize();
 

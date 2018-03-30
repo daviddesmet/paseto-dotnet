@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Linq;
     using System.Security.Cryptography;
     using System.Text;
 
@@ -34,10 +35,8 @@
         /// <returns>System.Byte[].</returns>
         public byte[] Encrypt(byte[] payload, byte[] aad, byte[] key, byte[] nonce)
         {
-            throw new NotImplementedException();
-
-            //var algo = new XChaCha20Poly1305(key);
-            //return algo.Encrypt(payload, aad, nonce);
+            var algo = new XChaCha20Poly1305(key);
+            return algo.Encrypt(payload, aad, nonce);
 
             /* 
              * Sodium
@@ -66,10 +65,8 @@
         /// <returns>System.String.</returns>
         public string Decrypt(byte[] payload, byte[] aad, byte[] key, byte[] nonce)
         {
-            throw new NotImplementedException();
-
-            //var algo = new XChaCha20Poly1305(key);
-            //return GetString(algo.Decrypt(payload, aad));
+            var algo = new XChaCha20Poly1305(key);
+            return GetString(algo.Decrypt(payload, aad));
 
             /* 
              * Sodium
@@ -161,8 +158,8 @@
             RandomNumberGenerator.Create().GetBytes(nKey);
 
             // Using Paseto Cryptography library
-            using (var hash = new Blake2B())
-                return hash.ComputeHash(nKey);
+            using (var hash = new Blake2B(size * 8))
+                return hash.ComputeHash(payload.Concat(nKey).ToArray());
 
             /*
              * Using NSec library

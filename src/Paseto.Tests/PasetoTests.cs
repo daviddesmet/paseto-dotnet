@@ -22,6 +22,10 @@
         private const string TokenV1 = "v1.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEzMDc1MzMifTzjEcgP2a3p_IrMPuU9bH8OvOmV5Olr8DFK3rFu_7SngF_pZ0cU1X9w590YQeZTy37B1bPouoXZDQ9JDYBfalxG0cNn2aP4iKHgYuyrOqHaUTmbNeooKOvDPwwl6CFO3spTTANLK04qgPJnixeb9mvjby2oM7Qpmn28HAwwr_lSoOMPhiUSCKN4u-SA6G6OddQTuXY-PCV1VtgQA83f0J6Yy3x7MGH9vvqonQSuOG6EGLHJ09p5wXllHQyGZcRm_654aKpwh8CXe3w8ol3OfozGCMFF_TLo_EeX0iKSkE8AQxkrQ-Fe-3lP_t7xPkeNhJPnhAa0-DGLSFQIILsL31M";
         private const string PublicKeyV2 = "g21uHSdjWR8UHQZOSVdkA1cgn9wVpWjruxZDp90lpXs=";
         private const string TokenV2 = "v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs";
+        private const string LocalKeyV2 = "37ZJdkLlZ43aF8UO7GWqi7GrdO0zDZSpSFLNTAdmKdk=";
+        private const string LocalTokenV2 = "v2.local.EMm98mfmCWo7p8qEha5nuyv4lP5y8248EMm98mfmCWo7p8qEha5nuyv4lP5y8248RV7rR23BzX5JWDcoaHeK70sYo4pO-9D8NJRABD1xF1RT8TOZ8I7IjEkf0q-B60GBGneoM5HYc7JrFHJJ3io";
+        private const string ExpectedPublicPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"1521245450\"}";
+        private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"1522532531\"}";
 
         #region Version 1
 
@@ -90,8 +94,13 @@
         {
             // Arrange
             string key = null;
+#if NETCOREAPP2_0
             using (var rsa = RSA.Create())
                 key = rsa.ToCompatibleXmlString(true);
+#elif NET47
+            using (var rsa = new RSACng())
+                key = rsa.ToXmlString(true);
+#endif
 
             // Act
             var token = new PasetoBuilder<Version1>()
@@ -119,9 +128,9 @@
             Assert.IsNotNull(payload);
         }
 
-        #endregion
+#endregion
 
-        #region Version 2
+#region Version 2
 
         [Test]
         public void Version2SignatureTest()
@@ -280,7 +289,7 @@
         }
 
         [Test]
-        public void Version2BuilderTokenGenerationTest()
+        public void Version2BuilderPublicTokenGenerationTest()
         {
             // Arrange
             var seed = new byte[32]; // signingKey
@@ -295,6 +304,27 @@
                               .AddClaim("example", HelloPaseto)
                               .Expiration(DateTime.UtcNow.AddHours(24))
                               .AsPublic()
+                              .Build();
+
+            // Assert
+            Assert.IsNotNull(token);
+        }
+
+        [Test]
+        public void Version2BuilderLocalTokenGenerationTest()
+        {
+            // Arrange
+            var key = new byte[32];
+            RandomNumberGenerator.Create().GetBytes(key);
+
+            //var secret = Convert.ToBase64String(key); //BitConverter.ToString(key).Replace("-", string.Empty); // Hex Encoded
+
+            // Act
+            var token = new PasetoBuilder<Version2>()
+                              .WithKey(key)
+                              .AddClaim("example", HelloPaseto)
+                              .Expiration(DateTime.UtcNow.AddHours(24))
+                              .AsLocal()
                               .Build();
 
             // Assert
@@ -320,7 +350,7 @@
         }
 
         [Test]
-        public void Version2BuilderTokenDecodingTest()
+        public void Version2BuilderPublicTokenDecodingTest()
         {
             // Arrange & Act
             var payload = new PasetoBuilder<Version2>()
@@ -331,6 +361,21 @@
 
             // Assert
             Assert.IsNotNull(payload);
+            Assert.That(payload, Is.EqualTo(ExpectedPublicPayload));
+        }
+
+        [Test]
+        public void Version2BuilderLocalTokenDecodingTest()
+        {
+            // Arrange & Act
+            var payload = new PasetoBuilder<Version2>()
+                              .WithKey(Convert.FromBase64String(LocalKeyV2))
+                              .AsLocal()
+                              .Decode(LocalTokenV2);
+
+            // Assert
+            Assert.IsNotNull(payload);
+            Assert.That(payload, Is.EqualTo(ExpectedLocalPayload));
         }
 
         [Test]
@@ -349,7 +394,7 @@
         public void Version2BuilderTokenDecodingInvalidTokenFails() => Assert.Throws<SignatureVerificationException>(() => new PasetoBuilder<Version2>().WithKey(Convert.FromBase64String(PublicKeyV2)).AsPublic().AndVerifySignature().Decode("v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV2cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs"));
 
         [Test]
-        public void Version2EncoderTest()
+        public void Version2EncoderPublicPurposeTest()
         {
             // Arrange
             var seed = new byte[32]; // signingKey
@@ -371,7 +416,7 @@
         }
 
         [Test]
-        public void Version2DecoderTest()
+        public void Version2DecoderPublicPurposeTest()
         {
             // Arrange & Act
             var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(Convert.FromBase64String(PublicKeyV2))); // default is public purpose
@@ -379,6 +424,40 @@
 
             // Assert
             Assert.IsNotNull(payload);
+            Assert.That(payload, Is.EqualTo(ExpectedPublicPayload));
+        }
+
+        [Test]
+        public void Version2EncoderLocalPurposeTest()
+        {
+            // Arrange
+            var key = new byte[32];
+            RandomNumberGenerator.Create().GetBytes(key);
+
+            //var secret = Convert.ToBase64String(key); //BitConverter.ToString(key).Replace("-", string.Empty); // Hex Encoded
+
+            // Act
+            var encoder = new PasetoEncoder(cfg => cfg.Use<Version2>(key, Purpose.Local));
+            var token = encoder.Encode(new PasetoPayload
+            {
+                { "example", HelloPaseto },
+                { "exp", UnixEpoch.ToUnixTimeString(DateTime.UtcNow.AddHours(24)) }
+            });
+
+            // Assert
+            Assert.IsNotNull(token);
+        }
+
+        [Test]
+        public void Version2DecoderLocalPurposeTest()
+        {
+            // Arrange & Act
+            var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(Convert.FromBase64String(LocalKeyV2), Purpose.Local));
+            var payload = decoder.Decode(LocalTokenV2);
+
+            // Assert
+            Assert.IsNotNull(payload);
+            Assert.That(payload, Is.EqualTo(ExpectedLocalPayload));
         }
 
         #endregion

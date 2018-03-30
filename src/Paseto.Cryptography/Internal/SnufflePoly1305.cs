@@ -77,7 +77,7 @@
 
             _snuffle.Encrypt(plaintext, output, nonce);
             
-            Array.Copy(output, nonce, nonce.Length);
+            //Array.Copy(output, nonce, nonce.Length); // no longer needed...
 
             var aad = associatedData;
             if (aad is null)
@@ -167,6 +167,8 @@
             Array.Copy(ciphertext, 0, macData, aadPaddedLen, ciphertextLen);
             macData[aadPaddedLen + ciphertextPaddedLen] = (byte)aad.Length;
             macData[aadPaddedLen + ciphertextPaddedLen + 8] = (byte)ciphertextLen;
+
+            // TODO: Check Endianness of macData?
 
             return macData;
         }
