@@ -58,8 +58,9 @@ var payload = decoder.Decode(token);
 
 ## Roadmap
 
-- [ ] Add support for local authentication for v1 and v2.
+- [x] Add support for local authentication for v2.
   - [x] Implement XChaCha20-Poly1305 algorithm ~~or use an external library~~
+- [ ] Add support for local authentication for v1
 - [ ] Improve protocol versioning
 - [ ] Add more documentation on the usage
 - [ ] Extend the fluent builder API
