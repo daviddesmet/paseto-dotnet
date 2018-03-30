@@ -1,4 +1,4 @@
-namespace Paseto.Tests.Encoding
+﻿namespace Paseto.Tests.Encode
 {
     using System.Collections.Generic;
     using System.Text;

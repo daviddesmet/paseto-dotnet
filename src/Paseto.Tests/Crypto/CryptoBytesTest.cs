@@ -10,9 +10,9 @@
     [TestFixture]
     public class CryptoBytesTest
     {
-        readonly byte[] _bytes = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
+        private readonly byte[] _bytes = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
 
-        const string HexStringUpper =
+        private const string HexStringUpper =
             "000102030405060708090A0B0C0D0E0F" +
             "101112131415161718191A1B1C1D1E1F" +
             "202122232425262728292A2B2C2D2E2F" +
@@ -30,7 +30,7 @@
             "E0E1E2E3E4E5E6E7E8E9EAEBECEDEEEF" +
             "F0F1F2F3F4F5F6F7F8F9FAFBFCFDFEFF";
 
-        const string HexStringLower =
+        private const string HexStringLower =
             "000102030405060708090a0b0c0d0e0f" +
             "101112131415161718191a1b1c1d1e1f" +
             "202122232425262728292a2b2c2d2e2f" +
@@ -48,7 +48,7 @@
             "e0e1e2e3e4e5e6e7e8e9eaebecedeeef" +
             "f0f1f2f3f4f5f6f7f8f9fafbfcfdfeff";
 
-        const string Base64String =
+        private const string Base64String =
             "AAECAwQFBgcICQoL" +
             "DA0ODxAREhMUFRYX" +
             "GBkaGxwdHh8gISIj" +

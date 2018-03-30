@@ -36,6 +36,9 @@
         {
             throw new NotImplementedException();
 
+            //var algo = new XChaCha20Poly1305(key);
+            //return algo.Encrypt(payload, aad, nonce);
+
             /* 
              * Sodium
              * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
@@ -64,6 +67,9 @@
         public string Decrypt(byte[] payload, byte[] aad, byte[] key, byte[] nonce)
         {
             throw new NotImplementedException();
+
+            //var algo = new XChaCha20Poly1305(key);
+            //return GetString(algo.Decrypt(payload, aad));
 
             /* 
              * Sodium
