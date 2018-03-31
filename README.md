@@ -18,7 +18,7 @@ var token = new PasetoBuilder<Version2>()
 ```
 
 ```csharp
-var encoder = new PasetoEncoder(cfg => cfg.Use<Version2>(sk)); // default is public purpose
+var encoder = new PasetoEncoder(cfg => cfg.Use<Version2>(secret)); // default is public purpose
 var token = encoder.Encode(new PasetoPayload
 {
 	{ "example", "Hello Paseto!" },
@@ -58,7 +58,7 @@ var payload = decoder.Decode(token);
 
 ## Roadmap
 
-- [x] Add support for local authentication for v2.
+- [x] Add support for local authentication for v2
   - [x] Implement XChaCha20-Poly1305 algorithm ~~or use an external library~~
 - [ ] Add support for local authentication for v1
 - [ ] Improve protocol versioning
