@@ -28,6 +28,7 @@
         private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"1522532531\"}";
 
         #region Version 1
+#if NETCOREAPP2_1 || NET47
 
         [Test]
         public void Version1SignatureTest()
@@ -36,7 +37,7 @@
             var paseto = new Version1();
 
             string key = null;
-#if NETCOREAPP2_0
+#if NETCOREAPP2_1
             using (var rsa = RSA.Create())
                 key = rsa.ToCompatibleXmlString(true);
 #elif NET47
@@ -61,7 +62,7 @@
 
             string key = null;
             string pubKey = null;
-#if NETCOREAPP2_0
+#if NETCOREAPP2_1
             using (var rsa = RSA.Create())
             {
                 //rsa.KeySize = 2048; // Default
@@ -94,7 +95,7 @@
         {
             // Arrange
             string key = null;
-#if NETCOREAPP2_0
+#if NETCOREAPP2_1
             using (var rsa = RSA.Create())
                 key = rsa.ToCompatibleXmlString(true);
 #elif NET47
@@ -127,10 +128,11 @@
             // Assert
             Assert.IsNotNull(payload);
         }
+#endif
 
-#endregion
+        #endregion
 
-#region Version 2
+        #region Version 2
 
         [Test]
         public void Version2SignatureTest()
@@ -460,6 +462,6 @@
             Assert.That(payload, Is.EqualTo(ExpectedLocalPayload));
         }
 
-        #endregion
+#endregion
     }
 }

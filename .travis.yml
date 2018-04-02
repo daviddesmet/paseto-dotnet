@@ -1,6 +1,6 @@
 language: csharp
 mono: none
-dotnet: 2.0.0
+dotnet: 2.1.101
 script:
  - dotnet restore src
- - dotnet test -f netcoreapp2.0 src/Paseto.Tests
+ - dotnet test -f netcoreapp2.1 src/Paseto.Tests
