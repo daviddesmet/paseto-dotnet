@@ -3,4 +3,4 @@ mono: none
 dotnet: 2.0.0
 script:
  - dotnet restore src
- - dotnet test src/Paseto.Tests
+ - dotnet test -f netcoreapp2.0 src/Paseto.Tests
