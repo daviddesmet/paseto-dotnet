@@ -23,9 +23,9 @@
         private const string PublicKeyV2 = "g21uHSdjWR8UHQZOSVdkA1cgn9wVpWjruxZDp90lpXs=";
         private const string TokenV2 = "v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs";
         private const string LocalKeyV2 = "37ZJdkLlZ43aF8UO7GWqi7GrdO0zDZSpSFLNTAdmKdk=";
-        private const string LocalTokenV2 = "v2.local.EMm98mfmCWo7p8qEha5nuyv4lP5y8248EMm98mfmCWo7p8qEha5nuyv4lP5y8248RV7rR23BzX5JWDcoaHeK70sYo4pO-9D8NJRABD1xF1RT8TOZ8I7IjEkf0q-B60GBGneoM5HYc7JrFHJJ3io";
+        private const string LocalTokenV2 = "v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248ENG98mfmCWo7p8qEha5nuyv4lP5y8248lY9VW87NmubNTuceI6BdOfmSOmi9ynEoHk-1CkSWpZygnRzDchEJcGJvSu1T8gIW94SQXj8bfb8BHejX4zE";
         private const string ExpectedPublicPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"1521245450\"}";
-        private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"1522532531\"}";
+        private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"1523053526\"}";
 
         #region Version 1
 #if NETCOREAPP2_1 || NET47

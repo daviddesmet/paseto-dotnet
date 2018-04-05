@@ -6,6 +6,13 @@
 [![MyGet](https://img.shields.io/myget/paseto/v/Paseto.Core.svg)](https://www.myget.org/feed/paseto/package/nuget/Paseto.Core)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/idaviddesmet/paseto-dotnet/issues)
 
+## Features
+
+- :x: v1.local
+- :heavy_check_mark: v1.public
+- :heavy_check_mark: v2.local
+- :heavy_check_mark: v2.public
+
 ## Usage
 ### Building a Paseto
 

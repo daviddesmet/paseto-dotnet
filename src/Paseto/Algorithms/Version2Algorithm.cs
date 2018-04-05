@@ -159,7 +159,11 @@
 
             // Using Paseto Cryptography library
             using (var hash = new Blake2B(size * 8))
-                return hash.ComputeHash(payload.Concat(nKey).ToArray());
+            {
+                hash.Key = nKey; // Keyed hashing, hash hmac
+                return hash.ComputeHash(payload);
+                //return hash.ComputeHash(payload.Concat(nKey).ToArray());
+            }
 
             /*
              * Using NSec library

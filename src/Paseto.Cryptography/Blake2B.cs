@@ -17,14 +17,14 @@
 
         public const int ROUNDS = 12;
 
-        public const ulong IV0 = 0x6A09E667F3BCC908UL;
-        public const ulong IV1 = 0xBB67AE8584CAA73BUL;
-        public const ulong IV2 = 0x3C6EF372FE94F82BUL;
-        public const ulong IV3 = 0xA54FF53A5F1D36F1UL;
-        public const ulong IV4 = 0x510E527FADE682D1UL;
-        public const ulong IV5 = 0x9B05688C2B3E6C1FUL;
-        public const ulong IV6 = 0x1F83D9ABFB41BD6BUL;
-        public const ulong IV7 = 0x5BE0CD19137E2179UL;
+        //public const ulong IV0 = 0x6A09E667F3BCC908UL;
+        //public const ulong IV1 = 0xBB67AE8584CAA73BUL;
+        //public const ulong IV2 = 0x3C6EF372FE94F82BUL;
+        //public const ulong IV3 = 0xA54FF53A5F1D36F1UL;
+        //public const ulong IV4 = 0x510E527FADE682D1UL;
+        //public const ulong IV5 = 0x9B05688C2B3E6C1FUL;
+        //public const ulong IV6 = 0x1F83D9ABFB41BD6BUL;
+        //public const ulong IV7 = 0x5BE0CD19137E2179UL;
 
         private readonly int _hashSize = 512;
 
@@ -43,8 +43,8 @@
 
         public Blake2B()
         {
-            fanOut = 1;
-            maxHeight = 1;
+            _fanOut = 1;
+            _maxHeight = 1;
             // leafSize = 0;
             // intermediateHashSize = 0;
         }
@@ -66,7 +66,20 @@
 
         public int HashSizeInUInt64 => HashSizeInBytes / 4;
 
-        public static readonly int[] Sigma = new int[ROUNDS * 16] {
+        public static readonly ulong[] IV = new ulong[]
+        {
+            0x6A09E667F3BCC908UL,
+            0xBB67AE8584CAA73BUL,
+            0x3C6EF372FE94F82BUL,
+            0xA54FF53A5F1D36F1UL,
+            0x510E527FADE682D1UL,
+            0x9B05688C2B3E6C1FUL,
+            0x1F83D9ABFB41BD6BUL,
+            0x5BE0CD19137E2179UL
+        };
+
+        public static readonly int[] Sigma = new int[ROUNDS * 16]
+        {
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
             14, 10, 4, 8, 9, 15, 13, 6, 1, 12, 0, 2, 11, 7, 5, 3,
             11, 8, 12, 0, 5, 2, 15, 13, 10, 14, 3, 6, 7, 1, 9, 4,
@@ -180,14 +193,23 @@
 
             HashClear();
 
-            _state[0] = IV0;
-            _state[1] = IV1;
-            _state[2] = IV2;
-            _state[3] = IV3;
-            _state[4] = IV4;
-            _state[5] = IV5;
-            _state[6] = IV6;
-            _state[7] = IV7;
+            //_state[0] = IV0;
+            //_state[1] = IV1;
+            //_state[2] = IV2;
+            //_state[3] = IV3;
+            //_state[4] = IV4;
+            //_state[5] = IV5;
+            //_state[6] = IV6;
+            //_state[7] = IV7;
+
+            _state[0] = IV[0];
+            _state[1] = IV[1];
+            _state[2] = IV[2];
+            _state[3] = IV[3];
+            _state[4] = IV[4];
+            _state[5] = IV[5];
+            _state[6] = IV[6];
+            _state[7] = IV[7];
 
             for (var i = 0; i < 8; i++)
                 _state[i] ^= c[i];
@@ -218,13 +240,13 @@
             for (i = 0; i < 16; ++i) _m[i] = 0UL;
         }
 
-        protected bool IsLastNode { get { return _f1 == ulong.MaxValue; } }
+        protected bool IsLastNode => _f1 == ulong.MaxValue;
 
-        protected void SetLastNode() { _f1 = ulong.MaxValue; }
+        protected void SetLastNode() => _f1 = ulong.MaxValue;
 
-        protected void ClearLastNode() { _f1 = 0; }
+        protected void ClearLastNode() => _f1 = 0;
 
-        protected bool IsLastBlock { get { return _f0 == ulong.MaxValue; } }
+        protected bool IsLastBlock => _f0 == ulong.MaxValue;
 
         protected void SetLastBlock()
         {
@@ -244,19 +266,19 @@
             if (_counter0 == 0) ++_counter1;
         }
 
-        protected override void HashCore(byte[] array, int offset, int length)
-        {
-            Core(array, offset, length);
-        }
+        protected override void HashCore(byte[] array, int offset, int length) => Core(array, offset, length);
 
         public virtual void Core(byte[] array, int offset, int length)
         {
             if (array == null)
-                throw new ArgumentNullException("array");
+                throw new ArgumentNullException(nameof(array));
+
             if (offset < 0)
-                throw new ArgumentOutOfRangeException("offset");
+                throw new ArgumentOutOfRangeException(nameof(offset));
+
             if (length < 0)
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
+
             if (offset + length > array.Length)
                 throw new ArgumentOutOfRangeException("offset + length");
 
@@ -291,10 +313,7 @@
 
         partial void Compress();
 
-        protected override byte[] HashFinal()
-        {
-            return Final();
-        }
+        protected override byte[] HashFinal() => Final();
 
         public virtual byte[] Final()
         {
@@ -317,7 +336,7 @@
         public virtual void Final(byte[] hash) //, bool isEndOfLayer)
         {
             if (hash.Length != HashSizeInBytes)
-                throw new ArgumentOutOfRangeException("hash", string.Format("hash.Length must be {0} HashSizeInBytes", HashSizeInBytes));
+                throw new ArgumentOutOfRangeException(nameof(hash), string.Format("hash.Length must be {0} HashSizeInBytes", HashSizeInBytes));
 
             if (!_isInitialized) Initialize();
 
@@ -377,98 +396,88 @@
             }
         }
 
-
-        private uint fanOut;
-
+        private uint _fanOut;
         public uint FanOut
         {
-            get { return fanOut; }
+            get => _fanOut;
             set
             {
-                fanOut = value;
+                _fanOut = value;
                 _rawConfig = null;
                 _isInitialized = false;
             }
         }
 
-        private uint maxHeight;
-
+        private uint _maxHeight;
         public uint MaxHeight
         {
-            get { return maxHeight; }
+            get => _maxHeight;
             set
             {
-                maxHeight = value;
+                _maxHeight = value;
                 _rawConfig = null;
                 _isInitialized = false;
             }
         }
 
-        private ulong leafSize;
-
+        private ulong _leafSize;
         public ulong LeafSize
         {
-            get { return leafSize; }
+            get => _leafSize;
             set
             {
-                leafSize = value;
+                _leafSize = value;
                 _rawConfig = null;
                 _isInitialized = false;
             }
         }
 
-        private uint intermediateHashSize;
-
+        private uint _intermediateHashSize;
         public uint IntermediateHashSize
         {
-            get { return intermediateHashSize; }
+            get => _intermediateHashSize;
             set
             {
-                intermediateHashSize = value;
+                _intermediateHashSize = value;
                 _rawConfig = null;
                 _isInitialized = false;
             }
         }
 
-
-        private byte[] personalization;
-
+        private byte[] _personalization;
         public byte[] Personalization
         {
-            get { return personalization; }
+            get => _personalization;
             set
             {
-                personalization = value;
+                _personalization = value;
                 _rawConfig = null;
                 _isInitialized = false;
             }
         }
 
-        private byte[] salt;
-
+        private byte[] _salt;
         public byte[] Salt
         {
-            get { return salt; }
+            get => _salt;
             set
             {
-                salt = value;
+                _salt = value;
                 _rawConfig = null;
                 _isInitialized = false;
             }
         }
 
-        private byte[] key;
-
+        private byte[] _key;
         public byte[] Key
         {
-            get { return key; }
+            get => _key;
             set
             {
-                key = value;
+                _key = value;
                 _rawConfig = null;
                 _isInitialized = false;
             }
         }
-
     }
 }
