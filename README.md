@@ -67,6 +67,7 @@ var payload = decoder.Decode(token);
 
 ## Roadmap
 
+- [ ] Switch from Unix DateTime to ISO 8601 compliant to adhere to [Paseto registered claims](https://github.com/paragonie/paseto/blob/master/docs/03-Implementation-Guide/01-Payload-Processing.md#registered-claims)
 - [x] Add support for local authentication for v2
   - [x] Implement XChaCha20-Poly1305 algorithm ~~or use an external library~~
 - [ ] Add support for local authentication for v1
