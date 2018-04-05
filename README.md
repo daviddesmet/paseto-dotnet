@@ -10,10 +10,9 @@
 
 ## Features
 
-- :x: v1.local
-- :heavy_check_mark: v1.public
-- :heavy_check_mark: v2.local
-- :heavy_check_mark: v2.public
+| v1.local | v1.public | v2.local | v2.public |
+| :---: | :---: | :---: | :---: |
+| :x: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 
 ## Usage
 ### Building a Paseto
