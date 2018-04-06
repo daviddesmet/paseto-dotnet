@@ -1,12 +1,12 @@
 ﻿namespace Paseto.Builder
 {
     using System;
-
     using Protocol;
-    using Utils;
 
     public static class PasetoBuilderExtensions
     {
+        //public const string DateTimeISO8601Format = "yyyy-MM-ddTHH:mm:sszzz"; // The default format used by Json.NET is the ISO 8601 standard
+
         /// <summary>
         /// Adds an issuer claim to the Paseto.
         /// </summary>
@@ -34,7 +34,7 @@
         /// </summary>
         /// <param name="time">The Utc time.</param>
         /// <returns>Current builder instance</returns>
-        public static PasetoBuilder<TProtocol> Expiration<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.ExpirationTime, UnixEpoch.ToUnixTimeString(time));
+        public static PasetoBuilder<TProtocol> Expiration<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.ExpirationTime, time);
 
         /// <summary>
         /// Adds a not before claim to the Paseto.
@@ -42,7 +42,7 @@
         /// </summary>
         /// <param name="time">The Utc time.</param>
         /// <returns>Current builder instance</returns>
-        public static PasetoBuilder<TProtocol> NotBefore<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.NotBefore, UnixEpoch.ToUnixTimeString(time));
+        public static PasetoBuilder<TProtocol> NotBefore<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.NotBefore, time);
 
         /// <summary>
         /// Adds an issued claim to the Paseto.
@@ -50,6 +50,14 @@
         /// </summary>
         /// <param name="time">The Utc time.</param>
         /// <returns>Current builder instance</returns>
-        public static PasetoBuilder<TProtocol> IssuedAt<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.IssuedAt, UnixEpoch.ToUnixTimeString(time));
+        public static PasetoBuilder<TProtocol> IssuedAt<TProtocol>(this PasetoBuilder<TProtocol> builder, DateTime time) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.IssuedAt, time);
+
+        /// <summary>
+        /// Adds a token identifier claim to the Paseto.
+        /// The Utc time will be converted to Unix time.
+        /// </summary>
+        /// <param name="jti">The token identifier.</param>
+        /// <returns>Current builder instance</returns>
+        public static PasetoBuilder<TProtocol> TokenIdentifier<TProtocol>(this PasetoBuilder<TProtocol> builder, string jti) where TProtocol : IPasetoProtocol, new() => builder.AddClaim(RegisteredClaims.TokenIdentifier, jti);
     }
 }

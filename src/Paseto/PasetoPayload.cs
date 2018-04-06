@@ -24,6 +24,6 @@
         /// </summary>
         /// <param name="jsonString">The JSON to deserialze.</param>
         /// <returns>An instance of <see cref="PasetoPayload"/>.</returns>
-        public static PasetoPayload DeserializeFromJson(string jsonString)=> new JsonNetSerializer().Deserialize<PasetoPayload>(jsonString);
+        public static PasetoPayload DeserializeFromJson(string jsonString) => new JsonNetSerializer().Deserialize<PasetoPayload>(jsonString);
     }
 }

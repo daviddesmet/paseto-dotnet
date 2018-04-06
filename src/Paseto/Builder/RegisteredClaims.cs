@@ -24,6 +24,9 @@
         NotBefore,
 
         [Description("iat")]
-        IssuedAt
+        IssuedAt,
+
+        [Description("jti")]
+        TokenIdentifier
     }
 }

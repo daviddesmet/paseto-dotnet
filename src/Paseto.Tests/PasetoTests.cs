@@ -20,12 +20,12 @@
         private const string HelloPaseto = "Hello Paseto!";
         private const string PublicKeyV1 = "<RSAKeyValue><Modulus>2Q3n8GRPEbcxAtT+uwsBnY08hhJF+Fby0MM1v5JbwlnQer7HmjKsaS97tbfnl87BwF15eKkxqHI12ntCSezxozhaUrgXCGVAXnUmZoioXTdtJgapFzBob88tLKhpWuoHdweRu9yGcWW3pD771zdFrRwa3h5alC1MAqAMHNid2D56TTsRj4CAfLSZpSsfmswfmHhDGqX7ZN6g/TND6kXjq4fPceFsb6yaKxy0JmtMomVqVTW3ggbVJhqJFOabwZ83/DjwqWEAJvfldz5g9LjvuislO5mJ9QEHBu7lnogKuX5g9PRTqP3c6Kus0/ldZ8CZvwWpxnxnwMRH10/UZ8TepQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
         private const string TokenV1 = "v1.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEzMDc1MzMifTzjEcgP2a3p_IrMPuU9bH8OvOmV5Olr8DFK3rFu_7SngF_pZ0cU1X9w590YQeZTy37B1bPouoXZDQ9JDYBfalxG0cNn2aP4iKHgYuyrOqHaUTmbNeooKOvDPwwl6CFO3spTTANLK04qgPJnixeb9mvjby2oM7Qpmn28HAwwr_lSoOMPhiUSCKN4u-SA6G6OddQTuXY-PCV1VtgQA83f0J6Yy3x7MGH9vvqonQSuOG6EGLHJ09p5wXllHQyGZcRm_654aKpwh8CXe3w8ol3OfozGCMFF_TLo_EeX0iKSkE8AQxkrQ-Fe-3lP_t7xPkeNhJPnhAa0-DGLSFQIILsL31M";
-        private const string PublicKeyV2 = "g21uHSdjWR8UHQZOSVdkA1cgn9wVpWjruxZDp90lpXs=";
-        private const string TokenV2 = "v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs";
+        private const string PublicKeyV2 = "rJRRV5JmY3BRUmyWu2CRa1EnUSSNbOgrAMTIsgbX3Z4=";
+        private const string TokenV2 = "v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjIwMTgtMDQtMDdUMDU6MDQ6MDcuOTE5NjM3NVoifTuR3EYYCG12DjhIqPKiVmTkKx2ewCDrYNZHcoewiF-lpFeaFqKW3LkEgnW28UZxrBWA5wrLFCR5FP1qUlMeqQA";
         private const string LocalKeyV2 = "37ZJdkLlZ43aF8UO7GWqi7GrdO0zDZSpSFLNTAdmKdk=";
-        private const string LocalTokenV2 = "v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248ENG98mfmCWo7p8qEha5nuyv4lP5y8248lY9VW87NmubNTuceI6BdOfmSOmi9ynEoHk-1CkSWpZygnRzDchEJcGJvSu1T8gIW94SQXj8bfb8BHejX4zE";
-        private const string ExpectedPublicPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"1521245450\"}";
-        private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"1523053526\"}";
+        private const string LocalTokenV2 = "v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248ENG98mfmCWo7p8qEha5nuyv4lP5y8248lY9VW87NmubNTuceI6BdOfmSOmi9ynEoHk-1CkSWpZygnR_GcRoUdWV3SOwlv2Euc2ZUuhxmrxjlNrPSQf9IEkn9CuOLbhGTDdNOcU9y0N8";
+        private const string ExpectedPublicPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T05:04:07.9196375Z\"}";
+        private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T04:57:18.5865183Z\"}";
 
         #region Version 1
 #if NETCOREAPP2_1 || NET47
@@ -358,7 +358,6 @@
             var payload = new PasetoBuilder<Version2>()
                               .WithKey(Convert.FromBase64String(PublicKeyV2))
                               .AsPublic()
-                              .AndVerifySignature()
                               .Decode(TokenV2);
 
             // Assert
@@ -393,7 +392,7 @@
         public void Version2BuilderTokenDecodingEmptyTokenFails() => Assert.Throws<ArgumentNullException>(() => new PasetoBuilder<Version2>().WithKey(new byte[32]).AsPublic().Decode(string.Empty));
 
         [Test]
-        public void Version2BuilderTokenDecodingInvalidTokenFails() => Assert.Throws<SignatureVerificationException>(() => new PasetoBuilder<Version2>().WithKey(Convert.FromBase64String(PublicKeyV2)).AsPublic().AndVerifySignature().Decode("v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV2cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs"));
+        public void Version2BuilderTokenDecodingInvalidTokenFails() => Assert.Throws<SignatureVerificationException>(() => new PasetoBuilder<Version2>().WithKey(Convert.FromBase64String(PublicKeyV2)).AsPublic().Decode("v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV2cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs"));
 
         [Test]
         public void Version2EncoderPublicPurposeTest()
@@ -410,7 +409,7 @@
             var token = encoder.Encode(new PasetoPayload
             {
                 { "example", HelloPaseto },
-                { "exp", UnixEpoch.ToUnixTimeString(DateTime.UtcNow.AddHours(24)) }
+                { "exp", DateTime.UtcNow.AddHours(24) }
             });
 
             // Assert
@@ -443,7 +442,7 @@
             var token = encoder.Encode(new PasetoPayload
             {
                 { "example", HelloPaseto },
-                { "exp", UnixEpoch.ToUnixTimeString(DateTime.UtcNow.AddHours(24)) }
+                { "exp", DateTime.UtcNow.AddHours(24) }
             });
 
             // Assert

@@ -73,6 +73,14 @@
         public PasetoBuilder<TProtocol> AddClaim(RegisteredClaims name, string value) => AddClaim(name.GetRegisteredClaimName(), value);
 
         /// <summary>
+        /// Adds well-known claim to the Paseto.
+        /// </summary>
+        /// <param name="name">Well-known registered claim name</param>
+        /// <param name="value">Claim value</param>
+        /// <returns>Current builder instance</returns>
+        public PasetoBuilder<TProtocol> AddClaim(RegisteredClaims name, object value) => AddClaim(name.GetRegisteredClaimName(), value);
+
+        /// <summary>
         /// Adds a footer to the Paseto.
         /// </summary>
         /// <param name="footer">The footer.</param>
@@ -94,10 +102,12 @@
         /// <summary>
         /// Sets the Paseto's purpose as public.
         /// </summary>
+        /// <param name="verify">if set to <c>true</c> it should verify the signature when decoding.</param>
         /// <returns>Current builder instance</returns>
-        public PasetoBuilder<TProtocol> AsPublic()
+        public PasetoBuilder<TProtocol> AsPublic(bool verify = true)
         {
             _purpose = Purpose.Public;
+            _verify = verify;
             return this;
         }
 
@@ -116,6 +126,7 @@
         /// </summary>
         /// <param name="verify">if set to <c>true</c> it will verify the signature when decoding.</param>
         /// <returns>Current builder instance</returns>
+        [Obsolete("Use the 'AsPublic' method's argument")]
         public PasetoBuilder<TProtocol> AndVerifySignature(bool verify = true)
         {
             _verify = verify;

@@ -31,14 +31,14 @@ var encoder = new PasetoEncoder(cfg => cfg.Use<Version2>(secret)); // default is
 var token = encoder.Encode(new PasetoPayload
 {
 	{ "example", "Hello Paseto!" },
-	{ "exp", UnixEpoch.ToUnixTime(DateTime.UtcNow.AddHours(24)) }
+	{ "exp", DateTime.UtcNow.AddHours(24) }
 });
 ```
 
 #### Encoded Token:
 
 ```
-v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs
+v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjIwMTgtMDQtMDdUMDU6MDQ6MDcuOTE5NjM3NVoifTuR3EYYCG12DjhIqPKiVmTkKx2ewCDrYNZHcoewiF-lpFeaFqKW3LkEgnW28UZxrBWA5wrLFCR5FP1qUlMeqQA
 ```
 
 ### Decoding a Paseto
@@ -47,7 +47,6 @@ v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl
 var payload = new PasetoBuilder<Version2>()
 		.WithKey(publicKey)
 		.AsPublic() // Purpose
-		.AndVerifySignature()
 		.Decode(token);
 ```
 
@@ -61,13 +60,13 @@ var payload = decoder.Decode(token);
 ```json
 {
   "example": "Hello Paseto!",
-  "exp": "1521245450"
+  "exp": "2018-04-07T05:04:07.9196375Z"
 }
 ```
 
 ## Roadmap
 
-- [ ] Switch from Unix DateTime to ISO 8601 compliant to adhere to [Paseto registered claims](https://github.com/paragonie/paseto/blob/master/docs/03-Implementation-Guide/01-Payload-Processing.md#registered-claims)
+- [x] Switch from Unix DateTime to ISO 8601 compliant to adhere to [Paseto registered claims](https://github.com/paragonie/paseto/blob/master/docs/03-Implementation-Guide/01-Payload-Processing.md#registered-claims)
 - [x] Add support for local authentication for v2
   - [x] Implement XChaCha20-Poly1305 algorithm ~~or use an external library~~
 - [ ] Add support for local authentication for v1
@@ -79,5 +78,6 @@ var payload = decoder.Decode(token);
 ## Cryptography
 
 * Uses Ed25519 algorithm from CodesInChaos [Chaos.NaCl](https://github.com/CodesInChaos/Chaos.NaCl) cryptography library.
+* Uses Blake2b cryptographic hash function from [metadings](https://github.com/metadings/Blake2B.cs) repository.
 
 At its current state, [libsodium-core](https://github.com/tabrath/libsodium-core) and [NSec](https://github.com/ektrah/nsec) does't support XChaCha20-Poly1305.
