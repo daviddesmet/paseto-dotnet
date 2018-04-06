@@ -70,6 +70,7 @@ var payload = decoder.Decode(token);
 - [x] Add support for local authentication for v2
   - [x] Implement XChaCha20-Poly1305 algorithm ~~or use an external library~~
 - [ ] Add support for local authentication for v1
+- [ ] Add payload [validation rules](https://github.com/paragonie/paseto/blob/master/docs/03-Implementation-Guide/02-Validators.md#validators)
 - [ ] Improve protocol versioning
 - [ ] Add more documentation on the usage
 - [ ] Extend the fluent builder API
