@@ -134,6 +134,7 @@
             //var pack = PreAuthEncode(new[] { header, GetString(nonce), footer }.Select(GetBytes).ToArray());
             var pack = PreAuthEncode(new[] { GetBytes(header), nonce, GetBytes(footer) });
 
+            //return Algorithm.Decrypt(bytes, pack, key, null);
             return Algorithm.Decrypt(payload, pack, key, nonce);
         }
 

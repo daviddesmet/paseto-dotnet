@@ -66,7 +66,7 @@
         public string Decrypt(byte[] payload, byte[] aad, byte[] key, byte[] nonce)
         {
             var algo = new XChaCha20Poly1305(key);
-            return GetString(algo.Decrypt(payload, aad));
+            return GetString(algo.Decrypt(payload, aad, nonce));
 
             /* 
              * Sodium

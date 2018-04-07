@@ -461,6 +461,18 @@
             Assert.That(payload, Is.EqualTo(ExpectedLocalPayload));
         }
 
-#endregion
+        [Test]
+        public void Version2DecoderPublicPurposeFromPasetoExampleTest()
+        {
+            // Arrange & Act
+            var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(CryptoBytes.FromHexString("11324397f535562178d53ff538e49d5a162242970556b4edd950c87c7d86648a"), Purpose.Public));
+            var payload = decoder.Decode("v2.public.eyJleHAiOiIyMDM5LTAxLTAxVDAwOjAwOjAwKzAwOjAwIiwiZGF0YSI6InRoaXMgaXMgYSBzaWduZWQgbWVzc2FnZSJ91gC7-jCWsN3mv4uJaZxZp0btLJgcyVwL-svJD7f4IHyGteKe3HTLjHYTGHI1MtCqJ-ESDLNoE7otkIzamFskCA");
+
+            // Assert
+            Assert.IsNotNull(payload);
+            Assert.That(payload, Is.EqualTo("{\"exp\":\"2039-01-01T00:00:00+00:00\",\"data\":\"this is a signed message\"}"));
+        }
+
+        #endregion
     }
 }
