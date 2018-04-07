@@ -84,18 +84,17 @@
                 aad = new byte[0];
 
             var limit = output.Length - Poly1305.MAC_TAG_SIZE_IN_BYTES;
-            var tag = Poly1305.ComputeMac(GetMacKey(nonce), MacDataRfc7539(aad, output, limit, nonce.Length));
+            var tag = Poly1305.ComputeMac(GetMacKey(nonce), MacDataRfc7539(aad, output, limit));
 
             Array.Copy(tag, 0, output, limit, tag.Length);
             return output;
         }
 
         /// <summary>
-        /// Decrypts the specified <paramref name="ciphertext"> with <see cref="Poly1305"/> authentication based on <paramref name="associatedData"> and an optional <paramref name="nonce">.
+        /// Decrypts the specified <paramref name="ciphertext"> with <see cref="Poly1305"/> authentication based on <paramref name="associatedData">.
         /// </summary>
         /// <param name="ciphertext">The ciphertext.</param>
         /// <param name="associatedData">The associated data.</param>
-        /// <param name="nonce">The nonce.</param>
         /// <returns>System.Byte[].</returns>
         /// <exception cref="ArgumentNullException">ciphertext</exception>
         /// <exception cref="CryptographyException">
@@ -103,7 +102,7 @@
         /// or
         /// AEAD Bad Tag Exception
         /// </exception>
-        public virtual byte[] Decrypt(byte[] ciphertext, byte[] associatedData, byte[] nonce = null)
+        public virtual byte[] Decrypt(byte[] ciphertext, byte[] associatedData)
         {
             if (ciphertext is null)
                 throw new ArgumentNullException(nameof(ciphertext));
@@ -115,13 +114,8 @@
             var tagIdx = ciphertext.Length - Poly1305.MAC_TAG_SIZE_IN_BYTES;
             Array.Copy(ciphertext, tagIdx, tag, 0, tag.Length);
 
-            var index = 0;
-            if (nonce is null)
-            {
-                nonce = new byte[_snuffle.NonceSizeInBytes()];
-                Array.Copy(ciphertext, 0, nonce, 0, nonce.Length);
-                index = nonce.Length;
-            }
+            var nonce = new byte[_snuffle.NonceSizeInBytes()];
+            Array.Copy(ciphertext, 0, nonce, 0, nonce.Length);
 
             var aad = associatedData;
             if (aad == null)
@@ -131,14 +125,14 @@
 
             try
             {
-                Poly1305.VerifyMac(GetMacKey(nonce), MacDataRfc7539(aad, ciphertext, index, limit), tag);
+                Poly1305.VerifyMac(GetMacKey(nonce), MacDataRfc7539(aad, ciphertext, limit), tag);
             }
             catch (Exception ex)
             {
                 throw new CryptographyException("AEAD Bad Tag Exception", ex);
             }
 
-            return _snuffle.Decrypt(ciphertext.Skip(index).Take(limit - index).ToArray());
+            return _snuffle.Decrypt(ciphertext.Take(limit).ToArray());
         }
 
         /// <summary>
@@ -159,18 +153,17 @@
         /// </summary>
         /// <param name="aad">The aad.</param>
         /// <param name="ciphertext">The ciphertext.</param>
-        /// <param name="index">The ciphertext's initial index.</param>
         /// <param name="len">The ciphertext's maximum length.</param>
         /// <returns>System.Byte[].</returns>
-        private byte[] MacDataRfc7539(byte[] aad, byte[] ciphertext, int index, int len)
+        private byte[] MacDataRfc7539(byte[] aad, byte[] ciphertext, int len)
         {
             var aadPaddedLen = (aad.Length % 16 == 0) ? aad.Length : (aad.Length + 16 - aad.Length % 16);
-            var ciphertextLen = len - (index == 0 ? _snuffle.NonceSizeInBytes() : _snuffle.NonceSizeInBytes() + index);
+            var ciphertextLen = len - _snuffle.NonceSizeInBytes();
             var ciphertextPaddedLen = (ciphertextLen % 16 == 0) ? ciphertextLen : (ciphertextLen + 16 - ciphertextLen % 16);
 
             var macData = new byte[aadPaddedLen + ciphertextPaddedLen + 16];
             Array.Copy(aad, macData, aad.Length);
-            Array.Copy(ciphertext, index, macData, aadPaddedLen, ciphertextLen);
+            Array.Copy(ciphertext, 0, macData, aadPaddedLen, ciphertextLen);
             macData[aadPaddedLen + ciphertextPaddedLen] = (byte)aad.Length;
             macData[aadPaddedLen + ciphertextPaddedLen + 8] = (byte)ciphertextLen;
             //ByteIntegerConverter.StoreLittleEndian32(macData, aadPaddedLen + ciphertextPaddedLen, (uint)aad.Length);

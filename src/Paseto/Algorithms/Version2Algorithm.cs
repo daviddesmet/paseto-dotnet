@@ -61,12 +61,11 @@
         /// <param name="payload">The payload.</param>
         /// <param name="aad">The additional associated data.</param>
         /// <param name="key">The symmetric key.</param>
-        /// <param name="nonce">The nonce.</param>
         /// <returns>System.String.</returns>
-        public string Decrypt(byte[] payload, byte[] aad, byte[] key, byte[] nonce)
+        public string Decrypt(byte[] payload, byte[] aad, byte[] key)
         {
             var algo = new XChaCha20Poly1305(key);
-            return GetString(algo.Decrypt(payload, aad, nonce));
+            return GetString(algo.Decrypt(payload, aad));
 
             /* 
              * Sodium

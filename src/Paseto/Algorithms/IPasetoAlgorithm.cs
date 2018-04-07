@@ -28,9 +28,8 @@
         /// <param name="payload">The payload.</param>
         /// <param name="aad">The additional associated data.</param>
         /// <param name="key">The symmetric key.</param>
-        /// <param name="nonce">The nonce.</param>
         /// <returns>System.Byte[].</returns>
-        string Decrypt(byte[] payload, byte[] aad, byte[] key, byte[] nonce);
+        string Decrypt(byte[] payload, byte[] aad, byte[] key);
 
         /// <summary>
         /// Signs the specified message.
