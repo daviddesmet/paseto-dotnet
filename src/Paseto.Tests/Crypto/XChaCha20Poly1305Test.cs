@@ -61,7 +61,8 @@
                 var ciphertext = aead.Encrypt(message, aad);
                 var decrypted = aead.Decrypt(ciphertext, aad);
 
-                Assert.AreEqual(message, decrypted);
+                //Assert.AreEqual(message, decrypted);
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(message, decrypted));
             }
         }
 
@@ -86,7 +87,8 @@
                 var ciphertext = aead.Encrypt(plaintext, aad);
                 var decrypted = aead.Decrypt(ciphertext, aad);
 
-                Assert.AreEqual(plaintext, decrypted);
+                //Assert.AreEqual(plaintext, decrypted);
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(plaintext, decrypted));
                 dataSize += 5 * dataSize / 11;
             }
         }

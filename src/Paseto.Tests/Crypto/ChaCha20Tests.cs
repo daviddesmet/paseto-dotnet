@@ -59,7 +59,8 @@
             var actualInput = cipher.Decrypt(output);
 
             // Assert
-            Assert.AreEqual(expectedInput, actualInput);
+            //Assert.AreEqual(expectedInput, actualInput);
+            Assert.IsTrue(CryptoBytes.ConstantTimeEquals(expectedInput, actualInput));
         }
 
         [Test]
@@ -85,7 +86,8 @@
                     var actualInput = cipher.Decrypt(output);
 
                     // Assert
-                    Assert.AreEqual(expectedInput, actualInput);
+                    //Assert.AreEqual(expectedInput, actualInput);
+                    Assert.IsTrue(CryptoBytes.ConstantTimeEquals(expectedInput, actualInput));
                 }
             }
         }
@@ -159,7 +161,8 @@
                 var output = cipher.Decrypt(Combine(test.Nonce, test.CipherText));
 
                 // Assert
-                Assert.That(output, Is.EqualTo(test.PlainText));
+                //Assert.That(output, Is.EqualTo(test.PlainText));
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(test.PlainText, output));
             }
         }
 
@@ -213,7 +216,8 @@
                 0x05, 0x3C, 0x84, 0xE4, 0x9A, 0x4A, 0x33, 0x32
             };
 
-            Assert.AreEqual(expected, Combine(block0, block1));
+            //Assert.AreEqual(expected, Combine(block0, block1));
+            Assert.IsTrue(CryptoBytes.ConstantTimeEquals(expected, Combine(block0, block1)));
         }
 
         private byte[] Combine(params byte[][] arrays)

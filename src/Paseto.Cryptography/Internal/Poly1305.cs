@@ -204,10 +204,14 @@
             //if (ComputeMac(key, data).SequenceEqual(mac))
             //    throw new CryptographyException("Invalid MAC");
 
-            if (!Equal(ComputeMac(key, data), mac))
+            //if (!Equal(ComputeMac(key, data), mac))
+            //    throw new CryptographyException("Invalid MAC");
+
+            if (!CryptoBytes.ConstantTimeEquals(ComputeMac(key, data), mac))
                 throw new CryptographyException("Invalid MAC");
         }
 
+        /*
         private static bool Equal(byte[] left, byte[] right)
         {
             if ((left != null) && (right != null))
@@ -226,5 +230,6 @@
 
             return false;
         }
+        */
     }
 }

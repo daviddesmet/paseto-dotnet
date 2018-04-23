@@ -37,6 +37,19 @@
             buf[offset + 3] = unchecked((byte)(value >> 24));
         }
 
+        /// <summary>
+        /// Stores the value into the buffer.
+        /// The value will be split into 8 bytes and put into eight sequential places in the output buffer, starting at the specified offset.
+        /// </summary>
+        /// <param name="buf">The output buffer.</param>
+        /// <param name="offset">The output offset.</param>
+        /// <param name="value">The input value.</param>
+        public static void StoreLittleEndian64(byte[] buf, int offset, ulong value)
+        {
+            StoreLittleEndian32(buf, offset, (uint)value);
+            StoreLittleEndian32(buf, offset + 4, (uint)(value >> 32));
+        }
+
         public static ulong LoadBigEndian64(byte[] buf, int offset)
         {
             return

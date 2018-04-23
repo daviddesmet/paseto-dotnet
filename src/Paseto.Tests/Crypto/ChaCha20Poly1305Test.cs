@@ -56,7 +56,8 @@
                 var ciphertext = aead.Encrypt(message, aad);
                 var decrypted = aead.Decrypt(ciphertext, aad);
 
-                Assert.AreEqual(message, decrypted);
+                //Assert.AreEqual(message, decrypted);
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(message, decrypted));
             }
         }
 
@@ -81,7 +82,8 @@
                 var ciphertext = aead.Encrypt(plaintext, aad);
                 var decrypted = aead.Decrypt(ciphertext, aad);
 
-                Assert.AreEqual(plaintext, decrypted);
+                //Assert.AreEqual(plaintext, decrypted);
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(plaintext, decrypted));
                 dataSize += 5 * dataSize / 11;
             }
         }
@@ -174,10 +176,12 @@
                 // encrypting with aad as a 0-length array
                 var ciphertext = aead.Encrypt(message, aad);
                 var decrypted = aead.Decrypt(ciphertext, aad);
-                Assert.AreEqual(message, decrypted);
+                //Assert.AreEqual(message, decrypted);
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(message, decrypted));
 
                 var decrypted2 = aead.Decrypt(ciphertext, null);
-                Assert.AreEqual(message, decrypted2);
+                //Assert.AreEqual(message, decrypted2);
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(message, decrypted2));
 
                 var badAad = new byte[] { 1, 2, 3 };
                 Assert.Throws<CryptographyException>(() => aead.Decrypt(ciphertext, badAad), AEADBadTagExceptionMessage);
@@ -185,10 +189,12 @@
                 // encrypting with aad equal to null
                 ciphertext = aead.Encrypt(message, null);
                 decrypted = aead.Decrypt(ciphertext, aad);
-                Assert.AreEqual(message, decrypted);
+                //Assert.AreEqual(message, decrypted);
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(message, decrypted));
 
                 decrypted2 = aead.Decrypt(ciphertext, null);
-                Assert.AreEqual(message, decrypted2);
+                //Assert.AreEqual(message, decrypted2);
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(message, decrypted2));
 
                 Assert.Throws<CryptographyException>(() => aead.Decrypt(ciphertext, badAad), AEADBadTagExceptionMessage);
             }

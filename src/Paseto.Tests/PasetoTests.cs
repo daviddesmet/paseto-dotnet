@@ -24,8 +24,10 @@
         private const string TokenV2 = "v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjIwMTgtMDQtMDdUMDU6MDQ6MDcuOTE5NjM3NVoifTuR3EYYCG12DjhIqPKiVmTkKx2ewCDrYNZHcoewiF-lpFeaFqKW3LkEgnW28UZxrBWA5wrLFCR5FP1qUlMeqQA";
         private const string LocalKeyV2 = "37ZJdkLlZ43aF8UO7GWqi7GrdO0zDZSpSFLNTAdmKdk=";
         private const string LocalTokenV2 = "v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248ENG98mfmCWo7p8qEha5nuyv4lP5y8248lY9VW87NmubNTuceI6BdOfmSOmi9ynEoHk-1CkSWpZygnR_GcRoUdWV3SOwlv2Euc2ZUuhxmrxjlNrPSQf9IEkn9CuOLbhGTDdNOcU9y0N8";
+        private const string LocalTokenWithFooterV2 = "v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248ENG98mfmCWo7p8qEha5nuyv4lP5y8248lY9VW87NmubNTuceI6BdOfmSOmi9ynEoHk-1CkSWpZygnR_GcRoUdWV3SOwlv2Euc2ZUuhxmrxjlNrPSQf9IEhoToEFjPT_uorhmu8AhZj8.eyJraWQiOiJnYW5kYWxmMCJ9";
         private const string ExpectedPublicPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T05:04:07.9196375Z\"}";
         private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T04:57:18.5865183Z\"}";
+        private const string ExpectedFooter = "{\"kid\":\"gandalf0\"}";
 
         #region Version 1
 #if NETCOREAPP2_1 || NET47
@@ -334,6 +336,30 @@
         }
 
         [Test]
+        public void Version2BuilderLocalTokenWithFooterGenerationTest()
+        {
+            // Arrange
+            var key = new byte[32];
+            RandomNumberGenerator.Create().GetBytes(key);
+
+            //var secret = Convert.ToBase64String(key); //BitConverter.ToString(key).Replace("-", string.Empty); // Hex Encoded
+            //key = Convert.FromBase64String(LocalKeyV2);
+
+            // Act
+            var token = new PasetoBuilder<Version2>()
+                              .WithKey(key)
+                              .AddClaim("example", HelloPaseto)
+                              .Expiration(DateTime.UtcNow.AddHours(24))
+                              //.Expiration(DateTime.Parse("2018-04-07T04:57:18.5865183Z").ToUniversalTime())
+                              .AddFooter(new PasetoPayload { { "kid", "gandalf0" } })
+                              .AsLocal()
+                              .Build();
+
+            // Assert
+            Assert.IsNotNull(token);
+        }
+
+        [Test]
         public void Version2BuilderTokenGenerationNullSecretFails() => Assert.Throws<InvalidOperationException>(() => new PasetoBuilder<Version2>().WithKey(null).Build());
 
         [Test]
@@ -380,10 +406,48 @@
         }
 
         [Test]
-        public void Version2BuilderTokenDecodingNullPublicKeyFails() => Assert.Throws<InvalidOperationException>(() => new PasetoBuilder<Version2>().WithKey(null).Decode(null));
+        public void Version2BuilderLocalTokenWithFooterDecodingTest()
+        {
+            // Arrange & Act
+            var payload = new PasetoBuilder<Version2>()
+                              .WithKey(Convert.FromBase64String(LocalKeyV2))
+                              .AsLocal()
+                              .Decode(LocalTokenWithFooterV2);
+
+            // Assert
+            Assert.IsNotNull(payload);
+            Assert.That(payload, Is.EqualTo(ExpectedLocalPayload));
+        }
 
         [Test]
-        public void Version2BuilderTokenDecodingEmptyPublicKeyFails() => Assert.Throws<InvalidOperationException>(() => new PasetoBuilder<Version2>().WithKey(new byte[0]).Decode(null));
+        public void Version2BuilderLocalTokenWithFooterDecodingToObjectTest()
+        {
+            // Arrange & Act
+            var data = new PasetoBuilder<Version2>()
+                           .WithKey(Convert.FromBase64String(LocalKeyV2))
+                           .AsLocal()
+                           .DecodeToObject(LocalTokenWithFooterV2);
+
+            // Assert
+            Assert.IsNotNull(data);
+        }
+
+        [Test]
+        public void Version2BuilderLocalTokenWithFooterDecodingFooterOnlyTest()
+        {
+            // Arrange & Act
+            var footer = new PasetoBuilder<Version2>().DecodeFooter(LocalTokenWithFooterV2);
+
+            // Assert
+            Assert.IsNotNull(footer);
+            Assert.That(footer, Is.EqualTo(ExpectedFooter));
+        }
+
+        [Test]
+        public void Version2BuilderTokenDecodingNullKeyFails() => Assert.Throws<InvalidOperationException>(() => new PasetoBuilder<Version2>().WithKey(null).Decode(null));
+
+        [Test]
+        public void Version2BuilderTokenDecodingEmptyKeyFails() => Assert.Throws<InvalidOperationException>(() => new PasetoBuilder<Version2>().WithKey(new byte[0]).Decode(null));
 
         [Test]
         public void Version2BuilderTokenDecodingNullTokenFails() => Assert.Throws<ArgumentNullException>(() => new PasetoBuilder<Version2>().WithKey(new byte[32]).AsPublic().Decode(null));
@@ -459,6 +523,17 @@
             // Assert
             Assert.IsNotNull(payload);
             Assert.That(payload, Is.EqualTo(ExpectedLocalPayload));
+        }
+
+        [Test]
+        public void Version2DecoderToObjectLocalPurposeTest()
+        {
+            // Arrange & Act
+            var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(Convert.FromBase64String(LocalKeyV2), Purpose.Local));
+            var data = decoder.DecodeToObject(LocalTokenWithFooterV2);
+
+            // Assert
+            Assert.IsNotNull(data);
         }
 
         [Test]

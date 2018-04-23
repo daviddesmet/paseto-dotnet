@@ -64,7 +64,8 @@
                     var actualInput = cipher.Decrypt(output);
 
                     // Assert
-                    Assert.AreEqual(expectedInput, actualInput);
+                    //Assert.AreEqual(expectedInput, actualInput);
+                    Assert.IsTrue(CryptoBytes.ConstantTimeEquals(expectedInput, actualInput));
                 }
             }
         }
@@ -79,7 +80,8 @@
                 var output = XChaCha20.HChaCha20(test.Key, test.Input);
 
                 // Assert
-                Assert.That(output, Is.EqualTo(test.Output));
+                //Assert.That(output, Is.EqualTo(test.Output));
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(test.Output, output));
             }
         }
     }

@@ -7,6 +7,7 @@
     using Extensions;
     using Protocol;
     using Serializers;
+    using static Utils.EncodingHelper;
 
     /// <summary>
     /// Build and decode a Paseto using a Fluent API.
@@ -15,7 +16,7 @@
     {
         private readonly PasetoData _paseto = new PasetoData();
 
-        private IJsonSerializer _serializer = new JsonNetSerializer();
+        //private IJsonSerializer _serializer = new JsonNetSerializer();
         //private IBase64UrlEncoder _urlEncoder = new Base64UrlEncoder();
 
         private byte[] _key;
@@ -91,6 +92,17 @@
             return this;
         }
 
+        /// <summary>
+        /// Adds a footer to the Paseto.
+        /// </summary>
+        /// <param name="footer">The footer.</param>
+        /// <returns>PasetoBuilder&lt;TProtocol&gt;.</returns>
+        public PasetoBuilder<TProtocol> AddFooter(PasetoPayload footer)
+        {
+            _footer = footer.SerializeToJson();
+            return this;
+        }
+
         /*
         public PasetoBuilder<TProtocol> WithPurpose(Purpose purpose)
         {
@@ -149,7 +161,7 @@
                 throw new InvalidOperationException("Can't build a token. Check if you have call the 'AddClaim' method.");
 
             var proto = new TProtocol();
-            var payload = _serializer.Serialize(_paseto.Payload);
+            var payload = _paseto.Payload.SerializeToJson();
 
             switch (_purpose)
             {
@@ -198,6 +210,39 @@
                 default:
                     throw new NotImplementedException($"The {_purpose} Purpose is not defined!");
             }
+        }
+
+        /// <summary>
+        /// Decodes a token into a PasetoData object using the supplied dependencies.
+        /// </summary>
+        /// <param name="token">The Paseto token.</param>
+        /// <returns>PasetoData.</returns>
+        public PasetoData DecodeToObject(string token) => new PasetoData(DecodeHeader(token), PasetoPayload.DeserializeFromJson(Decode(token)), DecodeFooter(token));
+
+        /// <summary>
+        /// Decodes the header using the supplied token.
+        /// </summary>
+        /// <param name="token">The Paseto token.</param>
+        /// <returns>System.String.</returns>
+        /// <exception cref="NotSupportedException">The specified token is not supported!</exception>
+        public string DecodeHeader(string token)
+        {
+            var parts = token.Split('.');
+            if (parts.Length < 3)
+                throw new NotSupportedException("The specified token is not valid!");
+
+            return $"{parts[0]}.{parts[1]}";
+        }
+
+        /// <summary>
+        /// Decodes the footer using the supplied token.
+        /// </summary>
+        /// <param name="token">The Paseto token.</param>
+        /// <returns>System.String.</returns>
+        public string DecodeFooter(string token)
+        {
+            var parts = token.Split('.');
+            return GetString(FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty));
         }
     }
 }

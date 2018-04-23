@@ -110,9 +110,10 @@
             if (ciphertext.Length < _snuffle.NonceSizeInBytes() + Poly1305.MAC_TAG_SIZE_IN_BYTES)
                 throw new CryptographyException($"The {nameof(ciphertext)} is too short.");
 
+            var limit = ciphertext.Length - Poly1305.MAC_TAG_SIZE_IN_BYTES;
+
             var tag = new byte[Poly1305.MAC_TAG_SIZE_IN_BYTES];
-            var tagIdx = ciphertext.Length - Poly1305.MAC_TAG_SIZE_IN_BYTES;
-            Array.Copy(ciphertext, tagIdx, tag, 0, tag.Length);
+            Array.Copy(ciphertext, limit, tag, 0, tag.Length);
 
             var nonce = new byte[_snuffle.NonceSizeInBytes()];
             Array.Copy(ciphertext, 0, nonce, 0, nonce.Length);
@@ -120,8 +121,6 @@
             var aad = associatedData;
             if (aad == null)
                 aad = new byte[0];
-
-            var limit = ciphertext.Length - Poly1305.MAC_TAG_SIZE_IN_BYTES;
 
             try
             {
@@ -162,16 +161,26 @@
             var ciphertextPaddedLen = (ciphertextLen % 16 == 0) ? ciphertextLen : (ciphertextLen + 16 - ciphertextLen % 16);
 
             var macData = new byte[aadPaddedLen + ciphertextPaddedLen + 16];
+
+            // Mac Text
             Array.Copy(aad, macData, aad.Length);
             Array.Copy(ciphertext, 0, macData, aadPaddedLen, ciphertextLen);
-            macData[aadPaddedLen + ciphertextPaddedLen] = (byte)aad.Length;
-            macData[aadPaddedLen + ciphertextPaddedLen + 8] = (byte)ciphertextLen;
-            //ByteIntegerConverter.StoreLittleEndian32(macData, aadPaddedLen + ciphertextPaddedLen, (uint)aad.Length);
-            //ByteIntegerConverter.StoreLittleEndian32(macData, aadPaddedLen + ciphertextPaddedLen + 8, (uint)ciphertextLen);
 
-            // TODO: Check Endianness of macData?
+            // Mac Length
+            //macData[aadPaddedLen + ciphertextPaddedLen] = (byte)aad.Length;
+            //macData[aadPaddedLen + ciphertextPaddedLen + 8] = (byte)ciphertextLen;
+            SetMacLength(macData, aadPaddedLen + ciphertextPaddedLen, aad.Length);
+            SetMacLength(macData, aadPaddedLen + ciphertextPaddedLen + sizeof(ulong), ciphertextLen);
 
             return macData;
+        }
+
+        private void SetMacLength(byte[] macData, int offset, int value)
+        {
+            var lenData = new byte[8];
+            ByteIntegerConverter.StoreLittleEndian64(lenData, 0, (ulong)value);
+
+            Array.Copy(lenData, 0, macData, offset, lenData.Length);
         }
     }
 }
