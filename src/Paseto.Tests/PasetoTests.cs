@@ -18,6 +18,7 @@
     public class PasetoTests
     {
         private const string HelloPaseto = "Hello Paseto!";
+        private const string IssuedBy = "Paragon Initiative Enterprises";
         private const string PublicKeyV1 = "<RSAKeyValue><Modulus>2Q3n8GRPEbcxAtT+uwsBnY08hhJF+Fby0MM1v5JbwlnQer7HmjKsaS97tbfnl87BwF15eKkxqHI12ntCSezxozhaUrgXCGVAXnUmZoioXTdtJgapFzBob88tLKhpWuoHdweRu9yGcWW3pD771zdFrRwa3h5alC1MAqAMHNid2D56TTsRj4CAfLSZpSsfmswfmHhDGqX7ZN6g/TND6kXjq4fPceFsb6yaKxy0JmtMomVqVTW3ggbVJhqJFOabwZ83/DjwqWEAJvfldz5g9LjvuislO5mJ9QEHBu7lnogKuX5g9PRTqP3c6Kus0/ldZ8CZvwWpxnxnwMRH10/UZ8TepQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
         private const string TokenV1 = "v1.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjE1MjEzMDc1MzMifTzjEcgP2a3p_IrMPuU9bH8OvOmV5Olr8DFK3rFu_7SngF_pZ0cU1X9w590YQeZTy37B1bPouoXZDQ9JDYBfalxG0cNn2aP4iKHgYuyrOqHaUTmbNeooKOvDPwwl6CFO3spTTANLK04qgPJnixeb9mvjby2oM7Qpmn28HAwwr_lSoOMPhiUSCKN4u-SA6G6OddQTuXY-PCV1VtgQA83f0J6Yy3x7MGH9vvqonQSuOG6EGLHJ09p5wXllHQyGZcRm_654aKpwh8CXe3w8ol3OfozGCMFF_TLo_EeX0iKSkE8AQxkrQ-Fe-3lP_t7xPkeNhJPnhAa0-DGLSFQIILsL31M";
         private const string PublicKeyV2 = "rJRRV5JmY3BRUmyWu2CRa1EnUSSNbOgrAMTIsgbX3Z4=";
@@ -546,6 +547,90 @@
             // Assert
             Assert.IsNotNull(payload);
             Assert.That(payload, Is.EqualTo("{\"exp\":\"2039-01-01T00:00:00+00:00\",\"data\":\"this is a signed message\"}"));
+        }
+
+        #endregion
+
+        #region Payload Validation
+
+        [Test]
+        public void PayloadNotBeforeNextDayValidationFails()
+        {
+            var nbf = new Validators.NotBeforeValidator(new PasetoPayload
+            {
+                { RegisteredClaims.NotBefore.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
+            });
+            Assert.Throws<TokenValidationException>(() => nbf.Validate(DateTime.UtcNow), "Token is not yet valid.");
+        }
+
+        [Test]
+        public void PayloadNotBeforeValidationTest()
+        {
+            var nbf = new Validators.NotBeforeValidator(new PasetoPayload
+            {
+                { RegisteredClaims.NotBefore.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
+            });
+            Assert.DoesNotThrow(() => nbf.Validate(DateTime.UtcNow));
+        }
+
+        [Test]
+        public void PayloadExpirationTimeYesterdayValidationFails()
+        {
+            var exp = new Validators.ExpirationTimeValidator(new PasetoPayload
+            {
+                { RegisteredClaims.ExpirationTime.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
+            });
+            Assert.Throws<TokenValidationException>(() => exp.Validate(DateTime.UtcNow), "Token has expired.");
+        }
+
+        [Test]
+        public void PayloadExpirationTimeValidationTest()
+        {
+            var exp = new Validators.ExpirationTimeValidator(new PasetoPayload
+            {
+                { RegisteredClaims.ExpirationTime.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
+            });
+            Assert.DoesNotThrow(() => exp.Validate(DateTime.UtcNow));
+        }
+
+        [Test]
+        public void PayloadEqualValidationNonEqualFails()
+        {
+            var val = new Validators.EqualValidator(new PasetoPayload
+            {
+                { RegisteredClaims.Issuer.GetRegisteredClaimName(), IssuedBy }
+            }, RegisteredClaims.Issuer.GetRegisteredClaimName());
+            Assert.Throws<TokenValidationException>(() => val.Validate(IssuedBy + "."));
+        }
+
+        [Test]
+        public void PayloadEqualValidationTest()
+        {
+            var val = new Validators.EqualValidator(new PasetoPayload
+            {
+                { RegisteredClaims.Issuer.GetRegisteredClaimName(), IssuedBy }
+            }, RegisteredClaims.Issuer.GetRegisteredClaimName());
+            Assert.DoesNotThrow(() => val.Validate(IssuedBy));
+        }
+
+        [Test]
+        public void PayloadCustomValidationNonEqualFails()
+        {
+            var val = new Validators.EqualValidator(new PasetoPayload
+            {
+                { "example", HelloPaseto }
+            }, "example");
+            Assert.Throws<TokenValidationException>(() => val.Validate(HelloPaseto + "!"));
+        }
+
+        [Test]
+        public void PayloadCustomValidationTest()
+        {
+            var val = new Validators.EqualValidator(new PasetoPayload
+            {
+                { "example", HelloPaseto }
+            }, "example");
+            Assert.DoesNotThrow(() => val.Validate(HelloPaseto));
         }
 
         #endregion
