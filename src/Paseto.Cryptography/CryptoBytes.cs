@@ -1,10 +1,23 @@
 ﻿namespace Paseto.Cryptography
 {
     using System;
+    using System.Linq;
     using System.Runtime.CompilerServices;
 
     public static class CryptoBytes
     {
+        public static byte[] Combine(params byte[][] arrays)
+        {
+            var rv = new byte[arrays.Sum(a => a.Length)];
+            var offset = 0;
+            foreach (var array in arrays)
+            {
+                Buffer.BlockCopy(array, 0, rv, offset, array.Length);
+                offset += array.Length;
+            }
+            return rv;
+        }
+
         public static bool ConstantTimeEquals(byte[] x, byte[] y)
         {
             if (x == null)

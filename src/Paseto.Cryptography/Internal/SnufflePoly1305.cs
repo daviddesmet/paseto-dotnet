@@ -35,13 +35,14 @@
         protected abstract Snuffle CreateSnuffleInstance(byte[] key, int initialCounter);
 
         /// <summary>
-        /// Encrypts the <paramref name="plaintext"> with <see cref="Poly1305"/> authentication based on <paramref name="associatedData">.
+        /// Encrypts the <paramref name="plaintext"> with <see cref="Poly1305"/> authentication based on an optional <paramref name="associatedData"> and an optional <paramref name="nonce">.
         /// </summary>
         /// <param name="plaintext">The plaintext.</param>
-        /// <param name="associatedData">The associated data.</param>
+        /// <param name="associatedData">The optional associated data.</param>
+        /// <param name="nonce">The optional nonce.</param>
         /// <returns>System.Byte[].</returns>
         /// <exception cref="CryptographyException">plaintext</exception>
-        public virtual byte[] Encrypt(byte[] plaintext, byte[] associatedData = null)
+        public virtual byte[] Encrypt(byte[] plaintext, byte[] associatedData = null, byte[] nonce = null)
         {
             if (plaintext is null)
                 throw new ArgumentNullException(nameof(plaintext));
@@ -49,45 +50,30 @@
             if (plaintext.Length > int.MaxValue - _snuffle.NonceSizeInBytes() - Poly1305.MAC_TAG_SIZE_IN_BYTES)
                 throw new CryptographyException($"The {nameof(plaintext)} is too long.");
 
-            return Encrypt(plaintext, associatedData, null);
-        }
-
-        /// <summary>
-        /// Encrypts the <paramref name="plaintext"> with <see cref="Poly1305"/> authentication based on <paramref name="associatedData">.
-        /// </summary>
-        /// <param name="plaintext">The plaintext.</param>
-        /// <param name="associatedData">The associated data.</param>
-        /// <param name="nonce">The nonce.</param>
-        /// <exception cref="CryptographyException">output</exception>
-        public byte[] Encrypt(byte[] plaintext, byte[] associatedData, byte[] nonce = null)
-        {
-            var output = new byte[plaintext.Length + _snuffle.NonceSizeInBytes() + Poly1305.MAC_TAG_SIZE_IN_BYTES];
-
-            if (output.Length < plaintext.Length + _snuffle.NonceSizeInBytes() + Poly1305.MAC_TAG_SIZE_IN_BYTES)
-                throw new CryptographyException($"The {nameof(output)} is too short.");
-
             if (nonce != null && nonce.Length != _snuffle.NonceSizeInBytes())
                 throw new CryptographyException($"The nonce length in bytes must be {_snuffle.NonceSizeInBytes()}.");
 
+            var randomNonce = false;
             if (nonce is null)
             {
+                randomNonce = true;
                 nonce = new byte[_snuffle.NonceSizeInBytes()];
                 RandomNumberGenerator.Create().GetBytes(nonce);
             }
 
-            _snuffle.Encrypt(plaintext, output, nonce);
-            
-            //Array.Copy(output, nonce, nonce.Length); // no longer needed...
+            var ciphertext = _snuffle.Encrypt(plaintext, nonce);
 
             var aad = associatedData;
             if (aad is null)
                 aad = new byte[0];
 
-            var limit = output.Length - Poly1305.MAC_TAG_SIZE_IN_BYTES;
-            var tag = Poly1305.ComputeMac(GetMacKey(nonce), MacDataRfc7539(aad, output, limit));
+            var tag = Poly1305.ComputeMac(GetMacKey(nonce), GetMacDataRfc7539(aad, ciphertext.Skip(nonce.Length).ToArray()));
 
-            Array.Copy(tag, 0, output, limit, tag.Length);
-            return output;
+            Array.Resize(ref ciphertext, plaintext.Length + _snuffle.NonceSizeInBytes() + Poly1305.MAC_TAG_SIZE_IN_BYTES);
+            var limit = ciphertext.Length - Poly1305.MAC_TAG_SIZE_IN_BYTES;
+            Array.Copy(tag, 0, ciphertext, limit, tag.Length);
+
+            return randomNonce ? ciphertext : ciphertext.Skip(nonce.Length).ToArray();
         }
 
         /// <summary>
@@ -95,6 +81,7 @@
         /// </summary>
         /// <param name="ciphertext">The ciphertext.</param>
         /// <param name="associatedData">The associated data.</param>
+        /// <param name="nonce">The optional nonce.</param>
         /// <returns>System.Byte[].</returns>
         /// <exception cref="ArgumentNullException">ciphertext</exception>
         /// <exception cref="CryptographyException">
@@ -102,7 +89,7 @@
         /// or
         /// AEAD Bad Tag Exception
         /// </exception>
-        public virtual byte[] Decrypt(byte[] ciphertext, byte[] associatedData)
+        public virtual byte[] Decrypt(byte[] ciphertext, byte[] associatedData, byte[] nonce = null)
         {
             if (ciphertext is null)
                 throw new ArgumentNullException(nameof(ciphertext));
@@ -115,21 +102,35 @@
             var tag = new byte[Poly1305.MAC_TAG_SIZE_IN_BYTES];
             Array.Copy(ciphertext, limit, tag, 0, tag.Length);
 
-            var nonce = new byte[_snuffle.NonceSizeInBytes()];
-            Array.Copy(ciphertext, 0, nonce, 0, nonce.Length);
+            if (nonce != null && nonce.Length != _snuffle.NonceSizeInBytes())
+                throw new CryptographyException($"The nonce length in bytes must be {_snuffle.NonceSizeInBytes()}.");
+
+            var randomNonce = false;
+            if (nonce is null)
+            {
+                randomNonce = true;
+                nonce = new byte[_snuffle.NonceSizeInBytes()];
+                Array.Copy(ciphertext, 0, nonce, 0, nonce.Length);
+                limit -= nonce.Length;
+            }
 
             var aad = associatedData;
-            if (aad == null)
+            if (aad is null)
                 aad = new byte[0];
 
             try
             {
-                Poly1305.VerifyMac(GetMacKey(nonce), MacDataRfc7539(aad, ciphertext, limit), tag);
+                Poly1305.VerifyMac(GetMacKey(nonce), GetMacDataRfc7539(aad, ciphertext.Skip(randomNonce ? nonce.Length : 0).Take(limit).ToArray()), tag);
             }
             catch (Exception ex)
             {
                 throw new CryptographyException("AEAD Bad Tag Exception", ex);
             }
+
+            if (!randomNonce)
+                ciphertext = CryptoBytes.Combine(nonce, ciphertext);
+
+            limit += nonce.Length;
 
             return _snuffle.Decrypt(ciphertext.Take(limit).ToArray());
         }
@@ -154,10 +155,10 @@
         /// <param name="ciphertext">The ciphertext.</param>
         /// <param name="len">The ciphertext's maximum length.</param>
         /// <returns>System.Byte[].</returns>
-        private byte[] MacDataRfc7539(byte[] aad, byte[] ciphertext, int len)
+        private byte[] GetMacDataRfc7539(byte[] aad, byte[] ciphertext)
         {
             var aadPaddedLen = (aad.Length % 16 == 0) ? aad.Length : (aad.Length + 16 - aad.Length % 16);
-            var ciphertextLen = len - _snuffle.NonceSizeInBytes();
+            var ciphertextLen = ciphertext.Length;//len - _snuffle.NonceSizeInBytes();
             var ciphertextPaddedLen = (ciphertextLen % 16 == 0) ? ciphertextLen : (ciphertextLen + 16 - ciphertextLen % 16);
 
             var macData = new byte[aadPaddedLen + ciphertextPaddedLen + 16];

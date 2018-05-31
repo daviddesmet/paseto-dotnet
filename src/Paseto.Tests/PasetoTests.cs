@@ -24,8 +24,8 @@
         private const string PublicKeyV2 = "rJRRV5JmY3BRUmyWu2CRa1EnUSSNbOgrAMTIsgbX3Z4=";
         private const string TokenV2 = "v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjIwMTgtMDQtMDdUMDU6MDQ6MDcuOTE5NjM3NVoifTuR3EYYCG12DjhIqPKiVmTkKx2ewCDrYNZHcoewiF-lpFeaFqKW3LkEgnW28UZxrBWA5wrLFCR5FP1qUlMeqQA";
         private const string LocalKeyV2 = "37ZJdkLlZ43aF8UO7GWqi7GrdO0zDZSpSFLNTAdmKdk=";
-        private const string LocalTokenV2 = "v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248ENG98mfmCWo7p8qEha5nuyv4lP5y8248lY9VW87NmubNTuceI6BdOfmSOmi9ynEoHk-1CkSWpZygnR_GcRoUdWV3SOwlv2Euc2ZUuhxmrxjlNrPSQf9IEkn9CuOLbhGTDdNOcU9y0N8";
-        private const string LocalTokenWithFooterV2 = "v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248ENG98mfmCWo7p8qEha5nuyv4lP5y8248lY9VW87NmubNTuceI6BdOfmSOmi9ynEoHk-1CkSWpZygnR_GcRoUdWV3SOwlv2Euc2ZUuhxmrxjlNrPSQf9IEhoToEFjPT_uorhmu8AhZj8.eyJraWQiOiJnYW5kYWxmMCJ9";
+        private const string LocalTokenV2 = "v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248ENG98mfmCWo7p8qEha5nuyv4lP5y8248lY9VW87NmubNTuceI6BdOfmSOmi9ynEoHk-1CkSWpZygnR_GcRoUdWV3SOwlv2Euc2ZUuhxmrxjlNrPSQf9IEj676PrUXJr5yEXZmHjY_TQ";
+        private const string LocalTokenWithFooterV2 = "v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248ENG98mfmCWo7p8qEha5nuyv4lP5y8248lY9VW87NmubNTuceI6BdOfmSOmi9ynEoHk-1CkSWpZygnR_GcRoUdWV3SOwlv2Euc2ZUuhxmrxjlNrPSQf9IEhTRfVmsK8hUXivx4umHk5Q.eyJraWQiOiJnYW5kYWxmMCJ9";
         private const string ExpectedPublicPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T05:04:07.9196375Z\"}";
         private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T04:57:18.5865183Z\"}";
         private const string ExpectedFooter = "{\"kid\":\"gandalf0\"}";
@@ -322,13 +322,14 @@
             var key = new byte[32];
             RandomNumberGenerator.Create().GetBytes(key);
 
-            //var secret = Convert.ToBase64String(key); //BitConverter.ToString(key).Replace("-", string.Empty); // Hex Encoded
+            //key = Convert.FromBase64String(LocalKeyV2);
 
             // Act
             var token = new PasetoBuilder<Version2>()
                               .WithKey(key)
                               .AddClaim("example", HelloPaseto)
                               .Expiration(DateTime.UtcNow.AddHours(24))
+                              //.Expiration(DateTime.Parse("2018-04-07T04:57:18.5865183Z").ToUniversalTime())
                               .AsLocal()
                               .Build();
 
@@ -343,8 +344,7 @@
             var key = new byte[32];
             RandomNumberGenerator.Create().GetBytes(key);
 
-            //var secret = Convert.ToBase64String(key); //BitConverter.ToString(key).Replace("-", string.Empty); // Hex Encoded
-            //key = Convert.FromBase64String(LocalKeyV2);
+            key = Convert.FromBase64String(LocalKeyV2);
 
             // Act
             var token = new PasetoBuilder<Version2>()

@@ -145,7 +145,7 @@
                 0xd19c12b5, 0xb94e16de, 0xe883d0cb, 0x4e3c50a2,
             };
 
-            Assert.AreEqual(expected, ToUInt16Array(output));
+            Assert.AreEqual(expected, TestHelpers.ToUInt16Array(output));
         }
 
         [Test]
@@ -158,7 +158,7 @@
             {
                 // Act
                 var cipher = new ChaCha20(test.Key, test.InitialCounter);
-                var output = cipher.Decrypt(Combine(test.Nonce, test.CipherText));
+                var output = cipher.Decrypt(CryptoBytes.Combine(test.Nonce, test.CipherText));
 
                 // Assert
                 //Assert.That(output, Is.EqualTo(test.PlainText));
@@ -217,26 +217,7 @@
             };
 
             //Assert.AreEqual(expected, Combine(block0, block1));
-            Assert.IsTrue(CryptoBytes.ConstantTimeEquals(expected, Combine(block0, block1)));
-        }
-
-        private byte[] Combine(params byte[][] arrays)
-        {
-            var rv = new byte[arrays.Sum(a => a.Length)];
-            var offset = 0;
-            foreach (var array in arrays)
-            {
-                Buffer.BlockCopy(array, 0, rv, offset, array.Length);
-                offset += array.Length;
-            }
-            return rv;
-        }
-
-        private uint[] ToUInt16Array(byte[] source)
-        {
-            var decoded = new uint[source.Length / 4];
-            Buffer.BlockCopy(source, 0, decoded, 0, source.Length);
-            return decoded;
+            Assert.IsTrue(CryptoBytes.ConstantTimeEquals(expected, CryptoBytes.Combine(block0, block1)));
         }
     }
 }

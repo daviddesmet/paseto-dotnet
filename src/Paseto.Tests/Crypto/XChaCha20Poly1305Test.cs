@@ -119,7 +119,7 @@
 
                     modified[b] ^= (byte)(1 << bit);
 
-                    //Assert.Throws<CryptographyException>(() => aead.Decrypt(modified, aad), AEADBadTagExceptionMessage);
+                    //Assert.Throws<CryptographyException>(() => aead.Decrypt(modified, aad));
                 }
             }
 

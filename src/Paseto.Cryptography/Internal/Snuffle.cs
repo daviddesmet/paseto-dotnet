@@ -68,29 +68,15 @@
         /// Encrypts the specified plaintext.
         /// </summary>
         /// <param name="plaintext">The plaintext.</param>
-        /// <returns>System.Byte[].</returns>
-        /// <exception cref="CryptographyException">plaintext</exception>
-        public virtual byte[] Encrypt(byte[] plaintext)
+        /// <param name="nonce">The optional nonce.</param>
+        /// <exception cref="CryptographyException">plaintext or ciphertext</exception>
+        public virtual byte[] Encrypt(byte[] plaintext, byte[] nonce = null)
         {
             if (plaintext.Length > int.MaxValue - NonceSizeInBytes())
                 throw new CryptographyException($"The {nameof(plaintext)} is too long.");
-            
+
             var ciphertext = new byte[plaintext.Length + NonceSizeInBytes()];
 
-            Encrypt(plaintext, ciphertext);
-
-            return ciphertext;
-        }
-
-        /// <summary>
-        /// Encrypts the specified plaintext.
-        /// </summary>
-        /// <param name="plaintext">The plaintext.</param>
-        /// <param name="ciphertext">The ciphertext.</param>
-        /// <param name="nonce">The nonce.</param>
-        /// <exception cref="CryptographyException">ciphertext</exception>
-        public void Encrypt(byte[] plaintext, byte[] ciphertext, byte[] nonce = null)
-        {
             if (ciphertext.Length - NonceSizeInBytes() < plaintext.Length)
                 throw new CryptographyException($"The {nameof(ciphertext)} is too short.");
 
@@ -105,6 +91,8 @@
 
             Array.Copy(nonce, ciphertext, nonce.Length);
             Process(nonce, ciphertext, plaintext, nonce.Length);
+
+            return ciphertext;
         }
 
         /// <summary>
@@ -117,7 +105,7 @@
         {
             if (ciphertext.Length < NonceSizeInBytes())
                 throw new CryptographyException($"The {nameof(ciphertext)} is too short.");
-            
+
             var nonce = new byte[NonceSizeInBytes()];
             Array.Copy(ciphertext, nonce, nonce.Length);
             var plaintext = new byte[ciphertext.Length - NonceSizeInBytes()];

@@ -114,7 +114,7 @@
 
                     modified[b] ^= (byte)(1 << bit);
 
-                    //Assert.Throws<CryptographyException>(() => aead.Decrypt(modified, aad), AEADBadTagExceptionMessage);
+                    Assert.Throws<CryptographyException>(() => aead.Decrypt(modified, aad), AEADBadTagExceptionMessage);
                 }
             }
 
@@ -224,6 +224,48 @@
             }
 
             Assert.AreEqual(samples, ciphertexts.Count);
+        }
+
+        [Test]
+        public void ChaCha20Poly1305TestVector()
+        {
+            // https://tools.ietf.org/html/rfc7539
+
+            // Arrange
+            foreach (var test in Rfc7539TestVector.Rfc7539AeadTestVectors)
+            {
+                // Act
+                var aead = new ChaCha20Poly1305(test.Key);
+                var ct = aead.Encrypt(test.PlainText, test.Aad, test.Nonce);
+                Assert.That(ct, Is.EqualTo(CryptoBytes.Combine(test.CipherText, test.Tag)));
+
+                var output = aead.Decrypt(ct, test.Aad, test.Nonce);
+
+                // Assert
+                //Assert.That(output, Is.EqualTo(test.PlainText));
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(test.PlainText, output));
+            }
+        }
+
+        [Test]
+        public void ChaCha20Poly1305TestVector2()
+        {
+            // https://tools.ietf.org/html/rfc7634
+
+            // Arrange
+            foreach (var test in Rfc7539TestVector.Rfc7634AeadTestVectors)
+            {
+                // Act
+                var aead = new ChaCha20Poly1305(test.Key);
+                var ct = aead.Encrypt(test.PlainText, test.Aad, test.Nonce);
+                Assert.That(ct, Is.EqualTo(CryptoBytes.Combine(test.CipherText, test.Tag)));
+
+                var output = aead.Decrypt(ct, test.Aad, test.Nonce);
+
+                // Assert
+                //Assert.That(output, Is.EqualTo(test.PlainText));
+                Assert.IsTrue(CryptoBytes.ConstantTimeEquals(test.PlainText, output));
+            }
         }
 
         public void WycheproofTestVectors()

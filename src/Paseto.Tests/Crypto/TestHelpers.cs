@@ -81,5 +81,12 @@
             Array.Copy(segment.Array, segment.Offset, result, 0, segment.Count);
             return result;
         }
+
+        public static uint[] ToUInt16Array(byte[] source)
+        {
+            var decoded = new uint[source.Length / 4];
+            Buffer.BlockCopy(source, 0, decoded, 0, source.Length);
+            return decoded;
+        }
     }
 }
