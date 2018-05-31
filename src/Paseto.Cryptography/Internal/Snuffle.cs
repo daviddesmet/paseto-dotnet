@@ -69,6 +69,7 @@
         /// </summary>
         /// <param name="plaintext">The plaintext.</param>
         /// <param name="nonce">The optional nonce.</param>
+        /// <returns>System.Byte[].</returns>
         /// <exception cref="CryptographyException">plaintext or ciphertext</exception>
         public virtual byte[] Encrypt(byte[] plaintext, byte[] nonce = null)
         {

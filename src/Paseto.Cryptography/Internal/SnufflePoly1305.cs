@@ -153,12 +153,11 @@
         /// </summary>
         /// <param name="aad">The aad.</param>
         /// <param name="ciphertext">The ciphertext.</param>
-        /// <param name="len">The ciphertext's maximum length.</param>
         /// <returns>System.Byte[].</returns>
         private byte[] GetMacDataRfc7539(byte[] aad, byte[] ciphertext)
         {
             var aadPaddedLen = (aad.Length % 16 == 0) ? aad.Length : (aad.Length + 16 - aad.Length % 16);
-            var ciphertextLen = ciphertext.Length;//len - _snuffle.NonceSizeInBytes();
+            var ciphertextLen = ciphertext.Length;
             var ciphertextPaddedLen = (ciphertextLen % 16 == 0) ? ciphertextLen : (ciphertextLen + 16 - ciphertextLen % 16);
 
             var macData = new byte[aadPaddedLen + ciphertextPaddedLen + 16];
