@@ -7,6 +7,7 @@
     using System.Text;
 
     using Cryptography;
+    using NaCl.Core;
     using static Utils.EncodingHelper;
 
     /// <summary>
@@ -38,17 +39,17 @@
             var algo = new XChaCha20Poly1305(key);
             return algo.Encrypt(payload, aad, nonce);
 
-            /* 
+            /*
              * Sodium
              * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
-             * 
+             *
             return SecretAead.Encrypt(payload, nonce, key, aad);
             */
 
-            /* 
+            /*
              * NSec
              * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
-             * 
+             *
             var algo = new XChaCha20Poly1305();
             using (var k = Key.Import(algo, key, KeyBlobFormat.RawSymmetricKey))
                 return algo.Encrypt(k, new Nonce(nonce, 0), aad, payload);
@@ -61,23 +62,24 @@
         /// <param name="payload">The payload.</param>
         /// <param name="aad">The additional associated data.</param>
         /// <param name="key">The symmetric key.</param>
+        /// <param name="nonce">The nonce.</param>
         /// <returns>System.String.</returns>
-        public string Decrypt(byte[] payload, byte[] aad, byte[] key)
+        public string Decrypt(byte[] payload, byte[] aad, byte[] key, byte[] nonce)
         {
             var algo = new XChaCha20Poly1305(key);
-            return GetString(algo.Decrypt(payload, aad));
+            return GetString(algo.Decrypt(payload, aad, nonce));
 
-            /* 
+            /*
              * Sodium
              * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
-             * 
+             *
             return GetString(SecretAead.Decrypt(payload, nonce, key, associatedData));
             */
 
-            /* 
+            /*
              * NSec
              * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
-             * 
+             *
             var algo = new XChaCha20Poly1305();
             using (var k = Key.Import(algo, key, KeyBlobFormat.RawSymmetricKey))
                 return GetString(algo.Decrypt(k, new Nonce(nonce, 0), aad, payload));
@@ -95,9 +97,9 @@
             // Using Paseto Cryptography library
             return Ed25519.Sign(message, key);
 
-            /* 
+            /*
              * Using NSec library
-             * 
+             *
             var algo = new Ed25519();
             using (var k = Key.Import(algo, key, KeyBlobFormat.RawPrivateKey))
             {
@@ -121,9 +123,9 @@
             // Using Paseto Cryptography library
             return Ed25519.Verify(signature, message, key);
 
-            /* 
+            /*
              * Using NSec library
-             * 
+             *
             var algo = new Ed25519();
             var publicKey = PublicKey.Import(algo, key, KeyBlobFormat.RawPublicKey);
             algo.Verify(publicKey, message, signature);
@@ -166,7 +168,7 @@
 
             /*
              * Using NSec library
-             * 
+             *
             var algo = new Blake2bMac();
             using (var key = Key.Import(algo, nKey, KeyBlobFormat.RawSymmetricKey))
                 return algo.Mac(key, payload, size);

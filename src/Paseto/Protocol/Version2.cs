@@ -43,7 +43,7 @@
             /*
              * Encrypt Specification
              * -------
-             * 
+             *
              * Given a message m, key k, and optional footer f.
              *   1. Set header h to v2.local.
              *   2. Generate 24 random bytes from the OS's CSPRNG.
@@ -51,12 +51,12 @@
              *      - This step is to ensure that an RNG failure does not result in a nonce-misuse condition that breaks the security of our stream cipher.
              *   4. Pack h, n, and f together using PAE (pre-authentication encoding). We'll call this preAuth.
              *   5. Encrypt the message using XChaCha20-Poly1305, using an AEAD interface such as the one provided in libsodium.
-             *   6. If f is: 
+             *   6. If f is:
              *      - Empty: return "h || base64url(n || c)"
              *      - Non-empty: return "h || base64url(n || c) || . || base64url(f)"
              *      - ...where || means "concatenate"
              *      - Note: base64url() means Base64url from RFC 4648 without = padding.
-             *   
+             *
              */
 
             // Validate the length of the key
@@ -98,7 +98,7 @@
             /*
              * Decrypt Specification
              * -------
-             * 
+             *
              * Given a message m, key k, and optional footer f.
              *   1. If f is not empty, verify that the value appended to the token matches f, using a constant-time string compare function. If it does not, throw an exception.
              *   2. Verify that the message begins with v2.local., otherwise throw an exception. This constant will be referred to as h.
@@ -109,7 +109,7 @@
              *   4. Pack h, n, and f together using PAE (pre-authentication encoding). We'll call this preAuth.
              *   5. Decrypt c using XChaCha20-Poly1305, store the result in p.
              *   6. If decryption failed, throw an exception. Otherwise, return p.
-             *   
+             *
              */
 
             if (string.IsNullOrWhiteSpace(token))
@@ -134,7 +134,7 @@
             //var pack = PreAuthEncode(new[] { header, GetString(nonce), footer }.Select(GetBytes).ToArray());
             var pack = PreAuthEncode(new[] { GetBytes(header), nonce, GetBytes(footer) });
 
-            return Algorithm.Decrypt(payload, pack, key);
+            return Algorithm.Decrypt(payload, pack, key, nonce);
         }
 
         /// <summary>
@@ -149,7 +149,7 @@
             /*
              * Sign Specification
              * -------
-             * 
+             *
              * Given a message m, Ed25519 secret key sk, and optional footer f (which defaults to empty string):
              *   1. Set h to v2.public.
              *   2. Pack h, m, and f together using PAE (pre-authentication encoding). We'll call this m2.
@@ -159,7 +159,7 @@
              *      - Non-empty: return "h || base64url(m || sig) || . || base64url(f)"
              *      - ...where || means "concatenate"
              *      - Note: base64url() means Base64url from RFC 4648 without = padding.
-             *   
+             *
              */
 
             if (key is null)
@@ -199,7 +199,7 @@
             /*
              * Verify Specification
              * -------
-             * 
+             *
              * Given a signed message sm, public key pk, and optional footer f (which defaults to empty string):
              *   1. If f is not empty, verify that the value appended to the token matches f, using a constant-time string compare function. If it does not, throw an exception.
              *   2. Verify that the message begins with v2.public., otherwise throw an exception. This constant will be referred to as h.
@@ -210,7 +210,7 @@
              *   4. Pack h, m, and f together using PAE (pre-authentication encoding). We'll call this m2.
              *   5. Use Ed25519 to verify that the signature is valid for the message.
              *   6. If the signature is valid, return m. Otherwise, throw an exception.
-             *   
+             *
              */
 
             if (string.IsNullOrWhiteSpace(token))
