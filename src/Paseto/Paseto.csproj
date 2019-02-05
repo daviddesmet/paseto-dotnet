@@ -9,7 +9,7 @@
     <Copyright>Copyright © 2018 David De Smet</Copyright>
     <PackageTags>paseto dotnet dotnet-core netstandard</PackageTags>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
-    <Version>0.7.0</Version>
+    <Version>0.7.1</Version>
     <PackageId>Paseto.Core</PackageId>
     <PackageProjectUrl>https://github.com/idaviddesmet/paseto-dotnet</PackageProjectUrl>
     <RepositoryUrl>https://github.com/idaviddesmet/paseto-dotnet.git</RepositoryUrl>
@@ -26,7 +26,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NaCl.Core" Version="1.1.0" />
+    <PackageReference Include="NaCl.Core" Version="1.2.0" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
   </ItemGroup>
 

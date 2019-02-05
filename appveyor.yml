@@ -1,18 +1,18 @@
-version: 0.6.1.{build}
+version: 0.7.1.{build}
 pull_requests:
   do_not_increment_build_number: true
 image: Visual Studio 2017
 before_build:
-- cmd: dotnet restore src
+  - cmd: dotnet restore src
 build:
   verbosity: minimal
 only_commits:
   files:
     - src/
 deploy:
-- provider: GitHub
-  auth_token:
-    secure: djcUXsjzGm1mZ4rPTUfn1Zf13ZPNK3ole3tE9cN79ts9SbFIYKU0g2kHM52i3mOh
-  on:
-    branch: master
-    appveyor_repo_tag: true
+  - provider: GitHub
+    auth_token:
+      secure: djcUXsjzGm1mZ4rPTUfn1Zf13ZPNK3ole3tE9cN79ts9SbFIYKU0g2kHM52i3mOh
+    on:
+      branch: master
+      appveyor_repo_tag: true
