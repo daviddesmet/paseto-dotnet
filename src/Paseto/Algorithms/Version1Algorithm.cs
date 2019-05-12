@@ -64,7 +64,7 @@
 
                 return rsa.SignData(message, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
             }
-#elif NET47
+#elif (NET46 || NET47)
             using (var rsa = new RSACng())
             {
                 //rsa.KeySize = 2048; // Default
@@ -97,7 +97,7 @@
 
                 return rsa.VerifyData(message, signature, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
             }
-#elif NET47
+#elif (NET46 || NET47)
             using (var rsa = new RSACng())
             {
                 //rsa.KeySize = 2048; // Default
