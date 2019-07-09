@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <TargetFrameworks Condition="'$(OS)' != 'Unix'">net46;net47;netstandard2.0</TargetFrameworks>
-    <Version>0.7.1</Version>
+    <Version>0.7.2</Version>
     <Authors>David De Smet</Authors>
     <Company />
     <Description>Cryptography library for Paseto.Core</Description>
