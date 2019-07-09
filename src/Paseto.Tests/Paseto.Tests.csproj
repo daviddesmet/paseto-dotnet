@@ -2,10 +2,10 @@
 
   <PropertyGroup>
     <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
-    <TargetFrameworks Condition="'$(OS)' != 'Unix'">net46;net47;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks Condition="'$(OS)' != 'Unix'">net47;netcoreapp2.0</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <Version>0.7.1</Version>
+    <Version>0.7.2</Version>
     <Authors>David De Smet</Authors>
     <Copyright>Copyright © 2018 David De Smet</Copyright>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
