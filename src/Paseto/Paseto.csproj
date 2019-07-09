@@ -6,7 +6,7 @@
     <Description>A Paseto (Platform-Agnostic Security Tokens) implementation for .NET</Description>
     <Authors>David De Smet</Authors>
     <Company />
-    <Copyright>Copyright © 2018 David De Smet</Copyright>
+    <Copyright>Copyright © 2019 David De Smet</Copyright>
     <PackageTags>paseto dotnet dotnet-core netstandard</PackageTags>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
     <Version>0.7.2</Version>
