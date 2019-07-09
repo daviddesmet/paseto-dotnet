@@ -7,7 +7,7 @@
     <Authors>David De Smet</Authors>
     <Company />
     <Description>Cryptography library for Paseto.Core</Description>
-    <Copyright>Copyright © 2018 David De Smet</Copyright>
+    <Copyright>Copyright © 2019 David De Smet</Copyright>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
     <PackageTags>paseto dotnet dotnet-core netstandard</PackageTags>
     <PackageProjectUrl>https://github.com/idaviddesmet/paseto-dotnet</PackageProjectUrl>
