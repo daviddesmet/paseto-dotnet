@@ -7,7 +7,7 @@
     <IsTestProject>true</IsTestProject>
     <Version>0.7.2</Version>
     <Authors>David De Smet</Authors>
-    <Copyright>Copyright © 2018 David De Smet</Copyright>
+    <Copyright>Copyright © 2019 David De Smet</Copyright>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
     <PackageTags>paseto dotnet dotnet-core netstandard</PackageTags>
     <PackageProjectUrl>https://github.com/idaviddesmet/paseto-dotnet</PackageProjectUrl>
