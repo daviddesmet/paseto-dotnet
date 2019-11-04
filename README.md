@@ -16,11 +16,34 @@
 | :x: | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
 
 ## Usage
-### Building a Paseto
 
+### Generating keypair
+```csharp
+string secretKey = "YJExjGFZvdbSKTeVgLUQFupOzFWfSlRm"; // The secret key must have 32 chars.
+byte[] hashSeed  =  Encoding.ASCII.GetBytes(secretKey); // Convert it into byte array
+
+byte[] privateKey = new byte[64];
+byte[] publicKey =  new byte[32];
+
+Ed25519.KeyPairFromSeed(out publicKey, out privateKey, hashSeed);
+```
+
+### Generating private key only
+```csharp
+//...
+byte[] privateKey = Ed25519.ExpandedPrivateKeyFromSeed(hashSeed);
+```
+
+### Generating public key only
+```csharp
+//...
+byte[] publicKey = Ed25519.PublicKeyFromSeed(hashSeed);
+```
+
+### Building a Paseto
 ```csharp
 var token = new PasetoBuilder<Version2>()
-		.WithKey(secret)
+		.WithKey(privateKey)
 		.AddClaim("example", "Hello Paseto!")
 		.Expiration(DateTime.UtcNow.AddHours(24))
 		.AsPublic() // Purpose
@@ -55,6 +78,7 @@ var payload = new PasetoBuilder<Version2>()
 var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(publicKey)); // default is public purpose
 var payload = decoder.Decode(token);
 ```
+
 
 #### Decrypted Payload:
 
