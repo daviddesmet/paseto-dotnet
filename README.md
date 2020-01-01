@@ -5,7 +5,7 @@
 [![NuGet](https://img.shields.io/nuget/v/Paseto.Core.svg)](https://www.nuget.org/packages/Paseto.Core/)
 [![MyGet](https://img.shields.io/myget/paseto/v/Paseto.Core.svg)](https://www.myget.org/feed/paseto/package/nuget/Paseto.Core)
 [![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=idaviddesmet/paseto-dotnet)](https://dependabot.com)
-[![Maintenance](https://img.shields.io/maintenance/yes/2019.svg)](https://github.com/idaviddesmet/paseto-dotnet)
+[![Maintenance](https://img.shields.io/maintenance/yes/2020.svg)](https://github.com/idaviddesmet/paseto-dotnet)
 [![License](https://img.shields.io/github/license/idaviddesmet/paseto-dotnet.svg)](https://github.com/idaviddesmet/paseto-dotnet/blob/master/LICENSE)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/idaviddesmet/paseto-dotnet/issues)
 
