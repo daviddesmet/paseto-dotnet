@@ -27,7 +27,7 @@
 
   <ItemGroup>
     <PackageReference Include="NaCl.Core" Version="1.2.0" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFramework)' == 'net46'">
