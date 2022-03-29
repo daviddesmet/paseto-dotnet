@@ -1,16 +1,21 @@
-﻿namespace Paseto
+﻿namespace Paseto;
+
+using System.ComponentModel;
+
+/// <summary>
+/// The Purpose of the Paseto.
+/// </summary>
+public enum Purpose
 {
-    using System.ComponentModel;
+    /// <summary>
+    /// Shared-key encryption (symmetric-key, AEAD).
+    /// </summary>
+    [Description("local")]
+    Local,
 
     /// <summary>
-    /// The Purpose of the Paseto.
+    /// Public-key digital signatures (asymmetric-key).
     /// </summary>
-    public enum Purpose
-    {
-        [Description("local")]
-        Local,
-
-        [Description("public")]
-        Public
-    }
+    [Description("public")]
+    Public
 }
