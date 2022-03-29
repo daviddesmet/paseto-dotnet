@@ -4,10 +4,10 @@
 [![Build Status](https://travis-ci.org/idaviddesmet/paseto-dotnet.svg?branch=master)](https://travis-ci.org/idaviddesmet/paseto-dotnet)
 [![NuGet](https://img.shields.io/nuget/v/Paseto.Core.svg)](https://www.nuget.org/packages/Paseto.Core/)
 [![MyGet](https://img.shields.io/myget/paseto/v/Paseto.Core.svg)](https://www.myget.org/feed/paseto/package/nuget/Paseto.Core)
-[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=idaviddesmet/paseto-dotnet)](https://dependabot.com)
-[![Maintenance](https://img.shields.io/maintenance/yes/2020.svg)](https://github.com/idaviddesmet/paseto-dotnet)
-[![License](https://img.shields.io/github/license/idaviddesmet/paseto-dotnet.svg)](https://github.com/idaviddesmet/paseto-dotnet/blob/master/LICENSE)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/idaviddesmet/paseto-dotnet/issues)
+[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=daviddesmet/paseto-dotnet)](https://dependabot.com)
+[![Maintenance](https://img.shields.io/maintenance/yes/2022.svg)](https://github.com/daviddesmet/paseto-dotnet)
+[![License](https://img.shields.io/github/license/idaviddesmet/paseto-dotnet.svg)](https://github.com/daviddesmet/paseto-dotnet/blob/master/LICENSE)
+[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/daviddesmet/paseto-dotnet/issues)
 
 ## Features
 
@@ -96,7 +96,7 @@ var payload = decoder.Decode(token);
 - [ ] Add support for local authentication for v1
 - [ ] Add support for version detection when decoding
 - [ ] Add payload [validation rules](https://github.com/paragonie/paseto/blob/master/docs/03-Implementation-Guide/02-Validators.md#validators)
-  - There's already an [initial implementation](https://github.com/idaviddesmet/paseto-dotnet/commit/0f25cb5f7d937ebf2396d15572c16ac16690f68b) and [tests](https://github.com/idaviddesmet/paseto-dotnet/blob/9adb1a575afdc8722e1772109d0885413ff22cf8/src/Paseto.Tests/PasetoTests.cs#L554)
+  - There's already an [initial implementation](https://github.com/daviddesmet/paseto-dotnet/commit/0f25cb5f7d937ebf2396d15572c16ac16690f68b) and [tests](https://github.com/idaviddesmet/paseto-dotnet/blob/9adb1a575afdc8722e1772109d0885413ff22cf8/src/Paseto.Tests/PasetoTests.cs#L554)
 - [ ] Improve protocol versioning
 - [ ] Add more documentation on the usage
 - [ ] Extend the fluent builder API
@@ -105,5 +105,5 @@ var payload = decoder.Decode(token);
 ## Cryptography
 
 * Uses Ed25519 algorithm from CodesInChaos [Chaos.NaCl](https://github.com/CodesInChaos/Chaos.NaCl) cryptography library.
-* Uses Blake2b cryptographic hash function from [metadings](https://github.com/metadings/Blake2B.cs) repository.
-* Uses XChaCha20-Poly1305 AEAD from [NaCl.Core](https://github.com/idaviddesmet/NaCl.Core) repository.
+* Uses Blake2b cryptographic hash function from [Konscious.Security.Cryptography](https://github.com/kmaragon/Konscious.Security.Cryptography) repository.
+* Uses XChaCha20-Poly1305 AEAD from [NaCl.Core](https://github.com/daviddesmet/NaCl.Core) repository.
