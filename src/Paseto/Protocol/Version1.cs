@@ -35,12 +35,22 @@ public sealed class Version1 : IPasetoProtocolVersion
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
     /// <returns>System.String.</returns>
-    /// <exception cref="NotImplementedException"></exception>
+    /// <exception cref="PasetoNotSupportedException"></exception>
     public string Encrypt(PasetoSymmetricKey pasetoKey, byte[] nonce, string payload, string footer = "")
     {
 #pragma warning disable IDE0022 // Use expression body for methods
         throw new PasetoNotSupportedException("The Local Purpose is not supported in the Version 1 Protocol");
 #pragma warning restore IDE0022 // Use expression body for methods
+
+        /*
+         * Get Nonce Specification
+         * -------
+         * 
+         * Given a message (m) and a nonce (n):
+         *   1. Calculate HMAC-SHA384 of the message m with n as the key.
+         *   2. Return the leftmost 32 bytes of step 1.
+         *   
+         */
 
         /*
          * Encrypt Specification
@@ -70,7 +80,7 @@ public sealed class Version1 : IPasetoProtocolVersion
     /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The symmetric key.</param>
     /// <returns>System.String.</returns>
-    /// <exception cref="NotImplementedException"></exception>
+    /// <exception cref="PasetoNotSupportedException"></exception>
     public string Decrypt(string token, PasetoSymmetricKey pasetoKey)
     {
 #pragma warning disable IDE0022 // Use expression body for methods
@@ -105,12 +115,9 @@ public sealed class Version1 : IPasetoProtocolVersion
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
     /// <returns>System.String.</returns>
-    /// <exception cref="ArgumentNullException">
-    /// key
-    /// or
-    /// payload
-    /// </exception>
-    /// <exception cref="ArgumentException">Secret Key cannot be empty!</exception>
+    /// <exception cref="System.ArgumentException">Secret Key is missing</exception>
+    /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
+    /// <exception cref="Paseto.PasetoInvalidException">Key is not valid</exception>
     public string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "")
     {
         /*
@@ -163,12 +170,9 @@ public sealed class Version1 : IPasetoProtocolVersion
     /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The asymmetric public key.</param>
     /// <returns><c>true</c> if verified, <c>false</c> otherwise.</returns>
-    /// <exception cref="ArgumentNullException">token</exception>
-    /// <exception cref="NotSupportedException">
-    /// The specified token is not supported!
-    /// or
-    /// Unexpected token size!
-    /// </exception>
+    /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
+    /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
+    /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload does not contain signature</exception>
     public (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
     {
         /*
@@ -197,10 +201,13 @@ public sealed class Version1 : IPasetoProtocolVersion
         if (!pasetoKey.IsValidFor(this, Purpose.Public))
             throw new PasetoInvalidException($"Key is not valid for {Purpose.Public} purpose and {Version} version");
 
+        if (pasetoKey.Key.Length == 0)
+            throw new ArgumentException("Public Key is missing", nameof(pasetoKey));
+
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
 
         if (!token.StartsWith(header))
-            throw new NotSupportedException("The specified token is not supported!");
+            throw new PasetoInvalidException($"The specified token is not valid for {Purpose.Local} purpose and {Version} version");
 
         var parts = token.Split('.');
         var footer = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
@@ -209,7 +216,7 @@ public sealed class Version1 : IPasetoProtocolVersion
 
         const int blockSize = 256;
         if (body.Length < blockSize)
-            throw new PasetoInvalidException("Unexpected token size!"); // TODO: Change text to something like "Payload does not contain signature"
+            throw new PasetoInvalidException("Payload does not contain signature");
 
         // TODO: Use Span
         var signature = body.Skip(body.Length - blockSize).ToArray();
@@ -218,22 +225,5 @@ public sealed class Version1 : IPasetoProtocolVersion
         var pack = PreAuthEncode(new[] { GetBytes(header), payload, footer });
 
         return (Algorithm.Verify(pack, signature, pasetoKey.Key), GetString(payload));
-    }
-
-    private byte[] GetNonce(string payload, byte[] nonce)
-    {
-#pragma warning disable IDE0022 // Use expression body for methods
-        throw new NotImplementedException();
-#pragma warning restore IDE0022 // Use expression body for methods
-
-        /*
-         * Get Nonce Specification
-         * -------
-         * 
-         * Given a message (m) and a nonce (n):
-         *   1. Calculate HMAC-SHA384 of the message m with n as the key.
-         *   2. Return the leftmost 32 bytes of step 1.
-         *   
-         */
     }
 }

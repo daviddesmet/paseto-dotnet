@@ -7,8 +7,6 @@ using Paseto.Algorithms;
 using Paseto.Extensions;
 using Paseto.Cryptography.Key;
 using static Utils.EncodingHelper;
-using System.Security.Cryptography;
-using Newtonsoft.Json.Linq;
 
 /// <summary>
 /// Paseto Version 2.
@@ -18,9 +16,6 @@ using Newtonsoft.Json.Linq;
 public sealed class Version2 : IPasetoProtocolVersion
 {
     public const string VERSION = "v2";
-
-    private const int KEYBYTES = 32;
-    private const int NPUBBYTES = 24; // crypto_aead_xchacha20poly1305_ietf_NPUBBYTES 24
 
     public const int KEY_SIZE_IN_INTS = 8;
     public const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
@@ -44,8 +39,9 @@ public sealed class Version2 : IPasetoProtocolVersion
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
     /// <returns>System.String.</returns>
-    /// <exception cref="PasetoInvalidException">pasetoKey</exception>
-    /// <exception cref="System.Security.Cryptography.CryptographicException">pasetoKey</exception>
+    /// <exception cref="System.ArgumentException">Shared Key is missing or invalid</exception>
+    /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
+    /// <exception cref="Paseto.PasetoInvalidException">Key is not valid</exception>
     public string Encrypt(PasetoSymmetricKey pasetoKey, byte[] nonce, string payload, string footer = "")
     {
         /*
@@ -84,7 +80,7 @@ public sealed class Version2 : IPasetoProtocolVersion
             throw new PasetoInvalidException($"Key is not valid for {Purpose.Local} purpose and {Version} version");
 
         if (pasetoKey.Key.Length != KEY_SIZE_IN_BYTES)
-            throw new CryptographicException($"The key length in bytes must be {KEY_SIZE_IN_BYTES}.");
+            throw new ArgumentException($"The key length in bytes must be {KEY_SIZE_IN_BYTES}.");
 
         if (nonce is null || nonce.Length != NONCE_SIZE_IN_BYTES)
             nonce = Algorithm.Hash(GetBytes(payload), NONCE_SIZE_IN_BYTES);
@@ -108,12 +104,9 @@ public sealed class Version2 : IPasetoProtocolVersion
     /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The symmetric key.</param>
     /// <returns>System.String.</returns>
-    /// <exception cref="System.ArgumentNullException">token</exception>
-    /// <exception cref="System.NotSupportedException">
-    /// Token not supported!
-    /// or
-    /// Token size not supported!
-    /// </exception>
+    /// <exception cref="System.ArgumentException">Shared Key is missing or invalid</exception>
+    /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
+    /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload is not valid</exception>
     public string Decrypt(string token, PasetoSymmetricKey pasetoKey)
     {
         /*
@@ -150,7 +143,7 @@ public sealed class Version2 : IPasetoProtocolVersion
             throw new PasetoInvalidException($"Key is not valid for {Purpose.Local} purpose and {Version} version");
 
         if (pasetoKey.Key.Length != KEY_SIZE_IN_BYTES)
-            throw new CryptographicException($"The key length in bytes must be {KEY_SIZE_IN_BYTES}.");
+            throw new ArgumentException($"The key length in bytes must be {KEY_SIZE_IN_BYTES}.");
 
         var header = $"{Version}.{Purpose.Local.ToDescription()}.";
 
@@ -163,7 +156,7 @@ public sealed class Version2 : IPasetoProtocolVersion
         var bytes = FromBase64Url(parts[2]);
 
         if (bytes.Length < NONCE_SIZE_IN_BYTES)
-            throw new PasetoInvalidException("Token size is not supported!"); // TODO: Change text
+            throw new PasetoInvalidException("Payload is not valid");
 
         var nonce = bytes.Take(NONCE_SIZE_IN_BYTES).ToArray();
         var payload = bytes.Skip(NONCE_SIZE_IN_BYTES).ToArray();
@@ -181,6 +174,9 @@ public sealed class Version2 : IPasetoProtocolVersion
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
     /// <returns>System.String.</returns>
+    /// <exception cref="System.ArgumentException">Secret Key is missing</exception>
+    /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
+    /// <exception cref="Paseto.PasetoInvalidException">Key is not valid</exception>
     public string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "")
     {
         /*
@@ -233,12 +229,9 @@ public sealed class Version2 : IPasetoProtocolVersion
     /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The asymmetric public key.</param>
     /// <returns><c>true</c> if verified, <c>false</c> otherwise.</returns>
-    /// <exception cref="System.ArgumentNullException">token</exception>
-    /// <exception cref="System.NotSupportedException">
-    /// The specified token is not supported!
-    /// or
-    /// Unexpected token size!
-    /// </exception>
+    /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
+    /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
+    /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload does not contain signature</exception>
     public (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
     {
         /*
@@ -290,7 +283,7 @@ public sealed class Version2 : IPasetoProtocolVersion
 
         const int blockSize = 64;
         if (body.Length < blockSize)
-            throw new PasetoInvalidException("Unexpected token size!"); // TODO: Change text to something like "Payload does not contain signature"
+            throw new PasetoInvalidException("Payload does not contain signature");
 
         // TODO: Use Span
         var signature = body.Skip(body.Length - blockSize).ToArray();

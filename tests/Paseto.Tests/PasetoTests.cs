@@ -22,6 +22,7 @@
     using Paseto.Tests.Vectors;
     using FluentAssertions;
     using NUnit.Framework.Internal;
+    using Paseto.Cryptography.Key;
 
     [TestFixture]
     public class PasetoTests
@@ -153,9 +154,10 @@
             var paseto = new Version2();
             var seed = new byte[32];
             Ed25519.KeyPairFromSeed(out var pk, out var sk, seed);
+            var pasetoKey = new PasetoAsymmetricSecretKey(sk, paseto);
 
             // Act
-            var signature = paseto.Sign(sk, HelloPaseto);
+            var signature = paseto.Sign(pasetoKey, HelloPaseto);
 
             // Assert
             Assert.IsNotNull(signature);
@@ -166,9 +168,10 @@
         {
             // Arrange
             var paseto = new Version2();
+            var pasetoKey = new PasetoAsymmetricSecretKey((byte[])null, paseto);
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => paseto.Sign((byte[])null, HelloPaseto));
+            Assert.Throws<ArgumentException>(() => paseto.Sign(pasetoKey, HelloPaseto));
         }
 
         [Test]
@@ -176,9 +179,10 @@
         {
             // Arrange
             var paseto = new Version2();
+            var pasetoKey = new PasetoAsymmetricSecretKey(new byte[0], paseto);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => paseto.Sign(new byte[0], HelloPaseto));
+            Assert.Throws<ArgumentException>(() => paseto.Sign(pasetoKey, HelloPaseto));
         }
 
         [Test]
@@ -187,9 +191,10 @@
             // Arrange
             var paseto = new Version2();
             Ed25519.KeyPairFromSeed(out var pk, out var sk, new byte[32]);
+            var pasetoKey = new PasetoAsymmetricSecretKey(sk, paseto);
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => paseto.Sign(sk, null));
+            Assert.Throws<ArgumentNullException>(() => paseto.Sign(pasetoKey, null));
         }
 
         [Test]
@@ -198,9 +203,10 @@
             // Arrange
             var paseto = new Version2();
             Ed25519.KeyPairFromSeed(out var pk, out var sk, new byte[32]);
+            var pasetoKey = new PasetoAsymmetricSecretKey(sk, paseto);
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => paseto.Sign(sk, string.Empty));
+            Assert.Throws<ArgumentNullException>(() => paseto.Sign(pasetoKey, string.Empty));
         }
 
         [Test]
@@ -211,12 +217,14 @@
             var seed = new byte[32];
             RandomNumberGenerator.Create().GetBytes(seed);
             Ed25519.KeyPairFromSeed(out var pk, out var sk, seed);
+            var pasetoSecretKey = new PasetoAsymmetricSecretKey(sk, paseto);
+            var pasetoPublicKey = new PasetoAsymmetricPublicKey(pk, paseto);
 
             //var pub = Convert.ToBase64String(pk);
 
             // Act
-            var token = paseto.Sign(sk, HelloPaseto);
-            var verified = paseto.Verify(token, pk).Valid;
+            var token = paseto.Sign(pasetoSecretKey, HelloPaseto);
+            var verified = paseto.Verify(token, pasetoPublicKey).Valid;
 
             // Assert
             Assert.IsTrue(verified);
@@ -227,9 +235,10 @@
         {
             // Arrange
             var paseto = new Version2();
+            var pasetoKey = new PasetoAsymmetricPublicKey((byte[])null, paseto);
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => paseto.Verify(null, (byte[])null));
+            Assert.Throws<ArgumentNullException>(() => paseto.Verify(null, pasetoKey));
         }
 
         [Test]
@@ -237,9 +246,11 @@
         {
             // Arrange
             var paseto = new Version2();
+            var pasetoKey = new PasetoAsymmetricPublicKey((byte[])null, paseto);
+
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => paseto.Verify(string.Empty, (byte[])null));
+            Assert.Throws<ArgumentNullException>(() => paseto.Verify(string.Empty, pasetoKey));
         }
 
         [Test]
@@ -247,9 +258,10 @@
         {
             // Arrange
             var paseto = new Version2();
+            var pasetoKey = new PasetoAsymmetricPublicKey((byte[])null, paseto);
 
             // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => paseto.Verify(TokenV2, (byte[])null));
+            Assert.Throws<ArgumentException>(() => paseto.Verify(TokenV2, pasetoKey));
         }
 
         [Test]
@@ -257,9 +269,10 @@
         {
             // Arrange
             var paseto = new Version2();
+            var pasetoKey = new PasetoAsymmetricPublicKey(new byte[0], paseto);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => paseto.Verify(TokenV2, new byte[0]));
+            Assert.Throws<ArgumentException>(() => paseto.Verify(TokenV2, pasetoKey));
         }
 
         [Test]
@@ -267,9 +280,10 @@
         {
             // Arrange
             var paseto = new Version2();
+            var pasetoKey = new PasetoAsymmetricPublicKey(new byte[16], paseto);
 
             // Act & Assert
-            Assert.Throws<ArgumentException>(() => paseto.Verify(TokenV2, new byte[16]));
+            Assert.Throws<ArgumentException>(() => paseto.Verify(TokenV2, pasetoKey));
         }
 
         [Test]
@@ -277,9 +291,10 @@
         {
             // Arrange
             var paseto = new Version2();
+            var pasetoKey = new PasetoAsymmetricPublicKey(new byte[32], paseto);
 
             // Act & Assert
-            Assert.Throws<NotSupportedException>(() => paseto.Verify("v1.public.", new byte[32]));
+            Assert.Throws<PasetoInvalidException>(() => paseto.Verify("v1.public.", pasetoKey));
         }
 
         [Test]
@@ -287,9 +302,10 @@
         {
             // Arrange
             var paseto = new Version2();
+            var pasetoKey = new PasetoAsymmetricPublicKey(new byte[32], paseto);
 
             // Act & Assert
-            Assert.Throws<NotSupportedException>(() => paseto.Verify("v2.remote.", new byte[32]));
+            Assert.Throws<PasetoInvalidException>(() => paseto.Verify("v2.remote.", pasetoKey));
         }
 
         [Test]
@@ -297,9 +313,10 @@
         {
             // Arrange
             var paseto = new Version2();
+            var pasetoKey = new PasetoAsymmetricPublicKey(new byte[32], paseto);
 
             // Act & Assert
-            Assert.Throws<NotSupportedException>(() => paseto.Verify("v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZX", new byte[32]));
+            Assert.Throws<PasetoInvalidException>(() => paseto.Verify("v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZX", pasetoKey));
         }
 
         #endregion
@@ -407,21 +424,6 @@
         }
         */
 
-        [Test]
-        public void Version2PublicTestVector()
-        {
-            // Arrange
-            foreach (var test in PasetoPublicTestVector.PasetoPublicTestVectors)
-            {
-                // Act
-                var paseto = new Version2();
-                var token = paseto.Sign(test.PrivateKey, test.Message, test.Footer);
-
-                // Assert
-                Assert.That(token, Is.EqualTo(test.Token));
-            }
-        }
-
         /*
         [Test]
         public void Version2EncryptTestVector()
@@ -499,8 +501,9 @@
         public void Version2SignTestVector()
         {
             // Arrange
-            var privateKey = CryptoBytes.FromHexString("b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a37741eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2");
             var paseto = new Version2();
+            var privateKey = CryptoBytes.FromHexString("b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a37741eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2");
+            var pasetoKey = new PasetoAsymmetricSecretKey(privateKey, paseto);
 
             // Test Vector S-1: Empty string, 32-character NUL byte key.
             //var token = paseto.Sign(privateKey, string.Empty, string.Empty);
@@ -511,163 +514,31 @@
             //Assert.That(token, Is.EqualTo("v2.public.Qf-w0RdU2SDGW_awMwbfC0Alf_nd3ibUdY3HigzU7tn_4MPMYIKAJk_J_yKYltxrGlxEdrWIqyfjW81njtRyDw.Q3VvbiBBbHBpbnVz"));
 
             // Test Vector S-3: Non-empty string, 32-character 0xFF byte key.
-            var token = paseto.Sign(privateKey, "Frank Denis rocks", string.Empty);
+            var token = paseto.Sign(pasetoKey, "Frank Denis rocks", string.Empty);
             Assert.That(token, Is.EqualTo("v2.public.RnJhbmsgRGVuaXMgcm9ja3NBeHgns4TLYAoyD1OPHww0qfxHdTdzkKcyaE4_fBF2WuY1JNRW_yI8qRhZmNTaO19zRhki6YWRaKKlCZNCNrQM"));
 
             // Test Vector S-4: Non-empty string, 32-character 0xFF byte key. (One character difference)
-            token = paseto.Sign(privateKey, "Frank Denis rockz", string.Empty);
+            token = paseto.Sign(pasetoKey, "Frank Denis rockz", string.Empty);
             Assert.That(token, Is.EqualTo("v2.public.RnJhbmsgRGVuaXMgcm9ja3qIOKf8zCok6-B5cmV3NmGJCD6y3J8fmbFY9KHau6-e9qUICrGlWX8zLo-EqzBFIT36WovQvbQZq4j6DcVfKCML"));
 
             // Test Vector S-5: Non-empty string, 32-character 0xFF byte key, non-empty footer.
-            token = paseto.Sign(privateKey, "Frank Denis rocks", "Cuon Alpinus");
+            token = paseto.Sign(pasetoKey, "Frank Denis rocks", "Cuon Alpinus");
             Assert.That(token, Is.EqualTo("v2.public.RnJhbmsgRGVuaXMgcm9ja3O7MPuu90WKNyvBUUhAGFmi4PiPOr2bN2ytUSU-QWlj8eNefki2MubssfN1b8figynnY0WusRPwIQ-o0HSZOS0F.Q3VvbiBBbHBpbnVz"));
 
             // Test Vector S-6
-            token = paseto.Sign(privateKey, "{\"data\":\"this is a signed message\",\"expires\":\"2019-01-01T00:00:00+00:00\"}", string.Empty);
+            token = paseto.Sign(pasetoKey, "{\"data\":\"this is a signed message\",\"expires\":\"2019-01-01T00:00:00+00:00\"}", string.Empty);
             Assert.That(token, Is.EqualTo("v2.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwaXJlcyI6IjIwMTktMDEtMDFUMDA6MDA6MDArMDA6MDAifSUGY_L1YtOvo1JeNVAWQkOBILGSjtkX_9-g2pVPad7_SAyejb6Q2TDOvfCOpWYH5DaFeLOwwpTnaTXeg8YbUwI"));
 
-            token = paseto.Sign(privateKey, "{\"data\":\"this is a signed message\",\"expires\":\"2019-01-01T00:00:00+00:00\"}", "Paragon Initiative Enterprises");
+            token = paseto.Sign(pasetoKey, "{\"data\":\"this is a signed message\",\"expires\":\"2019-01-01T00:00:00+00:00\"}", "Paragon Initiative Enterprises");
             Assert.That(token, Is.EqualTo("v2.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwaXJlcyI6IjIwMTktMDEtMDFUMDA6MDA6MDArMDA6MDAifcMYjoUaEYXAtzTDwlcOlxdcZWIZp8qZga3jFS8JwdEjEvurZhs6AmTU3bRW5pB9fOQwm43rzmibZXcAkQ4AzQs.UGFyYWdvbiBJbml0aWF0aXZlIEVudGVycHJpc2Vz"));
 
             // Test Vector 2E-6
-            token = paseto.Sign(privateKey, "{\"data\":\"this is a signed message\",\"exp\":\"2019-01-01T00:00:00+00:00\"}", "{\"kid\":\"zVhMiPBP9fRf2snEcT7gFTioeA9COcNy9DfgL1W60haN\"}");
+            token = paseto.Sign(pasetoKey, "{\"data\":\"this is a signed message\",\"exp\":\"2019-01-01T00:00:00+00:00\"}", "{\"kid\":\"zVhMiPBP9fRf2snEcT7gFTioeA9COcNy9DfgL1W60haN\"}");
             Assert.That(token, Is.EqualTo("v2.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwIjoiMjAxOS0wMS0wMVQwMDowMDowMCswMDowMCJ9flsZsx_gYCR0N_Ec2QxJFFpvQAs7h9HtKwbVK2n1MJ3Rz-hwe8KUqjnd8FAnIJZ601tp7lGkguU63oGbomhoBw.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9"));
         }
 
         #endregion
 
-        [Test]
-        public void Version2TestVectors()
-        {
-            var json = GetPasetoTestVector("v2");
 
-            var vector = JsonConvert.DeserializeObject<PasetoTestVectors>(json);
-
-            foreach (var test in vector.Tests)
-            {
-                /*
-                 * Encode
-                 */
-                var builder = new PasetoBuilder();
-
-                // expect-fail is only for decoding tests
-                if (!test.ExpectFail)
-                {
-                    if (test.IsLocal)
-                    {
-                        builder = builder.Use(ProtocolVersion.V2, Purpose.Local)
-                                         .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey)
-                                         .WithNonce(CryptoBytes.FromHexString(test.Nonce));
-                    }
-                    else
-                    {
-                        var secretKey = CryptoBytes.ToHexStringLower(Ed25519.ExpandedPrivateKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
-                        Assert.That(secretKey, Is.EqualTo(test.SecretKey));
-
-                        var publicKey = CryptoBytes.ToHexStringLower(Ed25519.PublicKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
-                        Assert.That(publicKey, Is.EqualTo(test.PublicKey));
-
-                        // Use Public & Secret Keys
-                        builder = builder.Use(ProtocolVersion.V2, Purpose.Public)
-                                         .WithKey(CryptoBytes.FromHexString(test.SecretKey), Encryption.AsymmetricSecretKey);
-                    }
-
-                    if (!string.IsNullOrEmpty(test.Payload))
-                    {
-                        var testPayload = JsonConvert.DeserializeObject<PasetoPayloadTestVector>(test.Payload, new JsonSerializerSettings
-                        {
-                            DateTimeZoneHandling = DateTimeZoneHandling.Utc
-                        });
-
-                        builder.AddClaim("data", testPayload.Data);
-                        builder.AddClaim("exp", testPayload.ExpString);
-                        //builder.AddClaim(RegisteredClaims.ExpirationTime, payload.Exp);
-                    }
-
-                    if (!string.IsNullOrEmpty(test.Footer))
-                        builder.AddFooter(test.Footer);
-
-                    var token = builder.Encode();
-
-                    // 2-E-1
-                    // Expected
-                    // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ
-                    // NaCl
-                    // v2.local.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsm4Ts6wA4yoeuodTyTrK_gjl1bDexnpI8IAIJAqdDelBIifDmJT9QUYX0NctSsZGBKqh5wHHyvhCMWoY99CNCkWAEHLnHkPSVZPA-oJQPlinqKUHrA
-                    // v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248xqXFWNxuWGBIaU0yo_xm2htHeZho7vO_Xog1c6VPPrOvsEYZCdUqBIjUZegA6CJbtTwd-_VbOU33Ow02Z5pPl1wql7K75d7SeAEwAcGzapF8XMJR-Q // using nonce as nKey with original Blake2B class
-                    // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ // using NSec and nonce as nKey
-                    // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ // Using Blake2bMac https://github.com/kmaragon/Konscious.Security.Cryptography
-                    // NSec
-                    // v2.local.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsm4Ts6wA4yoeuodTyTrK_gjl1bDexnpI8IAIJAqdDelBIifDmJT9QUYX0NctSsZGBKqh5wHHyvhCMWoY99CNCkWAEHLnHkPSVZPA-oJQPlinqKUHrA
-
-                    Assert.That(token, Is.EqualTo(test.Token));
-                }
-
-                /*
-                 * Decode
-                 */
-                builder = new PasetoBuilder();
-
-                if (test.ExpectFail)
-                {
-                    // Tests may have mixed combination of purpose (based on the token) and keys. E.g. Local with Asymmetric keys or Public with Symmetric Keys
-
-                    if (!string.IsNullOrEmpty(test.Key))
-                    {
-                        // Using Symmetric Key
-                        builder = builder.Use(ProtocolVersion.V2, Purpose.Local)
-                                         .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey);
-                    }
-                    else
-                    {
-                        // Using Asymmetric Key
-                        builder = builder.Use(ProtocolVersion.V2, Purpose.Public)
-                                         .WithKey(CryptoBytes.FromHexString(test.PublicKey), Encryption.AsymmetricPublicKey);
-                    }
-                }
-                else
-                {
-                    if (test.IsLocal)
-                    {
-                        builder = builder.Use(ProtocolVersion.V2, Purpose.Local)
-                                         .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey);
-                    }
-                    else
-                    {
-                        builder = builder.Use(ProtocolVersion.V2, Purpose.Public)
-                                         .WithKey(CryptoBytes.FromHexString(test.PublicKey), Encryption.AsymmetricPublicKey);
-                    }
-                }
-
-                try
-                {
-                    var payload = builder.Decode(test.Token);
-
-                    Assert.That(payload, Is.EqualTo(test.Payload));
-                }
-                catch (PasetoVerificationException pve)
-                {
-
-                }
-                catch (Exception ex)
-                {
-
-                    throw;
-                }
-            }
-        }
-
-        private string GetPasetoTestVector(string version)
-        {
-            try
-            {
-                using var client = new HttpClient();
-                return client.GetStringAsync($"https://github.com/paseto-standard/test-vectors/raw/master/{version}.json").Result;
-            }
-            catch (Exception)
-            {
-                return File.ReadAllText($@"Vectors\{version}.json");
-            }
-        }
     }
 }

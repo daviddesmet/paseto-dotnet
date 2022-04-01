@@ -1,0 +1,364 @@
+﻿namespace Paseto.Tests;
+
+using System;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text.RegularExpressions;
+
+using FluentAssertions;
+using NaCl.Core.Internal;
+using Newtonsoft.Json;
+using Xunit;
+using Xunit.Abstractions;
+using Xunit.Categories;
+
+using Paseto.Builder;
+using Paseto.Cryptography;
+using Paseto.Extensions;
+using Paseto.Tests.Vectors;
+using static Paseto.Utils.EncodingHelper;
+
+[Category("CI")]
+public class PasetoTestVectors
+{
+    private readonly Regex RsaPrivateKeyRegex = new(@"-----(BEGIN|END) (RSA|OPENSSH|ENCRYPTED) PRIVATE KEY-----[\W]*", RegexOptions.Compiled);
+    private readonly Regex RsaPublicKeyRegex = new(@"-----(BEGIN|END) PUBLIC KEY-----[\W]*", RegexOptions.Compiled);
+    private readonly ITestOutputHelper _output;
+
+    public PasetoTestVectors(ITestOutputHelper output) => _output = output;
+
+    [Theory]
+    [InlineData("v1")]
+    [InlineData("v2")]
+    public void VersionTestVectors(string version)
+    {
+        var json = GetPasetoTestVector(version);
+
+        var vector = JsonConvert.DeserializeObject<PasetoTestCollection>(json);
+
+        var errors = 0;
+        foreach (var test in vector.Tests)
+        {
+            /*
+             * Encode
+             */
+            var builder = new PasetoBuilder();
+
+            // expect-fail is only for decoding tests
+            if (!test.ExpectFail)
+            {
+                if (test.IsLocal)
+                {
+                    builder = builder.Use(version, Purpose.Local)
+                                     .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey)
+                                     .WithNonce(CryptoBytes.FromHexString(test.Nonce));
+                }
+                else
+                {
+                    if (version == "v2")
+                    {
+                        // We assert the seed since we want them to fail in case it changes
+                        var secretKey = CryptoBytes.ToHexStringLower(Ed25519.ExpandedPrivateKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
+                        secretKey.Should().Be(test.SecretKey);
+
+                        var publicKey = CryptoBytes.ToHexStringLower(Ed25519.PublicKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
+                        publicKey.Should().Be(test.PublicKey);
+                    }
+
+                    // Use Public & Secret Keys
+                    builder = builder.Use(version, Purpose.Public)
+                                     .WithKey(ReadKey(test.SecretKey), Encryption.AsymmetricSecretKey);
+                }
+
+                if (!string.IsNullOrEmpty(test.Payload))
+                {
+                    var testPayload = JsonConvert.DeserializeObject<PasetoTestPayload>(test.Payload, new JsonSerializerSettings
+                    {
+                        DateTimeZoneHandling = DateTimeZoneHandling.Utc
+                    });
+
+                    builder.AddClaim("data", testPayload.Data);
+                    builder.AddClaim("exp", testPayload.ExpString);
+                    //builder.AddClaim(RegisteredClaims.ExpirationTime, payload.Exp);
+                }
+
+                if (!string.IsNullOrEmpty(test.Footer))
+                    builder.AddFooter(test.Footer);
+
+                try
+                {
+                    var token = builder.Encode();
+
+                    token.Should().Be(test.Token);
+                }
+                catch (PasetoNotSupportedException)
+                {
+                    // This could be expected
+                    _output.WriteLine($"ENCODE FAIL {test.Name}: since the protocol version is not supported: {builder.DecodeHeader(test.Token)}");
+                }
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"ENCODE FAIL {test.Name}: {ex.Message}");
+                }
+
+                // 2-E-1
+                // Expected
+                // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ
+                // NaCl
+                // v2.local.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsm4Ts6wA4yoeuodTyTrK_gjl1bDexnpI8IAIJAqdDelBIifDmJT9QUYX0NctSsZGBKqh5wHHyvhCMWoY99CNCkWAEHLnHkPSVZPA-oJQPlinqKUHrA
+                // v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248xqXFWNxuWGBIaU0yo_xm2htHeZho7vO_Xog1c6VPPrOvsEYZCdUqBIjUZegA6CJbtTwd-_VbOU33Ow02Z5pPl1wql7K75d7SeAEwAcGzapF8XMJR-Q // using nonce as nKey with original Blake2B class
+                // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ // using NSec and nonce as nKey
+                // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ // Using Blake2bMac https://github.com/kmaragon/Konscious.Security.Cryptography
+                // NSec
+                // v2.local.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsm4Ts6wA4yoeuodTyTrK_gjl1bDexnpI8IAIJAqdDelBIifDmJT9QUYX0NctSsZGBKqh5wHHyvhCMWoY99CNCkWAEHLnHkPSVZPA-oJQPlinqKUHrA
+            }
+
+            /*
+             * Decode
+             */
+            builder = new PasetoBuilder();
+
+            if (test.ExpectFail)
+            {
+                // Tests may have mixed combination of purpose (based on the token) and keys. E.g. Local with Asymmetric keys or Public with Symmetric Keys
+
+                if (!string.IsNullOrEmpty(test.Key))
+                {
+                    // Using Symmetric Key
+                    builder = builder.Use(version, Purpose.Local)
+                                     .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey);
+                }
+                else
+                {
+                    // Using Asymmetric Key
+                    builder = builder.Use(version, Purpose.Public)
+                                     .WithKey(ReadKey(test.PublicKey), Encryption.AsymmetricPublicKey);
+                }
+            }
+            else
+            {
+                if (test.IsLocal)
+                {
+                    builder = builder.Use(version, Purpose.Local)
+                                     .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey);
+                }
+                else
+                {
+                    builder = builder.Use(version, Purpose.Public)
+                                     .WithKey(ReadKey(test.PublicKey), Encryption.AsymmetricPublicKey);
+                }
+            }
+
+            try
+            {
+                var payload = builder.Decode(test.Token);
+
+                payload.Should().Be(test.Payload);
+            }
+            catch (PasetoNotSupportedException)
+            {
+                // This could be expected
+                _output.WriteLine($"DECODE FAIL {test.Name}: since the protocol version is not supported: {builder.DecodeHeader(test.Token)}");
+            }
+            //catch (PasetoInvalidException)
+            //{
+            //    errors++;
+            //    test.ExpectFail.Should().BeTrue();
+            //}
+            //catch (PasetoVerificationException)
+            //{
+            //    errors++;
+            //    test.ExpectFail.Should().BeTrue();
+            //}
+            catch (Exception ex)
+            {
+                if (test.ExpectFail)
+                {
+                    _output.WriteLine($"DECODE FAIL {test.Name}: which was expected, with an exception of: {ex.GetType().Name}");
+                    errors++;
+                }
+                else
+                {
+                    _output.WriteLine($"DECODE FAIL {test.Name}: {ex.Message}");
+                }
+            }
+        }
+
+        errors.Should().Be(vector.Tests.Where(t => t.ExpectFail).Count());
+    }
+
+    [Fact]
+    public void Version2TestVectors()
+    {
+        var json = GetPasetoTestVector("v2");
+
+        var vector = JsonConvert.DeserializeObject<PasetoTestCollection>(json);
+
+        foreach (var test in vector.Tests)
+        {
+            /*
+             * Encode
+             */
+            var builder = new PasetoBuilder();
+
+            // expect-fail is only for decoding tests
+            if (!test.ExpectFail)
+            {
+                if (test.IsLocal)
+                {
+                    builder = builder.Use(ProtocolVersion.V2, Purpose.Local)
+                                     .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey)
+                                     .WithNonce(CryptoBytes.FromHexString(test.Nonce));
+                }
+                else
+                {
+                    // We assert the seed since we want them to fail in case it changes
+                    var secretKey = CryptoBytes.ToHexStringLower(Ed25519.ExpandedPrivateKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
+                    secretKey.Should().Be(test.SecretKey);
+
+                    var publicKey = CryptoBytes.ToHexStringLower(Ed25519.PublicKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
+                    publicKey.Should().Be(test.PublicKey);
+
+                    // Use Public & Secret Keys
+                    builder = builder.Use(ProtocolVersion.V2, Purpose.Public)
+                                     .WithKey(CryptoBytes.FromHexString(test.SecretKey), Encryption.AsymmetricSecretKey);
+                }
+
+                if (!string.IsNullOrEmpty(test.Payload))
+                {
+                    var testPayload = JsonConvert.DeserializeObject<PasetoTestPayload>(test.Payload, new JsonSerializerSettings
+                    {
+                        DateTimeZoneHandling = DateTimeZoneHandling.Utc
+                    });
+
+                    builder.AddClaim("data", testPayload.Data);
+                    builder.AddClaim("exp", testPayload.ExpString);
+                    //builder.AddClaim(RegisteredClaims.ExpirationTime, payload.Exp);
+                }
+
+                if (!string.IsNullOrEmpty(test.Footer))
+                    builder.AddFooter(test.Footer);
+
+                var token = builder.Encode();
+
+                // 2-E-1
+                // Expected
+                // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ
+                // NaCl
+                // v2.local.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsm4Ts6wA4yoeuodTyTrK_gjl1bDexnpI8IAIJAqdDelBIifDmJT9QUYX0NctSsZGBKqh5wHHyvhCMWoY99CNCkWAEHLnHkPSVZPA-oJQPlinqKUHrA
+                // v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248xqXFWNxuWGBIaU0yo_xm2htHeZho7vO_Xog1c6VPPrOvsEYZCdUqBIjUZegA6CJbtTwd-_VbOU33Ow02Z5pPl1wql7K75d7SeAEwAcGzapF8XMJR-Q // using nonce as nKey with original Blake2B class
+                // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ // using NSec and nonce as nKey
+                // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ // Using Blake2bMac https://github.com/kmaragon/Konscious.Security.Cryptography
+                // NSec
+                // v2.local.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsm4Ts6wA4yoeuodTyTrK_gjl1bDexnpI8IAIJAqdDelBIifDmJT9QUYX0NctSsZGBKqh5wHHyvhCMWoY99CNCkWAEHLnHkPSVZPA-oJQPlinqKUHrA
+
+                token.Should().Be(test.Token);
+            }
+
+            /*
+             * Decode
+             */
+            builder = new PasetoBuilder();
+
+            if (test.ExpectFail)
+            {
+                // Tests may have mixed combination of purpose (based on the token) and keys. E.g. Local with Asymmetric keys or Public with Symmetric Keys
+
+                if (!string.IsNullOrEmpty(test.Key))
+                {
+                    // Using Symmetric Key
+                    builder = builder.Use(ProtocolVersion.V2, Purpose.Local)
+                                     .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey);
+                }
+                else
+                {
+                    // Using Asymmetric Key
+                    builder = builder.Use(ProtocolVersion.V2, Purpose.Public)
+                                     .WithKey(CryptoBytes.FromHexString(test.PublicKey), Encryption.AsymmetricPublicKey);
+                }
+            }
+            else
+            {
+                if (test.IsLocal)
+                {
+                    builder = builder.Use(ProtocolVersion.V2, Purpose.Local)
+                                     .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey);
+                }
+                else
+                {
+                    builder = builder.Use(ProtocolVersion.V2, Purpose.Public)
+                                     .WithKey(CryptoBytes.FromHexString(test.PublicKey), Encryption.AsymmetricPublicKey);
+                }
+            }
+
+            try
+            {
+                var payload = builder.Decode(test.Token);
+
+                payload.Should().Be(test.Payload);
+            }
+            catch (PasetoInvalidException)
+            {
+                test.ExpectFail.Should().BeTrue();
+            }
+            catch (PasetoVerificationException)
+            {
+                test.ExpectFail.Should().BeTrue();
+            }
+            catch (Exception)
+            {
+                test.ExpectFail.Should().BeFalse();
+            }
+        }
+    }
+
+    private string GetPasetoTestVector(string version)
+    {
+        try
+        {
+            using var client = new HttpClient();
+            return client.GetStringAsync($"https://github.com/paseto-standard/test-vectors/raw/master/{version}.json").Result;
+        }
+        catch (Exception)
+        {
+            return File.ReadAllText($@"Vectors\{version}.json");
+        }
+    }
+
+    private byte[] ReadKey(string key)
+    {
+        if (RsaPrivateKeyRegex.IsMatch(key))
+        {
+            var rsaSecretKey = RSA.Create();
+#if NET5_0_OR_GREATER
+            rsaSecretKey.ImportFromPem(key);
+#elif NETCOREAPP3_1
+            var privateKeyBase64 = RsaPrivateKeyRegex.Replace(key, "");
+            var privateKey = Convert.FromBase64String(privateKeyBase64);
+            rsaSecretKey.ImportRSAPrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
+#endif
+
+            var sk = rsaSecretKey.ToCompatibleXmlString(true);
+            return GetBytes(sk);
+        }
+
+        if (RsaPublicKeyRegex.IsMatch(key))
+        {
+            var rsaPublicKey = RSA.Create();
+#if NET5_0_OR_GREATER
+            rsaPublicKey.ImportFromPem(key);
+#elif NETCOREAPP3_1
+            var publicKeyBase64 = RsaPublicKeyRegex.Replace(key, "");
+            var publicKey = Convert.FromBase64String(publicKeyBase64);
+            rsaPublicKey.ImportRSAPublicKey(new ReadOnlySpan<byte>(publicKey), out _);
+#endif
+
+            var pk = rsaPublicKey.ToCompatibleXmlString(false);
+            return GetBytes(pk);
+        }
+
+        return CryptoBytes.FromHexString(key);
+    }
+}

@@ -97,10 +97,7 @@ var payload = decoder.Decode(token);
 - [ ] Add support for version detection when decoding
 - [ ] Add payload [validation rules](https://github.com/paragonie/paseto/blob/master/docs/03-Implementation-Guide/02-Validators.md#validators)
   - There's already an [initial implementation](https://github.com/daviddesmet/paseto-dotnet/commit/0f25cb5f7d937ebf2396d15572c16ac16690f68b) and [tests](https://github.com/idaviddesmet/paseto-dotnet/blob/9adb1a575afdc8722e1772109d0885413ff22cf8/src/Paseto.Tests/PasetoTests.cs#L554)
-- [ ] Improve protocol versioning
 - [ ] Add more documentation on the usage
-- [ ] Extend the fluent builder API
-- [ ] Add more tests
 
 ## Cryptography
 
