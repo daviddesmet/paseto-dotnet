@@ -5,26 +5,18 @@
     using System.Linq;
     using System.Numerics;
 
-    using NUnit.Framework;
+    using FluentAssertions;
+    using Xunit;
 
-    using Cryptography;
+    using Paseto.Cryptography;
 
-    [TestFixture]
-    public class Ed25519Tests
+    public class Ed25519Tests : IClassFixture<Ed25519TestFixture>
     {
-        [SetUp]
-        public static void LoadTestVectors()
-        {
-            Ed25519TestVectors.LoadTestCases();
+        private readonly Ed25519TestFixture _testFixture;
 
-            //Warmup
-            var pk = Ed25519.PublicKeyFromSeed(new byte[32]);
-            var sk = Ed25519.ExpandedPrivateKeyFromSeed(new byte[32]);
-            var sig = Ed25519.Sign(Ed25519TestVectors.TestCases.Last().Message, sk);
-            Ed25519.Verify(sig, new byte[10], pk);
-        }
+        public Ed25519Tests(Ed25519TestFixture testFixture) => _testFixture = testFixture;
 
-        [Test]
+        [Fact]
         public void KeyPairFromSeed()
         {
             foreach (var testCase in Ed25519TestVectors.TestCases)
@@ -36,7 +28,7 @@
         }
 
 
-        [Test]
+        [Fact]
         public void KeyPairFromSeedSegments()
         {
             foreach (var testCase in Ed25519TestVectors.TestCases)
@@ -49,41 +41,41 @@
             }
         }
 
-        [Test]
+        [Fact]
         public void Sign()
         {
             foreach (var testCase in Ed25519TestVectors.TestCases)
             {
                 var sig = Ed25519.Sign(testCase.Message, testCase.PrivateKey);
-                Assert.AreEqual(64, sig.Length);
+                sig.Length.Should().Be(64);
                 TestHelpers.AssertEqualBytes(testCase.Signature, sig);
             }
         }
 
-        [Test]
+        [Fact]
         public void Verify()
         {
             foreach (var testCase in Ed25519TestVectors.TestCases)
             {
                 var success = Ed25519.Verify(testCase.Signature, testCase.Message, testCase.PublicKey);
-                Assert.IsTrue(success);
+                success.Should().BeTrue();
             }
         }
 
-        [Test]
+        [Fact]
         public void VerifyFail()
         {
             var message = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
             Ed25519.KeyPairFromSeed(out var pk, out var sk, new byte[32]);
             var signature = Ed25519.Sign(message, sk);
-            Assert.IsTrue(Ed25519.Verify(signature, message, pk));
+            Ed25519.Verify(signature, message, pk).Should().BeTrue();
             foreach (var modifiedMessage in message.WithChangedBit())
             {
-                Assert.IsFalse(Ed25519.Verify(signature, modifiedMessage, pk));
+                Ed25519.Verify(signature, modifiedMessage, pk).Should().BeFalse();
             }
             foreach (var modifiedSignature in signature.WithChangedBit())
             {
-                Assert.IsFalse(Ed25519.Verify(modifiedSignature, message, pk));
+                Ed25519.Verify(modifiedSignature, message, pk).Should().BeFalse();
             }
         }
 
@@ -97,10 +89,7 @@
             return result;
         }
 
-        private byte[] AddLToSignature(byte[] signature)
-        {
-            return signature.Take(32).Concat(AddL(signature.Skip(32))).ToArray();
-        }
+        private byte[] AddLToSignature(byte[] signature) => signature.Take(32).Concat(AddL(signature.Skip(32))).ToArray();
 
         // Ed25519 is malleable in the `S` part of the signature
         // One can add (a multiple of) the order of the subgroup `l` to `S` without invalidating the signature
@@ -110,43 +99,43 @@
         // This test serves to document the *is* behaviour, and doesn't define *should* behaviour
         //
         // I consider rejecting signatures with S >= l, but should probably talk to upstream and libsodium before that
-        [Test]
+        [Fact]
         public void MalleabilityAddL()
         {
             var message = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
             Ed25519.KeyPairFromSeed(out var pk, out var sk, new byte[32]);
             var signature = Ed25519.Sign(message, sk);
-            Assert.IsTrue(Ed25519.Verify(signature, message, pk));
+            Ed25519.Verify(signature, message, pk).Should().BeTrue();
             var modifiedSignature = AddLToSignature(signature);
-            Assert.IsTrue(Ed25519.Verify(modifiedSignature, message, pk));
+            Ed25519.Verify(modifiedSignature, message, pk).Should().BeTrue();
             var modifiedSignature2 = AddLToSignature(modifiedSignature);
-            Assert.IsFalse(Ed25519.Verify(modifiedSignature2, message, pk));
+            Ed25519.Verify(modifiedSignature2, message, pk).Should().BeFalse();
         }
 
-        [Test]
+        [Fact]
         public void VerifySegments()
         {
             foreach (var testCase in Ed25519TestVectors.TestCases)
             {
                 var success = Ed25519.Verify(testCase.Signature.Pad(), testCase.Message.Pad(), testCase.PublicKey.Pad());
-                Assert.IsTrue(success);
+                success.Should().BeTrue();
             }
         }
 
-        [Test]
+        [Fact]
         public void VerifyFailSegments()
         {
             var message = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
             Ed25519.KeyPairFromSeed(out var pk, out var sk, new byte[32]);
             var signature = Ed25519.Sign(message, sk);
-            Assert.IsTrue(Ed25519.Verify(signature.Pad(), message.Pad(), pk.Pad()));
+            Ed25519.Verify(signature.Pad(), message.Pad(), pk.Pad()).Should().BeTrue();
             foreach (var modifiedMessage in message.WithChangedBit())
             {
-                Assert.IsFalse(Ed25519.Verify(signature.Pad(), modifiedMessage.Pad(), pk.Pad()));
+                Ed25519.Verify(signature.Pad(), modifiedMessage.Pad(), pk.Pad()).Should().BeFalse();
             }
             foreach (var modifiedSignature in signature.WithChangedBit())
             {
-                Assert.IsFalse(Ed25519.Verify(modifiedSignature.Pad(), message.Pad(), pk.Pad()));
+                Ed25519.Verify(modifiedSignature.Pad(), message.Pad(), pk.Pad()).Should().BeFalse();
             }
         }
     }

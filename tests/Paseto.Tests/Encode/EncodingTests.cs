@@ -3,15 +3,14 @@
     using System.Collections.Generic;
     using System.Text;
 
-    using NUnit.Framework;
+    using FluentAssertions;
+    using Xunit;
 
-    using Utils;
-    using static Utils.EncodingHelper;
+    using static Paseto.Utils.EncodingHelper;
 
-    [TestFixture]
     public class EncodingTests
     {
-        [Test]
+        [Fact]
         public void PreAuthWithEmptyArrayTest()
         {
             // Arrange
@@ -24,10 +23,10 @@
 
             // Assert
             //Assert.AreEqual(expected, pae1);
-            Assert.AreEqual(expected, pae2);
+            pae2.Should().BeEquivalentTo(Encoding.ASCII.GetBytes(expected));
         }
 
-        [Test]
+        [Fact]
         public void PreAuthWithEmptyStringTest()
         {
             // Arrange
@@ -40,10 +39,10 @@
 
             // Assert
             //Assert.AreEqual(expected, pae1);
-            Assert.AreEqual(expected, pae2);
+            pae2.Should().BeEquivalentTo(Encoding.ASCII.GetBytes(expected));
         }
 
-        [Test]
+        [Fact]
         public void PreAuthWithStringTest()
         {
             // Arrange
@@ -56,7 +55,7 @@
 
             // Assert
             //Assert.AreEqual(expected, pae1);
-            Assert.AreEqual(expected, pae2);
+            pae2.Should().BeEquivalentTo(Encoding.ASCII.GetBytes(expected));
         }
     }
 }

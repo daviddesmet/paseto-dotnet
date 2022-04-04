@@ -78,7 +78,7 @@
             h4 += (t3 >> 8) | (1 << 24);
 
 
-            poly1305_donna_mul:
+        poly1305_donna_mul:
             tt0 = (ulong)h0 * r0 + (ulong)h1 * s4 + (ulong)h2 * s3 + (ulong)h3 * s2 + (ulong)h4 * s1;
             tt1 = (ulong)h0 * r1 + (ulong)h1 * r0 + (ulong)h2 * s4 + (ulong)h3 * s3 + (ulong)h4 * s2;
             tt2 = (ulong)h0 * r2 + (ulong)h1 * r1 + (ulong)h2 * r0 + (ulong)h3 * s4 + (ulong)h4 * s3;
@@ -116,7 +116,7 @@
             t1 = ByteIntegerConverter.LoadLittleEndian32(mp, 4);
             t2 = ByteIntegerConverter.LoadLittleEndian32(mp, 8);
             t3 = ByteIntegerConverter.LoadLittleEndian32(mp, 12);
-            CryptoBytes.Wipe(mp);
+            NaCl.Core.Internal.CryptoBytes.Wipe(mp);
 
             h0 += t0 & 0x3ffffff;
             h1 += (uint)(((((ulong)t1 << 32) | t0) >> 26) & 0x3ffffff);
@@ -126,7 +126,7 @@
 
             goto poly1305_donna_mul;
 
-            poly1305_donna_finish:
+        poly1305_donna_finish:
             b = h0 >> 26; h0 = h0 & 0x3ffffff;
             h1 += b; b = h1 >> 26; h1 = h1 & 0x3ffffff;
             h2 += b; b = h2 >> 26; h2 = h2 & 0x3ffffff;

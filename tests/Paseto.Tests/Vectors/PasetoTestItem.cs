@@ -1,9 +1,13 @@
 ﻿namespace Paseto.Tests.Vectors;
 
+using System.Diagnostics;
 using Newtonsoft.Json;
 
+[DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
 public class PasetoTestItem
 {
+    private string DebuggerDisplay => Name ?? $"{{{typeof(PasetoTestItem)}}}";
+
     public string Name { get; set; }
 
     [JsonProperty("expect-fail")]

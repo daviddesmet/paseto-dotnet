@@ -8,7 +8,7 @@ using System.Text;
 /// <summary>
 /// The Encoding Helper.
 /// </summary>
-public static class EncodingHelper
+internal static class EncodingHelper
 {
     #region Authentication Padding
 

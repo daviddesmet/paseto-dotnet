@@ -17,11 +17,10 @@ public interface IPasetoProtocolVersion
     /// Encrypt a message using a shared secret key.
     /// </summary>
     /// <param name="pasetoKey">The symmetric key.</param>
-    /// <param name="nonce">The nonce.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
     /// <returns>System.String.</returns>
-    string Encrypt(PasetoSymmetricKey pasetoKey, byte[] nonce, string payload, string footer = "");
+    string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "");
 
     /// <summary>
     /// Decrypts the specified token using a shared key.

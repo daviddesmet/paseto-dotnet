@@ -1,7 +1,7 @@
 ﻿namespace Paseto.Cryptography;
 
 using System;
-using Paseto.Cryptography.Internal;
+using NaCl.Core.Internal;
 using Paseto.Cryptography.Internal.Ed25519Ref10;
 
 public static class Ed25519

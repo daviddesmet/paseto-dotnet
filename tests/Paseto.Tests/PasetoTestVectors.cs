@@ -32,6 +32,7 @@ public class PasetoTestVectors
     [Theory]
     [InlineData("v1")]
     [InlineData("v2")]
+    [InlineData("v3")]
     public void VersionTestVectors(string version)
     {
         var json = GetPasetoTestVector(version);
@@ -102,6 +103,10 @@ public class PasetoTestVectors
                 {
                     _output.WriteLine($"ENCODE FAIL {test.Name}: {ex.Message}");
                 }
+
+                // 1-S-1
+                // v1.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwIjoiMjAxOS0wMS0wMVQwMDowMDowMCswMDowMCJ9ITaOgxZh43XkefPOcWykJaYdvpNyo3e7N4ZCx9bzz_iycyiZISO3M_bh6ifGWSC5-Es7b0rF9gMiEMzfO-bVojgvtC8YUB-Zrw9MTCYl2MKi2FSCMnbpx5UIaOSt5SzFRI2ofvDO9dNbBB9NInCNtnb8TtjTIi9s6o5QipTiZwsdcK7wl_u8MM4p42WSL-QY_yBnmbm5x5ayN29OA30ZnrP-9oN2xXD1G5F39Uf-QeMBtuhT4VIV4FhbSK-54V-z48iLf94N6SQ_OlbtyC0Yvld9HJGBnH-wmF-CGPc1bdgSGshGjwXxqvbaMed2wrY0B44fbEWA8l03sZyh9legvQ
+                // v1.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwIjoiMjAxOS0wMS0wMVQwMDowMDowMCswMDowMCJ9cIZKahKeGM5kiAS_4D70Qbz9FIThZpxetJ6n6E6kXP_119SvQcnfCSfY_gG3D0Q2v7FEtm2Cmj04lE6YdgiZ0RwA41WuOjXq7zSnmmHK9xOSH6_2yVgt207h1_LphJzVztmZzq05xxhZsV3nFPm2cCu8oPceWy-DBKjALuMZt_Xj6hWFFie96SfQ6i85lOsTX8Kc6SQaG-3CgThrJJ6W9DC-YfQ3lZ4TJUoY3QNYdtEgAvp1QuWWK6xmIb8BwvkBPej5t88QUb7NcvZ15VyNw3qemQGn2ITSdpdDgwMtpflZOeYdtuxQr1DSGO2aQyZl7s0WYn1IjdQFx6VjSQ4yfw
 
                 // 2-E-1
                 // Expected
@@ -189,6 +194,7 @@ public class PasetoTestVectors
         errors.Should().Be(vector.Tests.Where(t => t.ExpectFail).Count());
     }
 
+    // TODO: Remove this method
     [Fact]
     public void Version2TestVectors()
     {

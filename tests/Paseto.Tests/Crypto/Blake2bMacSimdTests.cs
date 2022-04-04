@@ -1,11 +1,10 @@
 ﻿namespace Paseto.Tests.Crypto
 {
     using System;
-    using System.Collections.Generic;
-    using System.Text;
-    using Paseto.Cryptography;
+    using FluentAssertions;
     using Xunit;
     using Xunit.Abstractions;
+    using Paseto.Cryptography;
 
     /// <summary>
     /// Tests that assert that the non-HW-accelerated version works
@@ -14,70 +13,37 @@
     {
         private ITestOutputHelper _output;
 
-        public Blake2bMacSimdTests(ITestOutputHelper helper)
-        {
-            _output = helper;
-        }
+        public Blake2bMacSimdTests(ITestOutputHelper helper) => _output = helper;
 
         [Fact]
-        public void CorrectlyComputesShortHash512()
-        {
-            AssertMatch(_output, 0x5069230, 9, 512, 512);
-        }
+        public void CorrectlyComputesShortHash512() => AssertMatch(_output, 0x5069230, 9, 512, 512);
 
         [Fact]
-        public void CorrectlyComputesShortHash128()
-        {
-            AssertMatch(_output, 0x102193, 3, 128, 128);
-        }
+        public void CorrectlyComputesShortHash128() => AssertMatch(_output, 0x102193, 3, 128, 128);
 
         [Fact]
-        public void CorrectlyComputesHash256With512BitKey()
-        {
-            AssertMatch(_output, 0x80f39c2, 157, 256, 512);
-        }
+        public void CorrectlyComputesHash256With512BitKey() => AssertMatch(_output, 0x80f39c2, 157, 256, 512);
 
         [Fact]
-        public void CorrectlyComputesHash256With128BitKey()
-        {
-            AssertMatch(_output, 0x12c7361f, 195, 256, 128);
-        }
+        public void CorrectlyComputesHash256With128BitKey() => AssertMatch(_output, 0x12c7361f, 195, 256, 128);
 
         [Fact]
-        public void CorrectlyComputesExactBoundaryHash512()
-        {
-            AssertMatch(_output, 0x5fc00893, 64, 512, 512);
-        }
+        public void CorrectlyComputesExactBoundaryHash512() => AssertMatch(_output, 0x5fc00893, 64, 512, 512);
 
         [Fact]
-        public void CorrectlyComputesLongNonBoundary512()
-        {
-            AssertMatch(_output, 0x750a6700, 176, 512, 512);
-        }
+        public void CorrectlyComputesLongNonBoundary512() => AssertMatch(_output, 0x750a6700, 176, 512, 512);
 
         [Fact]
-        public void CorrectlyComputesLongBoundaryAligned512()
-        {
-            AssertMatch(_output, 0x240f5a03, 640, 512, 512);
-        }
+        public void CorrectlyComputesLongBoundaryAligned512() => AssertMatch(_output, 0x240f5a03, 640, 512, 512);
 
         [Fact]
-        public void CorrectlyComputesLongBoundary512WithNonBoundaryKey()
-        {
-            AssertMatch(_output, 0x3f078897, 640, 512, 232);
-        }
+        public void CorrectlyComputesLongBoundary512WithNonBoundaryKey() => AssertMatch(_output, 0x3f078897, 640, 512, 232);
 
         [Fact]
-        public void CorrectlyComputesLongNonBoundary512WithNonBoundaryKey()
-        {
-            AssertMatch(_output, 0xa089e023, 521, 512, 368);
-        }
+        public void CorrectlyComputesLongNonBoundary512WithNonBoundaryKey() => AssertMatch(_output, 0xa089e023, 521, 512, 368);
 
         [Fact]
-        public void CorrectlyComputesLargeAligned128()
-        {
-            AssertMatch(_output, 0x1947850, 1024 * 1024 * 10, 128, 128);
-        }
+        public void CorrectlyComputesLargeAligned128() => AssertMatch(_output, 0x1947850, 1024 * 1024 * 10, 128, 128);
 
         private static void AssertMatch(ITestOutputHelper output, uint seed, int dataSize, int hashSize, int keySize)
         {
@@ -113,7 +79,7 @@
 
             //output.WriteLine($"Slow path took {slowTime} micros, Normal path took {normalTime} micros, 3rd Party path took {b2CoreTime} micros");
             output.WriteLine($"Slow path took {slowTime} micros, Normal path took {normalTime} micros");
-            Assert.Equal(slowHash, normalHash);
+            slowHash.Should().BeEquivalentTo(normalHash);
             //Assert.Equal(b2CoreHash, normalHash);
         }
     }

@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup Label="Build">
-    <TargetFrameworks>netstandard2.1;netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -52,7 +52,7 @@
     </PackageReference>
     <PackageReference Include="NaCl.Core" Version="2.0.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <!--<PackageReference Include="NSec.Cryptography" Version="21.11.0-preview2" />-->
+    <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
   </ItemGroup>
 
   <ItemGroup Label="Package References for Windows" Condition=" '$(TargetFramework)' == 'net48' ">

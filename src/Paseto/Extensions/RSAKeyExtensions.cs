@@ -3,10 +3,10 @@
 using System;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Xml;
 using System.Xml.Linq;
-
-using Newtonsoft.Json;
 
 public static class RSAKeyExtensions
 {
@@ -19,7 +19,7 @@ public static class RSAKeyExtensions
 
         try
         {
-            var paramsJson = JsonConvert.DeserializeObject<RSAParametersJson>(jsonString);
+            var paramsJson = JsonSerializer.Deserialize<RSAParametersJson>(jsonString);
 
             var parameters = new RSAParameters()
             {
@@ -57,7 +57,7 @@ public static class RSAKeyExtensions
             D = parameters.D != null ? Convert.ToBase64String(parameters.D) : null
         };
 
-        return JsonConvert.SerializeObject(parasJson);
+        return JsonSerializer.Serialize(parasJson);
     }
 
     #endregion
@@ -127,22 +127,34 @@ public static class RSAKeyExtensions
 
         public string Exponent { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+#if NET5_0_OR_GREATER
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+#endif
         public string P { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+#if NET5_0_OR_GREATER
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+#endif
         public string Q { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+#if NET5_0_OR_GREATER
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+#endif
         public string DP { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+#if NET5_0_OR_GREATER
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+#endif
         public string DQ { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+#if NET5_0_OR_GREATER
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+#endif
         public string InverseQ { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+#if NET5_0_OR_GREATER
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+#endif
         public string D { get; set; }
     }
 }

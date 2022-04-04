@@ -4,12 +4,12 @@
     using System.Collections.Generic;
     using System.Linq;
 
-    using NUnit.Framework;
+    using FluentAssertions;
 
     public static class TestHelpers
     {
-        private static readonly Random _random = new Random();
-        private static readonly object _sync = new object();
+        private static readonly Random _random = new();
+        private static readonly object _sync = new();
 
         private static int Random(int min, int max)
         {
@@ -19,15 +19,9 @@
             }
         }
 
-        public static void AssertEqualBytes(byte[] expected, byte[] actual)
-        {
-            Assert.AreEqual(BitConverter.ToString(expected), BitConverter.ToString(actual));
-        }
+        public static void AssertEqualBytes(byte[] expected, byte[] actual) => BitConverter.ToString(actual).Should().Be(BitConverter.ToString(expected));
 
-        public static ArraySegment<byte> Pad(this byte[] array)
-        {
-            return array.Pad(Random(1, 100), Random(0, 50));
-        }
+        public static ArraySegment<byte> Pad(this byte[] array) => array.Pad(Random(1, 100), Random(0, 50));
 
         private static ArraySegment<byte> Pad(this byte[] array, int paddingLeft, int paddingRight)
         {

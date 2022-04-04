@@ -25,6 +25,10 @@ public sealed class PasetoBuilder
         {
             Version2.VERSION,
             () => new Version2()
+        },
+        {
+            Version3.VERSION,
+            () => new Version3()
         }
 #pragma warning restore CS0618 // Type or member is obsolete
     };
@@ -156,11 +160,11 @@ public sealed class PasetoBuilder
     public PasetoBuilder WithPublicKey(byte[] key) => WithKey(key, Encryption.AsymmetricPublicKey);
 
     /// <summary>
-    /// Sets the nonce for encoding the token.
+    /// Sets the nonce for encoding the token used exclusively for testing purposes.
     /// </summary>
-    /// <param name="nonce">The nonce.</param>
+    /// <param name="nonce">The nonce used exclusively for testing purposes.</param>
     /// <returns>Current builder instance</returns>
-    public PasetoBuilder WithNonce(byte[] nonce)
+    internal PasetoBuilder WithNonce(byte[] nonce)
     {
         _nonce = nonce;
         return this;

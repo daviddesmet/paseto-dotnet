@@ -55,7 +55,7 @@ public class Sha512
         // Fill existing buffer
         if (bytesInBuffer != 0)
         {
-            var toCopy = System.Math.Min(BlockSize - bytesInBuffer, count);
+            var toCopy = Math.Min(BlockSize - bytesInBuffer, count);
             Buffer.BlockCopy(data, offset, _buffer, bytesInBuffer, toCopy);
             offset += toCopy;
             count -= toCopy;
@@ -64,7 +64,7 @@ public class Sha512
             {
                 ByteIntegerConverter.Array16LoadBigEndian64(out block, _buffer, 0);
                 Sha512Internal.Core(out _state, ref _state, ref block);
-                CryptoBytes.InternalWipe(_buffer, 0, _buffer.Length);
+                Array.Clear(_buffer, 0, _buffer.Length);
                 bytesInBuffer = 0;
             }
         }
@@ -93,7 +93,7 @@ public class Sha512
 
         Update(_padding, 0, _padding.Length);
         ByteIntegerConverter.Array16LoadBigEndian64(out Array16<ulong> block, _buffer, 0);
-        CryptoBytes.InternalWipe(_buffer, 0, _buffer.Length);
+        Array.Clear(_buffer, 0, _buffer.Length);
         var bytesInBuffer = (int)_totalBytes & (BlockSize - 1);
         if (bytesInBuffer > BlockSize - 16)
         {

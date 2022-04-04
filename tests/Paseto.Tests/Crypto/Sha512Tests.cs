@@ -1,15 +1,12 @@
 ﻿namespace Paseto.Tests.Crypto
 {
     using System;
-    using System.Collections.Generic;
     using System.Linq;
     using System.Security.Cryptography;
 
-    using NUnit.Framework;
+    using Xunit;
+    using Paseto.Cryptography;
 
-    using Cryptography;
-
-    [TestFixture]
     public class Sha512Tests
     {
         private static readonly byte[] _sha512HashAbc = new byte[]
@@ -24,7 +21,7 @@
                     0x2A, 0x9A, 0xC9, 0x4F, 0xA5, 0x4C, 0xA4, 0x9F
                 };
 
-        [Test]
+        [Fact]
         public void Sha512_1()
         {
             var sha512Framework = SHA512.Create();
@@ -37,7 +34,7 @@
             }
         }
 
-        [Test]
+        [Fact]
         public void Sha512_2()
         {
             var sha512Framework = SHA512.Create();
@@ -51,7 +48,7 @@
         }
 
 
-        [Test]
+        [Fact]
         public void Sha512_Split()
         {
             // use only a subset of possible indices to speed up the test
@@ -77,7 +74,7 @@
             }
         }
 
-        [Test]
+        [Fact]
         public void Sha512_Reuse()
         {
             var message = Enumerable.Range(1, 100).Select(i => (byte)i).ToArray();
@@ -107,7 +104,7 @@
         }
         */
 
-        [Test]
+        [Fact]
         public void Sha512Abc()
         {
             var message = new[] { (byte)'a', (byte)'b', (byte)'c' };
@@ -116,7 +113,7 @@
             TestHelpers.AssertEqualBytes(hashExpected, hash);
         }
 
-        [Test]
+        [Fact]
         public void Sha512OutputSegments()
         {
             var message = new[] { (byte)'a', (byte)'b', (byte)'c' };
@@ -128,25 +125,25 @@
             TestHelpers.AssertEqualBytes(hashExpected, output.UnPad());
         }
 
-        [Test]
+        [Fact]
         public void Sha512OutputSegmentsNull()
         {
             var sha512 = new Sha512();
-            Assert.Throws<ArgumentNullException>(() => sha512.Finish(default(ArraySegment<byte>)));
+            Assert.Throws<ArgumentNullException>(() => sha512.Finish(default));
         }
 
-        [Test]
+        [Fact]
         public void Sha512OutputSegmentsIncorretOutputSize()
         {
             var sha512 = new Sha512();
             Assert.Throws<ArgumentException>(() => sha512.Finish(new byte[32].Pad()));
         }
 
-        [Test]
+        [Fact]
         public void Sha512UpdateSegmentsNull()
         {
             var sha512 = new Sha512();
-            Assert.Throws<ArgumentNullException>(() => sha512.Update(default(ArraySegment<byte>)));
+            Assert.Throws<ArgumentNullException>(() => sha512.Update(default));
         }
     }
 }

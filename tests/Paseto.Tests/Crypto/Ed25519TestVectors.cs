@@ -5,7 +5,7 @@
     using System.Diagnostics.Contracts;
     using System.Linq;
 
-    using Paseto.Cryptography.Internal;
+    using NaCl.Core.Internal;
 
     public class Ed25519TestVectors
     {
@@ -33,7 +33,7 @@
             }
         }
 
-        public static readonly ReadOnlyCollection<TestTuple> TestCases = new ReadOnlyCollection<TestTuple>(GetTestCaseFile());
+        public static readonly ReadOnlyCollection<TestTuple> TestCases = new(GetTestCaseFile());
 
         private static TestTuple[] GetTestCaseFile()
         {

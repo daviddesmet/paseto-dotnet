@@ -3,17 +3,20 @@
 using System;
 using System.Linq;
 
-using Paseto.Algorithms;
-using Paseto.Extensions;
+using NaCl.Core;
+using NaCl.Core.Internal;
+
+using Paseto.Cryptography;
 using Paseto.Cryptography.Key;
-using static Utils.EncodingHelper;
+using Paseto.Extensions;
+using static Paseto.Utils.EncodingHelper;
 
 /// <summary>
 /// Paseto Version 2.
 /// </summary>
 /// <seealso cref="Paseto.Protocol.IPasetoProtocolVersion" />
 [Obsolete("PASETO Version 2 is deprecated. Implementations should migrate to Version 4.")]
-public sealed class Version2 : IPasetoProtocolVersion
+public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
 {
     public const string VERSION = "v2";
 
@@ -21,28 +24,23 @@ public sealed class Version2 : IPasetoProtocolVersion
     public const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
     public const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 3; // 24 crypto_aead_xchacha20poly1305_ietf_NPUBBYTES
 
-    public Version2() => Algorithm = new Version2Algorithm();
-
     /// <summary>
     /// Gets the unique header version string with which the protocol can be identified.
     /// </summary>
     /// <value>The header version.</value>
-    public string Version => VERSION;
-
-    internal IPasetoAlgorithm Algorithm { get; set; }
+    public override string Version => VERSION;
 
     /// <summary>
     /// Encrypt a message using a shared secret key.
     /// </summary>
     /// <param name="pasetoKey">The symmetric key.</param>
-    /// <param name="nonce">The nonce.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
     /// <returns>System.String.</returns>
     /// <exception cref="System.ArgumentException">Shared Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid</exception>
-    public string Encrypt(PasetoSymmetricKey pasetoKey, byte[] nonce, string payload, string footer = "")
+    public virtual string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "")
     {
         /*
          * Encrypt Specification
@@ -82,20 +80,49 @@ public sealed class Version2 : IPasetoProtocolVersion
         if (pasetoKey.Key.Length != KEY_SIZE_IN_BYTES)
             throw new ArgumentException($"The key length in bytes must be {KEY_SIZE_IN_BYTES}.");
 
-        if (nonce is null || nonce.Length != NONCE_SIZE_IN_BYTES)
-            nonce = Algorithm.Hash(GetBytes(payload), NONCE_SIZE_IN_BYTES);
-        else
-            nonce = Algorithm.Hash(GetBytes(payload), nonce, NONCE_SIZE_IN_BYTES);
+        var m = GetBytes(payload);
+
+        // Calculate nonce
+        var b = GetRandomBytes(NONCE_SIZE_IN_BYTES);
+        var blake = new Blake2bMac(b, NONCE_SIZE_IN_BYTES * 8);
+        var nonce = blake.ComputeHash(m);
 
         var header = $"{Version}.{Purpose.Local.ToDescription()}.";
         var pack = PreAuthEncode(new[] { GetBytes(header), nonce, GetBytes(footer) });
 
-        var encryptedPayload = Algorithm.Encrypt(GetBytes(payload), pack, nonce, pasetoKey.Key);
+        // Encrypt
+
+        /*
+         * NaCl.Core
+         */
+        var algo = new XChaCha20Poly1305(pasetoKey.Key);
+
+        var ciphertext = new byte[m.Length];
+        var tag = new byte[16];
+
+        algo.Encrypt(nonce, m, ciphertext, tag, pack);
+        var c = CryptoBytes.Combine(ciphertext, tag);
+
+        /*
+         * Sodium
+         * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
+         *
+        return SecretAead.Encrypt(payload, nonce, key, aad);
+        */
+
+        /*
+         * NSec
+         * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
+         *
+        var algo = new NSec.Cryptography.XChaCha20Poly1305();
+        using (var k = NSec.Cryptography.Key.Import(algo, key.Span, NSec.Cryptography.KeyBlobFormat.RawSymmetricKey))
+            return algo.Encrypt(k, nonce, aad, payload);
+        */
 
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(footer)}";
 
-        return $"{header}{ToBase64Url(nonce.Concat(encryptedPayload))}{footer}";
+        return $"{header}{ToBase64Url(nonce.Concat(c))}{footer}";
     }
 
     /// <summary>
@@ -107,7 +134,7 @@ public sealed class Version2 : IPasetoProtocolVersion
     /// <exception cref="System.ArgumentException">Shared Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload is not valid</exception>
-    public string Decrypt(string token, PasetoSymmetricKey pasetoKey)
+    public virtual string Decrypt(string token, PasetoSymmetricKey pasetoKey)
     {
         /*
          * Decrypt Specification
@@ -153,18 +180,47 @@ public sealed class Version2 : IPasetoProtocolVersion
         var parts = token.Split('.');
         var footer = GetString(FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty));
 
-        var bytes = FromBase64Url(parts[2]);
+        var bytes = FromBase64Url(parts[2]).AsSpan();
 
         if (bytes.Length < NONCE_SIZE_IN_BYTES)
             throw new PasetoInvalidException("Payload is not valid");
 
-        var nonce = bytes.Take(NONCE_SIZE_IN_BYTES).ToArray();
-        var payload = bytes.Skip(NONCE_SIZE_IN_BYTES).ToArray();
+        // Decode the payload
+        var nonce = bytes[..NONCE_SIZE_IN_BYTES];
+        var payload = bytes[NONCE_SIZE_IN_BYTES..];
 
-        //var pack = PreAuthEncode(new[] { header, GetString(nonce), footer }.Select(GetBytes).ToArray());
-        var pack = PreAuthEncode(new[] { GetBytes(header), nonce, GetBytes(footer) });
+        var pack = PreAuthEncode(new[] { GetBytes(header), nonce.ToArray(), GetBytes(footer) });
 
-        return Algorithm.Decrypt(payload, pack, nonce, pasetoKey.Key);
+        // Decrypt
+
+        /*
+         * NaCl.Core
+         */
+        var algo = new XChaCha20Poly1305(pasetoKey.Key);
+
+        var len = payload.Length - 16;
+        var plainText = new byte[len];
+        var tag = payload[len..];
+
+        algo.Decrypt(nonce, payload[..len], tag, plainText, pack);
+
+        /*
+         * Sodium
+         * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
+         *
+        return GetString(SecretAead.Decrypt(payload, nonce, key, associatedData));
+        */
+
+        /*
+         * NSec
+         * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
+         *
+        var algo = new XChaCha20Poly1305();
+        using (var k = Key.Import(algo, key, KeyBlobFormat.RawSymmetricKey))
+            return GetString(algo.Decrypt(k, new Nonce(nonce, 0), aad, payload));
+        */
+
+        return GetString(plainText);
     }
 
     /// <summary>
@@ -177,7 +233,7 @@ public sealed class Version2 : IPasetoProtocolVersion
     /// <exception cref="System.ArgumentException">Secret Key is missing</exception>
     /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid</exception>
-    public string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "")
+    public virtual string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "")
     {
         /*
          * Sign Specification
@@ -215,7 +271,7 @@ public sealed class Version2 : IPasetoProtocolVersion
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
         var pack = PreAuthEncode(new[] { header, payload, footer });
 
-        var signature = Algorithm.Sign(pack, pasetoKey.Key);
+        var signature = Ed25519.Sign(pack, pasetoKey.Key.ToArray());
 
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(GetBytes(footer))}";
@@ -232,7 +288,7 @@ public sealed class Version2 : IPasetoProtocolVersion
     /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload does not contain signature</exception>
-    public (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
+    public virtual (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
     {
         /*
          * Verify Specification
@@ -250,7 +306,7 @@ public sealed class Version2 : IPasetoProtocolVersion
          *   6. Use Ed25519 to verify that the signature is valid for the message.
          *      valid = crypto_sign_verify_detached(
          *          message = m2,
-         *          private_key = sk
+         *          publik_key = pk
          *      );
          *   7. If the signature is valid, return `m`. Otherwise, throw an exception.
          *
@@ -274,7 +330,7 @@ public sealed class Version2 : IPasetoProtocolVersion
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
 
         if (!token.StartsWith(header))
-            throw new PasetoInvalidException($"The specified token is not valid for {Purpose.Local} purpose and {Version} version");
+            throw new PasetoInvalidException($"The specified token is not valid for {Purpose.Public} purpose and {Version} version");
 
         var parts = token.Split('.');
         var footer = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
@@ -285,12 +341,15 @@ public sealed class Version2 : IPasetoProtocolVersion
         if (body.Length < blockSize)
             throw new PasetoInvalidException("Payload does not contain signature");
 
-        // TODO: Use Span
-        var signature = body.Skip(body.Length - blockSize).ToArray();
-        var payload = body.Take(body.Length - blockSize).ToArray();
+        // Decode the payload
+        var len = body.Length - blockSize;
+        var signature = body[..len];
+        var payload = body[len..];
 
         var pack = PreAuthEncode(new[] { GetBytes(header), payload, footer });
 
-        return (Algorithm.Verify(pack, signature, pasetoKey.Key), GetString(payload));
+        var valid = Ed25519.Verify(signature, pack, pasetoKey.Key.ToArray());
+
+        return (valid, GetString(payload));
     }
 }

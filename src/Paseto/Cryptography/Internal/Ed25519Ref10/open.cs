@@ -1,6 +1,7 @@
 ﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
 using System;
+using NaCl.Core.Internal;
 
 internal static partial class Ed25519Operations
 {

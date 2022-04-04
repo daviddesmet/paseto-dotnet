@@ -1,5 +1,7 @@
 ﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
+using NaCl.Core.Internal;
+
 internal static class MontgomeryOperations
 {
     internal static void scalarmult(byte[] q, int qoffset, byte[] n, int noffset, byte[] p, int poffset)
