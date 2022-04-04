@@ -8,7 +8,6 @@
     using NaCl.Core.Internal;
     using Xunit;
 
-    using Paseto.Algorithms;
     using Paseto.Builder;
     using Paseto.Cryptography;
     using Paseto.Cryptography.Key;

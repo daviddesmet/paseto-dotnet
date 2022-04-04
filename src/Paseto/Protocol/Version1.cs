@@ -2,30 +2,26 @@
 
 using System;
 using System.Linq;
+using System.Security.Cryptography;
 
-using Algorithms;
-using Extensions;
 using Paseto.Cryptography.Key;
-using static Utils.EncodingHelper;
+using Paseto.Extensions;
+using static Paseto.Utils.EncodingHelper;
 
 /// <summary>
 /// Paseto Version 1.
 /// </summary>
 /// <seealso cref="Paseto.Protocol.IPasetoProtocolVersion" />
 [Obsolete("PASETO Version 1 is deprecated. Implementations should migrate to Version 3.")]
-public sealed class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
+public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
 {
     public const string VERSION = "v1";
-
-    public Version1() => Algorithm = new Version1Algorithm();
 
     /// <summary>
     /// Gets the unique header version string with which the protocol can be identified.
     /// </summary>
     /// <value>The header version.</value>
     public override string Version => VERSION;
-
-    internal IPasetoAlgorithm Algorithm { get; set; }
 
     /// <summary>
     /// Encrypt a message using a shared secret key.
@@ -35,7 +31,7 @@ public sealed class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="footer">The optional footer.</param>
     /// <returns>System.String.</returns>
     /// <exception cref="PasetoNotSupportedException"></exception>
-    public string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "")
+    public virtual string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "")
     {
 #pragma warning disable IDE0022 // Use expression body for methods
         throw new PasetoNotSupportedException("The Local Purpose is not supported in the Version 1 Protocol");
@@ -98,7 +94,7 @@ public sealed class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The symmetric key.</param>
     /// <returns>System.String.</returns>
     /// <exception cref="PasetoNotSupportedException"></exception>
-    public string Decrypt(string token, PasetoSymmetricKey pasetoKey)
+    public virtual string Decrypt(string token, PasetoSymmetricKey pasetoKey)
     {
 #pragma warning disable IDE0022 // Use expression body for methods
         throw new PasetoNotSupportedException("The Local Purpose is not supported in the Version 1 Protocol");
@@ -156,7 +152,7 @@ public sealed class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <exception cref="System.ArgumentException">Secret Key is missing</exception>
     /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid</exception>
-    public string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "")
+    public virtual string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "")
     {
         /*
          * Sign Specification
@@ -203,7 +199,11 @@ public sealed class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
         var pack = PreAuthEncode(new[] { header, payload, footer });
 
-        var signature = Algorithm.Sign(pack, pasetoKey.Key);
+        using var rsa = RSA.Create();
+        //rsa.KeySize = 2048; // Default
+        rsa.FromCompatibleXmlString(GetString(pasetoKey.Key.Span));
+
+        var signature = rsa.SignData(pack, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
 
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(GetBytes(footer))}";
@@ -220,7 +220,7 @@ public sealed class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload does not contain signature</exception>
-    public (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
+    public virtual (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
     {
         /*
          * Verify Specification
@@ -275,12 +275,19 @@ public sealed class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (body.Length < blockSize)
             throw new PasetoInvalidException("Payload does not contain signature");
 
-        // TODO: Use Span
-        var signature = body.Skip(body.Length - blockSize).ToArray();
-        var payload = body.Take(body.Length - blockSize).ToArray();
+        // Decode the payload
+        var len = body.Length - blockSize;
+        var signature = body[..len];
+        var payload = body[len..];
 
         var pack = PreAuthEncode(new[] { GetBytes(header), payload, footer });
 
-        return (Algorithm.Verify(pack, signature, pasetoKey.Key), GetString(payload));
+        using var rsa = RSA.Create();
+        //rsa.KeySize = 2048; // Default
+        rsa.FromCompatibleXmlString(GetString(pasetoKey.Key.Span));
+
+        var valid = rsa.VerifyData(pack, signature, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
+
+        return (valid, GetString(payload));
     }
 }
