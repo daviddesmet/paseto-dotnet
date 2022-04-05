@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using FluentAssertions;
 using NaCl.Core.Internal;
 using Newtonsoft.Json;
+using Org.BouncyCastle.OpenSsl;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Categories;
@@ -19,10 +20,14 @@ using Paseto.Cryptography;
 using Paseto.Extensions;
 using Paseto.Tests.Vectors;
 using static Paseto.Utils.EncodingHelper;
+using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Asn1.Pkcs;
+using Org.BouncyCastle.Asn1.X509;
 
 [Category("CI")]
 public class PasetoTestVectors
 {
+    private readonly Regex ECDsaPrivateKeyRegex = new(@"-----(BEGIN|END) EC PRIVATE KEY-----[\W]*", RegexOptions.Compiled);
     private readonly Regex RsaPrivateKeyRegex = new(@"-----(BEGIN|END) (RSA|OPENSSH|ENCRYPTED) PRIVATE KEY-----[\W]*", RegexOptions.Compiled);
     private readonly Regex RsaPublicKeyRegex = new(@"-----(BEGIN|END) PUBLIC KEY-----[\W]*", RegexOptions.Compiled);
     private readonly ITestOutputHelper _output;
@@ -66,11 +71,20 @@ public class PasetoTestVectors
 
                         var publicKey = CryptoBytes.ToHexStringLower(Ed25519.PublicKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
                         publicKey.Should().Be(test.PublicKey);
-                    }
 
-                    // Use Public & Secret Keys
-                    builder = builder.Use(version, Purpose.Public)
-                                     .WithKey(ReadKey(test.SecretKey), Encryption.AsymmetricSecretKey);
+                        // Use Public & Secret Keys
+                        builder = builder.Use(version, Purpose.Public)
+                                         .WithKey(ReadKey(test.SecretKey), Encryption.AsymmetricSecretKey);
+                    }
+                    else
+                    {
+                        // Use Public & Secret Keys
+                        //builder = builder.Use(version, Purpose.Public)
+                        //                 .WithKey(ReadKey(test.SecretKeyPem), Encryption.AsymmetricSecretKey);
+
+                        builder = builder.Use(version, Purpose.Public)
+                                         .WithKey(ReadKey(test.SecretKey), Encryption.AsymmetricSecretKey);
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(test.Payload))
@@ -335,6 +349,51 @@ public class PasetoTestVectors
 
     private byte[] ReadKey(string key)
     {
+        // | PEM Label                    | Import method on RSA
+        // | ---------------------------- | --------------------
+        // | BEGIN RSA PRIVATE KEY        | ImportRSAPrivateKey
+        // | BEGIN PRIVATE KEY            | ImportPkcs8PrivateKey
+        // | BEGIN ENCRYPTED PRIVATE KEY  | ImportEncryptedPkcs8PrivateKey
+        // | BEGIN RSA PUBLIC KEY         | ImportRSAPublicKey
+        // | BEGIN PUBLIC KEY             | ImportSubjectPublicKeyInfo
+
+        if (ECDsaPrivateKeyRegex.IsMatch(key))
+        {
+            var ecdsaSecretKey = ECDsa.Create();
+            ecdsaSecretKey.ImportFromPem(key);
+            var sk = ecdsaSecretKey.ExportECPrivateKey();
+            return sk;
+
+            /*
+            using var ms = new MemoryStream(GetBytes(key));
+            using var sr = new StreamReader(ms);
+            var pemReader = new PemReader(sr);
+            var pem = pemReader.ReadPemObject();
+
+            var seq = Asn1Sequence.GetInstance(pem.Content);
+            var e = seq.GetEnumerator();
+            e.MoveNext();
+            var version = ((DerInteger)e.Current).Value;
+            if (version.IntValue == 0) // V1
+            {
+                var privateKeyInfo = PrivateKeyInfo.GetInstance(seq);
+                var akp = Org.BouncyCastle.Security.PrivateKeyFactory.CreateKey(privateKeyInfo);
+            }
+            else
+            {
+                var ec = Org.BouncyCastle.Asn1.Sec.ECPrivateKeyStructure.GetInstance(seq);
+                var algId = new AlgorithmIdentifier(Org.BouncyCastle.Asn1.X9.X9ObjectIdentifiers.IdECPublicKey, ec.GetParameters());
+                var privateKeyInfo = new PrivateKeyInfo(algId, ec.ToAsn1Object());
+                var der = privateKeyInfo.GetDerEncoded();
+                var akp = Org.BouncyCastle.Security.PrivateKeyFactory.CreateKey(privateKeyInfo);
+
+                return der;
+            }
+
+            return pem.Content; // same as sk
+            */
+        }
+
         if (RsaPrivateKeyRegex.IsMatch(key))
         {
             var rsaSecretKey = RSA.Create();

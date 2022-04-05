@@ -1,10 +1,20 @@
 ﻿namespace Paseto.Protocol;
 
 using System;
+using System.Linq;
 using System.Security.Cryptography;
 
 using NaCl.Core.Internal;
+using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Asn1.Nist;
+using Org.BouncyCastle.Asn1.Pkcs;
+using Org.BouncyCastle.Asn1.Sec;
+using Org.BouncyCastle.Asn1.X509;
+using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Crypto.Signers;
+using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Security;
 
 using Paseto.Cryptography.Key;
@@ -20,11 +30,17 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
     public const int KEY_SIZE_IN_INTS = 8;
     public const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
     public const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int SIG_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 12; // 96
     public const int KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 6; // 48
+    public const int SECRET_KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 6; // 48
+    public const int PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES = 49;
+    public const int PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES = 97;
+    public const int SIG_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 12; // 96
 
     public const string EK_INFO = "paseto-encryption-key";
     public const string AK_INFO = "paseto-auth-key-for-aead";
+
+    private const string ECDSA_PRE_KEY = "303e0201010430";
+    private const string ECDSA_ID_GEN = "a00706052b81040022";
 
     public const string VERSION = "v3";
 
@@ -320,9 +336,152 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
          *   
          */
 
-#pragma warning disable IDE0022 // Use expression body for methods
-        throw new PasetoNotSupportedException("The Public Purpose is not supported in the Version 3 Protocol");
-#pragma warning restore IDE0022 // Use expression body for methods
+        if (pasetoKey is null)
+            throw new ArgumentNullException(nameof(pasetoKey));
+
+        if (string.IsNullOrWhiteSpace(payload))
+            throw new ArgumentNullException(nameof(payload));
+
+        if (!pasetoKey.IsValidFor(this, Purpose.Public))
+            throw new PasetoInvalidException($"Key is not valid for {Purpose.Public} purpose and {Version} version");
+
+        if (pasetoKey.Key.Length == 0)
+            throw new ArgumentException("Secret Key is missing", nameof(pasetoKey));
+
+        if (pasetoKey.Key.Length != SECRET_KEY_SIZE_IN_BYTES)
+            throw new ArgumentException($"The key length in bytes must be {SECRET_KEY_SIZE_IN_BYTES}.");
+
+        // Convert a raw key to a form usable by the crypto (ECDSA -> PEM format).
+        //
+        // We use the OID and size(s) for P-384 and concatenate:
+        // - the 7 bytes represented in hex by 303e0201010430
+        // - the 48 bytes (384 bits) of the raw private key
+        // - the 9 bytes represented in hex by a00706052b81040022 (for P-384 aka secp384r1)
+        //   is a context-tag and length a007 for an OID tag and length 0605 containing 2b81040022 which is [1.3.132.0.34 aka secp384r1](http://www.oid-info.com/get/1.3.132.0.34)
+        //
+        // The result is the 'DER' (binary) form of the algorithm-specific (SEC1) private key (only).
+        //
+        // Please note that public keys are never encrypted and private keys in OpenSSL's 'traditional' aka 'legacy' algorithm-specific DER formats (for ECC, defined by [SECG SEC1](https://www.secg.org/)) cannot be encrypted.
+        // (OTOH private keys in PKCS8 format can be password-encrypted in either DER or PEM, although PEM is more convenient. And FWIW PKCS12 format is always password-encrypted, and always DER.).
+        // 
+        // An ECC (ECDSA, ECDH, ECMQV, etc) key is always relative to some 'curve' (more exactly, prime-order subgroup over a curve with an identified generator aka base point).
+
+        var preKey = CryptoBytes.FromHexString(ECDSA_PRE_KEY);
+        var basePoint = CryptoBytes.FromHexString(ECDSA_ID_GEN);
+        var sk = CryptoBytes.Combine(preKey, pasetoKey.Key.Span.ToArray(), basePoint);
+
+        /*
+         * Deterministic ECDSA (RFC 6979) is currently not supported in .NET out of the box. 04/04/2022
+         * 
+        using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP384); // There's no way to control K =(
+        //ecdsa.ImportECPrivateKey(pasetoKey.Key.Span, out _); // will work as long as Key is a PEM
+        ecdsa.ImportECPrivateKey(sk, out _);
+
+        // Point compression of pk
+        var ecdsaParameters = ecdsa.ExportParameters(false);
+        var x = ecdsaParameters.Q.X;
+        var y = ecdsaParameters.Q.Y;
+        var sign = (byte)(0x02 + (y[^1] & 1));
+        var pk = CryptoBytes.Combine(new byte[] { sign }, x);
+
+        ... removed for brevety
+
+        var sig = ecdsa.SignData(pack, HashAlgorithmName.SHA384, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
+        */
+
+        /*
+         * Bouncy Castle ECDSA supports deterministic signatures
+         */
+
+        // Create Private Key
+        var seq = (Asn1Sequence)Asn1Object.FromByteArray(sk);
+        var privKeyStruct = ECPrivateKeyStructure.GetInstance(seq);
+        var algId = new AlgorithmIdentifier(X9ObjectIdentifiers.IdECPublicKey, privKeyStruct.GetParameters());
+
+        var privKeyInfo = new PrivateKeyInfo(algId, privKeyStruct.ToAsn1Object());
+        var privKeyParams = (ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(privKeyInfo);
+        /*
+        var x9Params = NistNamedCurves.GetByName("P-384"); // or SecNamedCurves.GetByName("secp384r1");
+        var ecParams = new ECDomainParameters(x9Params.Curve, x9Params.G, x9Params.N, x9Params.H);
+        var privKeyParams = new ECPrivateKeyParameters(new BigInteger(1, pasetoKey.Key.Span.ToArray()), ecParams);
+        */
+
+        // Calculate Public Key from Private Key
+        var q = privKeyParams.Parameters.G.Multiply(privKeyParams.D);
+        var publicParams = new ECPublicKeyParameters(q, privKeyParams.Parameters);
+
+        // Point compression of pk
+        var x = publicParams.Q.XCoord.GetEncoded();
+        var y = publicParams.Q.YCoord.GetEncoded();
+        var sign = (byte)(0x02 + (y[^1] & 1));
+        var pk = CryptoBytes.Combine(new byte[] { sign }, x);
+
+        // Pack
+        var m = GetBytes(payload);
+        var f = GetBytes(footer);
+        var i = ""; // implicit assertion (add assertion/implicit parameter as string)
+
+        var header = $"{Version}.{Purpose.Public.ToDescription()}.";
+        var pack = PreAuthEncode(new[] { pk, GetBytes(header), m, f, GetBytes(i) });
+
+        // Sign the data
+        var signer = new ECDsaSigner(new HMacDsaKCalculator(new Sha384Digest()));
+        signer.Init(true, privKeyParams);
+
+        var signature = signer.GenerateSignature(pack);
+        var sig = signature[0].ToByteArrayUnsigned().Concat(signature[1].ToByteArrayUnsigned()).ToArray(); // must be 96 bytes
+
+        // TODO: Validate key length
+        // It should be a PEM (maybe)
+        // Or it should be 48 bytes concat to prefix & sufix
+
+
+
+        //var sk1 = CryptoBytes.FromHexString("20347609607477aca8fbfbc5e6218455f3199669792ef8b466faa87bdc67798144c848dd03661eed5ac62461340cea96");
+
+        // Deterministic signatures
+        //var x9Params = NistNamedCurves.GetByName("P-384"); // or SecNamedCurves.GetByName("secp384r1");
+        //var ecParams = new ECDomainParameters(x9Params.Curve, x9Params.G, x9Params.N, x9Params.H);
+        //var privKeyParams = new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(1, sk1), ecParams);
+        //privKeyParams = new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(1, pasetoKey.Key.Span.ToArray()), ecParams);
+        //var signer = new ECDsaSigner(new HMacDsaKCalculator(new Sha384Digest()));
+        //signer.Init(true, privKeyParams);
+        //var signature = signer.GenerateSignature(pack);
+        //var sig = signature[0].ToByteArrayUnsigned().Concat(signature[1].ToByteArrayUnsigned()).ToArray(); // must be 96 bytes
+
+        //var signer = SignerUtilities.GetSigner("SHA384withECDSA");
+        //var signer = SignerUtilities.GetSigner("SHA-384withECDSA"); // SHA384withECDSAinP1363Format
+        //var signer = new ECDsaSigner();
+        //signer.Init(true, pasetoKey.Key.Span.ToArray());
+        //var ecParams = ECNamedCurveTable.GetByName("P-384");
+        //var domainParameters = new ECDomainParameters(ecParams.Curve, ecParams.G, ecParams.N, ecParams.H, ecParams.GetSeed());
+        //var pkParameters = new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(1, pasetoKey.Key.Span.ToArray()), domainParameters);
+        //var pkParameters = new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(1, pasetoKey.Key.Span.ToArray()), ecParams); // Scalar is not in the interval [1, n - 1] (Parameter 'd')
+
+
+        //signer.Init(true, ecKeyParams); // same output as above
+
+        //signer.BlockUpdate(pack, 0, pack.Length);
+        //var signatureEncoded = signer.GenerateSignature(); // must be 96 but it isn't
+
+        //var signatureEncoded = new byte[96];
+        //using (var ms = new MemoryStream())
+        //using (var asn1stream = Asn1OutputStream.Create(ms))
+        //{
+        //    var seq = new DerSequenceGenerator(asn1stream);
+        //    seq.AddObject(new DerInteger(sig[0]));
+        //    seq.AddObject(new DerInteger(sig[1]));
+        //    seq.Close();
+        //    signatureEncoded = ms.ToArray();
+        //}
+
+
+
+        if (!string.IsNullOrEmpty(footer))
+            footer = $".{ToBase64Url(f)}";
+
+        //return $"{header}{ToBase64Url(m.Concat(sig))}{footer}";
+        return $"{header}{ToBase64Url(m.Concat(sig))}{footer}";
     }
 
     /// <summary>
@@ -359,6 +518,25 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
          *   7. If the signature is valid, return `m`. Otherwise, throw an exception.
          *
          */
+
+        if (pasetoKey is null)
+            throw new ArgumentNullException(nameof(pasetoKey));
+
+        if (string.IsNullOrWhiteSpace(token))
+            throw new ArgumentNullException(nameof(token));
+
+        if (!pasetoKey.IsValidFor(this, Purpose.Public))
+            throw new PasetoInvalidException($"Key is not valid for {Purpose.Public} purpose and {Version} version");
+
+        if (pasetoKey.Key.Length == 0)
+            throw new ArgumentException("Public Key is missing", nameof(pasetoKey));
+
+        if (pasetoKey.Key.Length != PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES || pasetoKey.Key.Length != PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES)
+            throw new ArgumentException($"The key length must be {PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES} bytes (compressed public key) or {PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES} bytes (uncompressed public key).");
+
+        // For validation, it should be:
+        // 49 bytes (compressed public key) and begin with 0x02 or 0x03 byte, and concat with prefix 3046301006072a8648ce3d020106052b81040022033200 hex
+        // 97 bytes (uncompressed public key) and begin with 0x04 byte, and concat with prefix 3076301006072a8648ce3d020106052b81040022036200
 
 #pragma warning disable IDE0022 // Use expression body for methods
         throw new PasetoNotSupportedException("The Public Purpose is not supported in the Version 3 Protocol");
