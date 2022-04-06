@@ -4,6 +4,10 @@ using System;
 using System.Linq;
 using System.Security.Cryptography;
 
+using NaCl.Core.Internal;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Security;
+
 using Paseto.Cryptography.Key;
 using Paseto.Extensions;
 using static Paseto.Utils.EncodingHelper;
@@ -15,6 +19,15 @@ using static Paseto.Utils.EncodingHelper;
 [Obsolete("PASETO Version 1 is deprecated. Implementations should migrate to Version 3.")]
 public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
 {
+    public const int KEY_SIZE_IN_INTS = 8;
+    public const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    public const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    public const int KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    public const int NONCE_SPLIT_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 2; // 16
+
+    public const string EK_INFO = "paseto-encryption-key";
+    public const string AK_INFO = "paseto-auth-key-for-aead";
+
     public const string VERSION = "v1";
 
     /// <summary>
@@ -33,10 +46,6 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <exception cref="PasetoNotSupportedException"></exception>
     public virtual string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "")
     {
-#pragma warning disable IDE0022 // Use expression body for methods
-        throw new PasetoNotSupportedException("The Local Purpose is not supported in the Version 1 Protocol");
-#pragma warning restore IDE0022 // Use expression body for methods
-
         /*
          * Get Nonce Specification
          * -------
@@ -85,6 +94,47 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
          *      - Note: `base64url()` means Base64url from RFC 4648 without `=` padding.
          *   
          */
+
+        if (pasetoKey is null)
+            throw new ArgumentNullException(nameof(pasetoKey));
+
+        if (string.IsNullOrWhiteSpace(payload))
+            throw new ArgumentNullException(nameof(payload));
+
+        if (!pasetoKey.IsValidFor(this, Purpose.Local))
+            throw new PasetoInvalidException($"Key is not valid for {Purpose.Local} purpose and {Version} version");
+
+        if (pasetoKey.Key.Length != KEY_SIZE_IN_BYTES)
+            throw new ArgumentException($"The key length in bytes must be {KEY_SIZE_IN_BYTES}.");
+
+        var header = $"{Version}.{Purpose.Local.ToDescription()}.";
+        var m = GetBytes(payload);
+        var f = GetBytes(footer);
+
+        // Calculate nonce
+        var b = GetRandomBytes(NONCE_SIZE_IN_BYTES);
+        using var hmacn = new HMACSHA384(b);
+        var nonce = hmacn.ComputeHash(m)[..NONCE_SIZE_IN_BYTES];
+
+        // Split the key into an Encryption key and Authentication key
+        var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_INFO), salt: nonce[..NONCE_SPLIT_SIZE_IN_BYTES]);
+        var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_INFO), salt: nonce[..NONCE_SPLIT_SIZE_IN_BYTES]);
+
+        // Encrypt using AES CTR (counter) mode cipher
+        var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
+        cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce[NONCE_SPLIT_SIZE_IN_BYTES..]));
+        var c = cipher.DoFinal(GetBytes(payload));
+
+        var pack = PreAuthEncode(GetBytes(header), nonce, c, f);
+
+        // Calculate MAC
+        using var hmac = new HMACSHA384(ak);
+        var t = hmac.ComputeHash(pack);
+
+        if (!string.IsNullOrEmpty(footer))
+            footer = $".{ToBase64Url(footer)}";
+
+        return $"{header}{ToBase64Url(CryptoBytes.Combine(nonce, c, t))}{footer}";
     }
 
     /// <summary>
@@ -96,10 +146,6 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <exception cref="PasetoNotSupportedException"></exception>
     public virtual string Decrypt(string token, PasetoSymmetricKey pasetoKey)
     {
-#pragma warning disable IDE0022 // Use expression body for methods
-        throw new PasetoNotSupportedException("The Local Purpose is not supported in the Version 1 Protocol");
-#pragma warning restore IDE0022 // Use expression body for methods
-
         /*
          * Decrypt Specification
          * -------
@@ -140,6 +186,66 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
          *      );
          *   
          */
+
+        if (string.IsNullOrWhiteSpace(token))
+            throw new ArgumentNullException(nameof(token));
+
+        if (pasetoKey is null)
+            throw new ArgumentNullException(nameof(pasetoKey));
+
+        if (!pasetoKey.IsValidFor(this, Purpose.Local))
+            throw new PasetoInvalidException($"Key is not valid for {Purpose.Local} purpose and {Version} version");
+
+        if (pasetoKey.Key.Length != KEY_SIZE_IN_BYTES)
+            throw new ArgumentException($"The key length in bytes must be {KEY_SIZE_IN_BYTES}.");
+
+        var header = $"{Version}.{Purpose.Local.ToDescription()}.";
+
+        if (!token.StartsWith(header))
+            throw new PasetoInvalidException($"The specified token is not valid for {Purpose.Local} purpose and {Version} version");
+
+        var parts = token.Split('.');
+        var footer = GetString(FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty));
+
+        var bytes = FromBase64Url(parts[2]).AsSpan();
+
+        if (bytes.Length < NONCE_SIZE_IN_BYTES + KEYDERIVATION_SIZE_IN_BYTES + NONCE_SPLIT_SIZE_IN_BYTES)
+            throw new PasetoInvalidException("Payload is not valid");
+
+        try
+        {
+            // Decode the payload
+            var right = NONCE_SIZE_IN_BYTES + NONCE_SPLIT_SIZE_IN_BYTES;
+            var n = bytes[..NONCE_SIZE_IN_BYTES];
+            //var t = bytes[..^right]; // somehow it doesn't return the expected result... ¯\(º_o)/¯
+            var c = bytes[NONCE_SIZE_IN_BYTES..^right];
+            var tlen = bytes.Length - right;
+            var t = bytes[tlen..];
+
+            // Split the key into an Encryption key and Authentication key
+            var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_INFO), salt: n[..NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
+            var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_INFO), salt: n[..NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
+
+            var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), GetBytes(footer));
+
+            // Recalculate MAC
+            using var hmac = new HMACSHA384(ak);
+            var t2 = hmac.ComputeHash(pack);
+
+            if (!CryptoBytes.ConstantTimeEquals(t, t2))
+                throw new PasetoInvalidException("Hash is not valid");
+
+            // Decrypt
+            var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
+            cipher.Init(false, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), n[NONCE_SPLIT_SIZE_IN_BYTES..].ToArray()));
+            var plaintext = cipher.DoFinal(c.ToArray());
+
+            return GetString(plaintext);
+        }
+        catch (Exception ex)
+        {
+            throw new PasetoInvalidException(ex.Message, ex);
+        }
     }
 
     /// <summary>
