@@ -1,6 +1,7 @@
 ﻿namespace Paseto.Utils;
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,26 @@ using System.Text;
 internal static class EncodingHelper
 {
     #region Authentication Padding
+
+    /// <summary>
+    /// Pre-Authentication Padding.
+    /// Multi-part messages (e.g. header, content, footer) are encoded in a specific manner before being passed to the respective cryptographic function.
+    /// In local mode, this encoding is applied to the additional associated data (AAD). In remote mode, which is not encrypted, this encoding is applied to the components of the token, with respect to the protocol version being followed.
+    ///
+    /// See <a href="https://github.com/paseto-standard/paseto-spec/blob/master/docs/01-Protocol-Versions/Common.md#authentication-padding">PAE</a>
+    /// </summary>
+    /// <param name="pieces">The pieces.</param>
+    /// <returns>System.Byte[].</returns>
+    internal static byte[] PreAuthEncode(params byte[][] pieces)
+    {
+        var accumulator = LE64(pieces.Length);
+        foreach (var piece in pieces)
+        {
+            var len = LE64(piece.Length);
+            accumulator = accumulator.Concat(len).Concat(piece).ToArray();
+        }
+        return accumulator;
+    }
 
     /// <summary>
     /// Pre-Authentication Padding.
@@ -56,9 +77,27 @@ internal static class EncodingHelper
     /// Encodes a 64-bit unsigned integer into a little-endian binary string.
     /// The most significant bit MUST be cleared for interoperability with programming languages that do not have unsigned integer support.
     /// </summary>
+    /// <param name="n">The input.</param>
+    /// <returns>System.Byte[].</returns>
+    private static byte[] LE64(int n)
+    {
+        var up = ~~(n / 0xffffffff);
+        var dn = (n % 0xffffffff) - up;
+
+        var buf = new byte[8].AsSpan();
+        BinaryPrimitives.WriteUInt32LittleEndian(buf[4..], (uint)up);
+        BinaryPrimitives.WriteUInt32LittleEndian(buf, (uint)dn);
+
+        return buf.ToArray();
+    }
+
+    /// <summary>
+    /// Encodes a 64-bit unsigned integer into a little-endian binary string.
+    /// The most significant bit MUST be cleared for interoperability with programming languages that do not have unsigned integer support.
+    /// </summary>
     /// <param name="input">The input.</param>
     /// <returns>System.Byte[].</returns>
-    private static byte[] LE64(int input)
+    private static byte[] LE64Alt(int input)
     {
         var result = new byte[0];
         for (var i = 0; i < 8; i++)

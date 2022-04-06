@@ -1,6 +1,7 @@
 ﻿namespace Paseto.Protocol;
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 
@@ -422,7 +423,7 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         var i = ""; // implicit assertion (add assertion/implicit parameter as string)
 
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
-        var pack = PreAuthEncode(new[] { pk, GetBytes(header), m, f, GetBytes(i) });
+        var pack = PreAuthEncode(pk, GetBytes(header), m, f, GetBytes(i));
 
         // Sign the data
         var signer = new ECDsaSigner(new HMacDsaKCalculator(new Sha384Digest()));
@@ -430,6 +431,32 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var signature = signer.GenerateSignature(pack);
         var sig = signature[0].ToByteArrayUnsigned().Concat(signature[1].ToByteArrayUnsigned()).ToArray(); // must be 96 bytes
+        var sig2 = signature[0].ToByteArray().Concat(signature[1].ToByteArray()).ToArray();
+
+        var r = signature[0];
+        var s = signature[1];
+
+        var sigDer = new DerSequence(new DerInteger(r), new DerInteger(s)).GetDerEncoded(); // DerEncode
+        //var sigBer = new DerSequence(new DerInteger(r), new DerInteger(s)).GetEncoded();
+
+        //var pkk = Cryptography.EllipticCurve.PrivateKey.FromPem("-----BEGIN EC PARAMETERS-----\nBgUrgQQACg==\n-----END EC PARAMETERS-----\n-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIODvZuS34wFbt0X53+P5EnSj6tMjfVK01dD1dgDH02RzoAcGBSuBBAAK\noUQDQgAE/nvHu/SQQaos9TUljQsUuKI15Zr5SabPrbwtbfT/408rkVVzq8vAisbB\nRmpeRREXj5aog/Mq8RrdYy75W9q/Ig==\n-----END EC PRIVATE KEY-----\n");
+        //var sign3 = Cryptography.Ecdsa.Sign("this is a message", pkk);
+        //var sign33 = sign3.ToDer();
+
+        // Convert sig to DER
+        using var ms = new MemoryStream();
+        using var asn1stream = Asn1OutputStream.Create(ms);
+
+        //var seqgen = new DerSequenceGenerator(asn1stream);
+        //seqgen.AddObject(new DerInteger(signature[0]));
+        //seqgen.AddObject(new DerInteger(signature[1]));
+        //seqgen.Close();
+        //var what = ms.ToArray();
+
+        asn1stream.WriteObject(new DerSequence(new DerInteger(r), new DerInteger(s)));
+        var sigEncoded = ms.ToArray();
+
+        // 112, 177, 200, 113, 
 
         // TODO: Validate key length
         // It should be a PEM (maybe)
