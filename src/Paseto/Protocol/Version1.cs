@@ -5,12 +5,21 @@ using System.Linq;
 using System.Security.Cryptography;
 
 using NaCl.Core.Internal;
+using Org.BouncyCastle.Asn1.Pkcs;
+using Org.BouncyCastle.Asn1.Sec;
+using Org.BouncyCastle.Asn1.X509;
+using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Crypto.Digests;
+using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Security;
 
 using Paseto.Cryptography.Key;
 using Paseto.Extensions;
 using static Paseto.Utils.EncodingHelper;
+using Org.BouncyCastle.Crypto.Generators;
 
 /// <summary>
 /// Paseto Version 1.
@@ -24,6 +33,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     public const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
     public const int KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
     public const int NONCE_SPLIT_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 2; // 16
+    public const int SALT_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 6; // 48
 
     public const string EK_INFO = "paseto-encryption-key";
     public const string AK_INFO = "paseto-auth-key-for-aead";
@@ -305,11 +315,48 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
         var pack = PreAuthEncode(new[] { header, payload, footer });
 
+        /*
+         * BCL doesn't support RSA-PSS SHA-384 MGF1
+         * 
         using var rsa = RSA.Create();
         //rsa.KeySize = 2048; // Default
         rsa.FromCompatibleXmlString(GetString(pasetoKey.Key.Span));
 
         var signature = rsa.SignData(pack, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
+        */
+
+        /*
+         * Using Bouncy Castle
+         */
+
+        // Create Private Key
+        var privKeyParams = pasetoKey.Key.Span.ToArray().ToPrivateKeyFromByteArray();
+        //var pubKeyParams = pasetoKey.Key.Span.ToArray().ToPublicKeyFromByteArray();
+
+        //var seq = (Asn1Sequence)Asn1Object.FromByteArray(pasetoKey.Key.Span.ToArray());
+        //var privKeyStruct = RsaPrivateKeyStructure.GetInstance(seq);
+        //var privKeyParams = new RsaPrivateCrtKeyParameters(privKeyStruct.Modulus, privKeyStruct.PublicExponent, privKeyStruct.PrivateExponent, privKeyStruct.Prime1, privKeyStruct.Prime2, privKeyStruct.Exponent1, privKeyStruct.Exponent2, privKeyStruct.Coefficient);
+
+        //var blindFactorGen = new RsaBlindingFactorGenerator();
+        //blindFactorGen.Init(pubKeyParams);
+        //var blindFactor = blindFactorGen.GenerateBlindingFactor();
+        //var blindParams = new RsaBlindingParameters(pubKeyParams, blindFactor);
+        //var blindEngine = new RsaBlindingEngine();
+
+        var salt = GetRandomBytes(SALT_SIZE_IN_BYTES);
+
+        //var rsa = new PssSigner(blindEngine, new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
+        //rsa.Init(true, new ParametersWithRandom(blindParams, new SecureRandom(salt)));
+        //rsa.BlockUpdate(pack, 0, pack.Length);
+        //var signature = rsa.GenerateSignature();
+
+        // Sign using RSA-PSS, SHA-384, MGF1(SHA-384), 48 byte salt length, 0xBC trailer
+        var rsa = new PssSigner(new RsaEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
+        rsa.Init(true, new ParametersWithRandom(privKeyParams, new SecureRandom(salt)));
+        //var rsa = new PssSigner(new RsaEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES);
+        //rsa.Init(true, new ParametersWithRandom(privKeyParams));
+        //rsa.Init(true, privKeyParams);
+        var signature = rsa.GenerateSignature();
 
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(GetBytes(footer))}";
@@ -388,11 +435,31 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var pack = PreAuthEncode(new[] { GetBytes(header), payload, footer });
 
+        /*
+         * BCL doesn't support RSA-PSS SHA-384 MGF1
+         * 
         using var rsa = RSA.Create();
         //rsa.KeySize = 2048; // Default
         rsa.FromCompatibleXmlString(GetString(pasetoKey.Key.Span));
 
         var valid = rsa.VerifyData(pack, signature, HashAlgorithmName.SHA384, RSASignaturePadding.Pss);
+        */
+
+        /*
+         * Using Bouncy Castle
+         */
+
+        // Create Public Key
+        var seq = (Asn1Sequence)Asn1Object.FromByteArray(pasetoKey.Key.Span.ToArray());
+        var pubKeyStruct = RsaPublicKeyStructure.GetInstance(seq);
+        var pubKeyParams = new RsaKeyParameters(false, pubKeyStruct.Modulus, pubKeyStruct.PublicExponent);
+
+        // Sign using RSA-PSS, SHA-384, MGF1(SHA-384), 48 byte salt length, 0xBC trailer
+        var rsa = new PssSigner(new RsaBlindingEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
+        //rsa.Init(false, PublicKeyFactory.CreateKey(pasetoKey.Key.Span.ToArray()));
+        rsa.Init(false, pubKeyParams);
+        rsa.BlockUpdate(pack, 0, pack.Length);
+        var valid = rsa.VerifySignature(signature);
 
         return (valid, GetString(payload));
     }
