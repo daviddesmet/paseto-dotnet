@@ -244,11 +244,117 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
 
     public string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "")
     {
-        throw new PasetoNotSupportedException();
+        /*
+         * Sign Specification
+         * -------
+         *
+         * Given a message `m`, Ed25519 secret key `sk`, and optional footer `f` (which defaults to empty string), and an optional implicit assertion `i` (which defaults to empty string):
+         *   1. Before signing, first assert that the key being used is intended for use with `v4.public` tokens, and is the secret key of the intended keypair. See [Algorithm Lucidity](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/03-Algorithm-Lucidity.md) for more information.
+         *   2. Set `h` to `v4.public`.
+         *   3. Pack `h`, `m`, `f` and `i` together using PAE (pre-authentication encoding). We'll call this `m2`.
+         *   4. Sign `m2` using Ed25519 `sk`. We'll call this `sig`.
+         *      sig = crypto_sign_detached(
+         *          message = m2,
+         *          private_key = sk
+         *      );
+         *   5. If `f` is:
+         *      - Empty: return "h || base64url(m || sig)"
+         *      - Non-empty: return "h || base64url(m || sig) || . || base64url(f)"
+         *      - ...where || means "concatenate"
+         *      - Note: `base64url()` means Base64url from RFC 4648 without `=` padding.
+         *
+         */
+
+        if (pasetoKey is null)
+            throw new ArgumentNullException(nameof(pasetoKey));
+
+        if (string.IsNullOrWhiteSpace(payload))
+            throw new ArgumentNullException(nameof(payload));
+
+        if (!pasetoKey.IsValidFor(this, Purpose.Public))
+            throw new PasetoInvalidException($"Key is not valid for {Purpose.Public} purpose and {Version} version");
+
+        if (pasetoKey.Key.Length == 0)
+            throw new ArgumentException("Secret Key is missing", nameof(pasetoKey));
+
+        var i = ""; // implicit assertion (add assertion/implicit parameter as string)
+
+        var header = $"{Version}.{Purpose.Public.ToDescription()}.";
+        var pack = PreAuthEncode(new[] { header, payload, footer, i });
+
+        var signature = Ed25519.Sign(pack, pasetoKey.Key.ToArray());
+
+        if (!string.IsNullOrEmpty(footer))
+            footer = $".{ToBase64Url(GetBytes(footer))}";
+
+        return $"{header}{ToBase64Url(GetBytes(payload).Concat(signature))}{footer}";
     }
 
     public (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
     {
-        throw new PasetoNotSupportedException();
+        /*
+         * Verify Specification
+         * -------
+         *
+         * Given a signed message `sm`, public key `pk`, and optional footer `f` (which defaults to empty string), and an optional implicit assertion `i` (which defaults to empty string):
+         *   1. Before verifying, first assert that the key being used is intended for use with `v4.public` tokens, and the public key of the intended keypair. See [Algorithm Lucidity](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/03-Algorithm-Lucidity.md) for more information.
+         *   2. If `f` is not empty, verify that the value appended to the token matches `f`, using a constant-time string compare function.
+         *   3. Verify that the message begins with `v4.public.`, otherwise throw an exception. This constant will be referred to as `h`.
+         *   4. Decode the payload (`sm` sans `h`, `f`, and the optional trailing period between `m` and `f`) from base64url to raw binary.
+         *      - Set:
+         *          - `s` to the rightmost 64 bytes
+         *          - `m` to the leftmost remainder of the payload, excluding `s`
+         *   5. Pack `h`, `m`, `f` and `i` together using PAE (pre-authentication encoding). We'll call this `m2`.
+         *   6. Use Ed25519 to verify that the signature is valid for the message.
+         *      valid = crypto_sign_verify_detached(
+         *          signature = s,
+         *          message = m2,
+         *          publik_key = pk
+         *      );
+         *   7. If the signature is valid, return `m`. Otherwise, throw an exception.
+         *
+         */
+
+        if (string.IsNullOrWhiteSpace(token))
+            throw new ArgumentNullException(nameof(token));
+
+        if (pasetoKey is null)
+            throw new ArgumentNullException(nameof(pasetoKey));
+
+        if (!pasetoKey.IsValidFor(this, Purpose.Public))
+            throw new PasetoInvalidException($"Key is not valid for {Purpose.Public} purpose and {Version} version");
+
+        if (pasetoKey.Key.Length == 0)
+            throw new ArgumentException("Public Key is missing", nameof(pasetoKey));
+
+        if (pasetoKey.Key.Length != KEY_SIZE_IN_BYTES)
+            throw new ArgumentException($"The key length in bytes must be {KEY_SIZE_IN_BYTES}.", nameof(pasetoKey));
+
+        var header = $"{Version}.{Purpose.Public.ToDescription()}.";
+
+        if (!token.StartsWith(header))
+            throw new PasetoInvalidException($"The specified token is not valid for {Purpose.Public} purpose and {Version} version");
+
+        var parts = token.Split('.');
+        var footer = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
+
+        var body = FromBase64Url(parts[2]);
+
+        const int blockSize = 64;
+        if (body.Length < blockSize)
+            throw new PasetoInvalidException("Payload does not contain signature");
+
+        // Decode the payload
+        var len = body.Length - blockSize;
+        var signature = body[..len];
+        var payload = body[len..];
+
+        var i = ""; // implicit assertion (add assertion/implicit parameter as string)
+
+        var pack = PreAuthEncode(new[] { GetBytes(header), payload, footer, GetBytes(i) });
+
+        var valid = Ed25519.Verify(signature, pack, pasetoKey.Key.ToArray());
+
+        return (valid, GetString(payload));
     }
 }

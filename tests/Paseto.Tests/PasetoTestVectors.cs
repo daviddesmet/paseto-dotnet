@@ -65,7 +65,7 @@ public class PasetoTestVectors
                 }
                 else
                 {
-                    if (version == "v2")
+                    if (version == "v2" || version == "v4")
                     {
                         // We assert the seed since we want them to fail in case it changes
                         var secretKey = CryptoBytes.ToHexStringLower(Ed25519.ExpandedPrivateKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));

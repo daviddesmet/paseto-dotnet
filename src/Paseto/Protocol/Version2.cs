@@ -305,6 +305,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
          *   5. Pack `h`, `m`, and `f` together using PAE (pre-authentication encoding). We'll call this `m2`.
          *   6. Use Ed25519 to verify that the signature is valid for the message.
          *      valid = crypto_sign_verify_detached(
+         *          signature = s,
          *          message = m2,
          *          publik_key = pk
          *      );
