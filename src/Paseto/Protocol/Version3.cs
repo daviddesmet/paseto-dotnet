@@ -40,6 +40,8 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
     private const string ECDSA_PRE_KEY = "303e0201010430";
     private const string ECDSA_ID_GEN = "a00706052b81040022";
 
+    public static readonly byte[] ECDSA_POINT_COMPRESSION_POINTS = new byte[] { 0x02, 0x03, 0x04 };
+
     public const string VERSION = "v3";
 
     /// <summary>
@@ -409,10 +411,11 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         var publicParams = new ECPublicKeyParameters(q, privKeyParams.Parameters);
 
         // Point compression of pk
-        var x = publicParams.Q.XCoord.GetEncoded();
-        var y = publicParams.Q.YCoord.GetEncoded();
-        var sign = (byte)(0x02 + (y[^1] & 1));
-        var pk = CryptoBytes.Combine(new byte[] { sign }, x);
+        //var x = publicParams.Q.XCoord.GetEncoded();
+        //var y = publicParams.Q.YCoord.GetEncoded();
+        //var sign = (byte)(0x02 + (y[^1] & 1));
+        //var pk = CryptoBytes.Combine(new byte[] { sign }, x);
+        var pk = publicParams.Q.GetEncoded(compressed: true);
 
         // Pack
         var m = GetBytes(payload);
@@ -555,12 +558,103 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (pasetoKey.Key.Length == 0)
             throw new ArgumentException("Public Key is missing", nameof(pasetoKey));
 
-        if (pasetoKey.Key.Length != PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES || pasetoKey.Key.Length != PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES)
-            throw new ArgumentException($"The key length must be {PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES} bytes (compressed public key) or {PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES} bytes (uncompressed public key).");
+        var mark = pasetoKey.Key.Span[0];
 
+        if (!ECDSA_POINT_COMPRESSION_POINTS.Contains(mark))
+            throw new ArgumentException("Public Key is invalid", nameof(pasetoKey));
+
+        if ((mark == ECDSA_POINT_COMPRESSION_POINTS[0] || mark == ECDSA_POINT_COMPRESSION_POINTS[1]) && pasetoKey.Key.Length != PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES)
+            throw new ArgumentException($"The key length must be {PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES} bytes for compressed public keys");
+
+        if (mark == ECDSA_POINT_COMPRESSION_POINTS[2] && pasetoKey.Key.Length != PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES)
+            throw new ArgumentException($"The key length must be {PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES} bytes for uncompressed public keys");
+
+        //if (pasetoKey.Key.Length != PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES || pasetoKey.Key.Length != PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES)
+        //    throw new ArgumentException($"The key length must be {PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES} bytes (compressed public key) or {PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES} bytes (uncompressed public key).");
+
+        var header = $"{Version}.{Purpose.Public.ToDescription()}.";
+
+        if (!token.StartsWith(header))
+            throw new PasetoInvalidException($"The specified token is not valid for {Purpose.Public} purpose and {Version} version");
+
+        var parts = token.Split('.');
+        var footer = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
+
+        var body = FromBase64Url(parts[2]);
+
+        const int blockSize = 96;
+        if (body.Length < blockSize)
+            throw new PasetoInvalidException("Payload does not contain signature");
+
+        // Decode the payload
+        var len = body.Length - blockSize;
+        var signature = body[len..];
+        var payload = body[..len];
+
+        var i = ""; // implicit assertion (add assertion/implicit parameter as string)
+
+        // Calculate Public Key
         // For validation, it should be:
         // 49 bytes (compressed public key) and begin with 0x02 or 0x03 byte, and concat with prefix 3046301006072a8648ce3d020106052b81040022033200 hex
         // 97 bytes (uncompressed public key) and begin with 0x04 byte, and concat with prefix 3076301006072a8648ce3d020106052b81040022036200
+
+        //var uncompressed = mark == ECDSA_POINT_COMPRESSION_POINTS[2];
+        //var preKey = uncompressed ? CryptoBytes.FromHexString("3076301006072a8648ce3d020106052b81040022036200") : CryptoBytes.FromHexString("3046301006072a8648ce3d020106052b81040022033200");
+        //var pubKey = CryptoBytes.Combine(preKey, pasetoKey.Key.Span.ToArray());
+
+        //var x = new BigInteger(1, pubKey.Skip(1).Take(48).ToArray());
+        //var y = new BigInteger(1, pubKey.Skip(1 + 48).ToArray());
+
+
+        var ecParams = NistNamedCurves.GetByName("P-384"); // or SecNamedCurves.GetByName("secp384r1");
+        var domainParameters = new ECDomainParameters(ecParams.Curve, ecParams.G, ecParams.N, ecParams.H, ecParams.GetSeed());
+        //var G = ecParams.G;
+        //var curve = ecParams.Curve;
+        //var q = curve.CreatePoint(x, y);
+
+        //var pubkeyParam = new ECPublicKeyParameters(q, domainParameters);
+        //var pubkeyParam = new ECPublicKeyParameters("ECDSA", ecParams.Curve.DecodePoint(pubKey), domainParameters);
+        var pubkeyParam = new ECPublicKeyParameters("ECDSA", ecParams.Curve.DecodePoint(pasetoKey.Key.Span.ToArray()), domainParameters);
+        var pk = pubkeyParam.Q.GetEncoded(compressed: true); // always compressed?
+
+        var pack = PreAuthEncode(pk, GetBytes(header), payload, footer, GetBytes(i));
+
+        // Verify signature using ECDSA
+        var signer = new ECDsaSigner(new HMacDsaKCalculator(new Sha384Digest()));
+        signer.Init(false, pubkeyParam);
+
+        var sigLen = signature.Length / 2;
+        using var ms = new MemoryStream();
+        using var asn1stream = Asn1OutputStream.Create(ms);
+        var v = new Asn1EncodableVector
+        {
+            new DerInteger(new BigInteger(1, signature[..sigLen])),
+            new DerInteger(new BigInteger(1, signature[sigLen..]))
+        };
+        var seq = new DerSequence(v);
+        asn1stream.WriteObject(seq);
+
+        // same as above but throws
+        //using var decoder = new Asn1InputStream(pack);
+        //var seq = (Asn1Sequence)decoder.ReadObject();
+
+        using var decoder2 = new Asn1InputStream(signature);
+        var seq2 = (Asn1Sequence)decoder2.ReadObject();
+
+
+        // OpenSSL deviates from the DER spec by interpreting these values as unsigned, though they should not be
+        // Thus, we always use the positive versions. See: http://r6.ca/blog/20111119T211504Z.html
+        var result = signer.VerifySignature(pack, ((DerInteger)seq[0]).PositiveValue, ((DerInteger)seq[1]).PositiveValue);
+
+        //using (var asn1stream = Asn1OutputStream.Create(ms))
+        //{
+        //    var seq = new DerSequenceGenerator(asn1stream);
+        //    seq.AddObject(new DerInteger(sig[0]));
+        //    seq.AddObject(new DerInteger(sig[1]));
+        //    seq.Close();
+        //    signatureEncoded = ms.ToArray();
+        //}
+        //signer.VerifySignature(pack);
 
 #pragma warning disable IDE0022 // Use expression body for methods
         throw new PasetoNotSupportedException("The Public Purpose is not supported in the Version 3 Protocol");

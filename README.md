@@ -12,8 +12,8 @@
 
 | purpose | v1 | v2 | v3 | v4 | 
 | -- | -- | -- | -- | -- |
-| local | ✅ | ✅ | ✅ | ❌ |
-| public | ✅ | ✅ | ✅ | ✅ |
+| local | ✅ | ✅ | ✅ | ✅ |
+| public | ✅ | ✅ | ❌ | ✅ |
 
 ## Usage
 
