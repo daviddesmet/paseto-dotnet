@@ -32,9 +32,6 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     public const int ASYM_KEY_SIZE_IN_BITS = 2048;
     public const int ASYM_KEY_SIZE_IN_BYTES = ASYM_KEY_SIZE_IN_BITS / 8; // 256
 
-    public const string EK_INFO = "paseto-encryption-key";
-    public const string AK_INFO = "paseto-auth-key-for-aead";
-
     public const string VERSION = "v1";
 
     /// <summary>
@@ -124,8 +121,8 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         var nonce = hmacn.ComputeHash(m)[..SYM_NONCE_SIZE_IN_BYTES];
 
         // Split the key into an Encryption key and Authentication key
-        var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_INFO), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
-        var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_INFO), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
+        var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_DOMAIN_SEPARATION), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
+        var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_DOMAIN_SEPARATION), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
 
         // Encrypt using AES CTR (counter) mode cipher
         var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
@@ -230,8 +227,8 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
             var t = bytes[tlen..];
 
             // Split the key into an Encryption key and Authentication key
-            var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_INFO), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
-            var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_INFO), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
+            var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_DOMAIN_SEPARATION), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
+            var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_DOMAIN_SEPARATION), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
 
             var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), GetBytes(footer));
 

@@ -189,7 +189,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
         var nonce = bytes[..NONCE_SIZE_IN_BYTES];
         var payload = bytes[NONCE_SIZE_IN_BYTES..];
 
-        var pack = PreAuthEncode(new[] { GetBytes(header), nonce.ToArray(), GetBytes(footer) });
+        var pack = PreAuthEncode(GetBytes(header), nonce.ToArray(), GetBytes(footer));
 
         // Decrypt
 

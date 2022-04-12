@@ -4,6 +4,9 @@ namespace Paseto.Protocol;
 
 public abstract class PasetoProtocolVersion
 {
+    public const string EK_DOMAIN_SEPARATION = "paseto-encryption-key";
+    public const string AK_DOMAIN_SEPARATION = "paseto-auth-key-for-aead";
+
     /// <summary>
     /// Gets the unique header version string with which the protocol can be identified.
     /// </summary>

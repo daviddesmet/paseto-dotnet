@@ -37,9 +37,6 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
     public const int PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES = 97;
     public const int SIG_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 12; // 96
 
-    public const string EK_INFO = "paseto-encryption-key";
-    public const string AK_INFO = "paseto-auth-key-for-aead";
-
     private const string ECDSA_PRE_KEY = "303e0201010430";
     private const string ECDSA_ID_GEN = "a00706052b81040022";
 
@@ -121,11 +118,11 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         var n = GetRandomBytes(NONCE_SIZE_IN_BYTES);
 
         // Split the key into an Encryption key and Authentication key
-        var tmp = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(EK_INFO), n));
+        var tmp = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(EK_DOMAIN_SEPARATION), n));
         var ek = tmp[..32];
         var n2 = tmp[32..];
 
-        var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(AK_INFO), n));
+        var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n));
 
         // Initialize AES CTR (counter) mode cipher
         var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
@@ -145,7 +142,7 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         var i = ""; // implicit assertion (add assertion/implicit parameter as string)
 
         var header = $"{Version}.{Purpose.Local.ToDescription()}.";
-        var pack = PreAuthEncode(new[] { GetBytes(header), n, c, GetBytes(footer), GetBytes(i) });
+        var pack = PreAuthEncode(GetBytes(header), n, c, GetBytes(footer), GetBytes(i));
 
         // Calculate MAC
         using var hmac = new HMACSHA384(ak);
@@ -250,15 +247,15 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
             var t = bytes[tlen..];
 
             // Split the key into an Encryption key and Authentication key
-            var tmp = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(EK_INFO), n.ToArray()));
+            var tmp = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(EK_DOMAIN_SEPARATION), n.ToArray()));
             var ek = tmp[..32];
             var n2 = tmp[32..];
 
-            var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(AK_INFO), n.ToArray()));
+            var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n.ToArray()));
 
             var i = ""; // implicit assertion (add assertion/implicit parameter as string)
 
-            var pack = PreAuthEncode(new[] { GetBytes(header), n.ToArray(), c.ToArray(), GetBytes(footer), GetBytes(i) });
+            var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), GetBytes(footer), GetBytes(i));
 
             // Recalculate MAC
             using var hmac = new HMACSHA384(ak);

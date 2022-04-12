@@ -26,11 +26,15 @@ public sealed class PasetoBuilder
             Version2.VERSION,
             () => new Version2()
         },
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             Version3.VERSION,
             () => new Version3()
+        },
+        {
+            Version4.VERSION,
+            () => new Version4()
         }
-#pragma warning restore CS0618 // Type or member is obsolete
     };
 
     //private IJsonSerializer _serializer = new JsonNetSerializer();
@@ -58,6 +62,20 @@ public sealed class PasetoBuilder
     /// <returns>Current builder instance</returns>
     public PasetoBuilder UseV2(Purpose purpose) => UseImpl(new Version2(), purpose);
 #pragma warning restore CS0618 // Type or member is obsolete
+
+    /// <summary>
+    /// Sets the protocol version 3 and the purpose.
+    /// </summary>
+    /// <param name="purpose">The purpose.</param>
+    /// <returns>Current builder instance</returns>
+    public PasetoBuilder UseV3(Purpose purpose) => UseImpl(new Version3(), purpose);
+
+    /// <summary>
+    /// Sets the protocol version 4 and the purpose.
+    /// </summary>
+    /// <param name="purpose">The purpose.</param>
+    /// <returns>Current builder instance</returns>
+    public PasetoBuilder UseV4(Purpose purpose) => UseImpl(new Version4(), purpose);
 
     /// <summary>
     /// Sets the protocol version and the purpose.

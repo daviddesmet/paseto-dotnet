@@ -39,6 +39,7 @@ public class PasetoTestVectors
     [InlineData("v1")]
     [InlineData("v2")]
     [InlineData("v3")]
+    [InlineData("v4")]
     public void VersionTestVectors(string version)
     {
         var json = GetPasetoTestVector(version);

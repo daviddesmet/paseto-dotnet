@@ -14,7 +14,7 @@ public class Blake2bMac : HMAC
     public const int KEY_SIZE_MAX = 64;
 
     private readonly int _hashSize;
-    private Func<Blake2bBase> _createImpl;
+    private readonly Func<Blake2bBase> _createImpl;
     private Blake2bBase _implementation;
 
     /// <summary>
@@ -26,10 +26,10 @@ public class Blake2bMac : HMAC
         HashName = "Blake2bMac";
 
         if ((hashSize % HASH_SIZE_MIN) > 0)
-            throw new ArgumentException("Hash Size must be byte aligned", nameof(hashSize));
+            throw new ArgumentException("Hash size must be byte aligned", nameof(hashSize));
 
         if (hashSize < HASH_SIZE_MIN || hashSize > HASH_SIZE_MAX)
-            throw new ArgumentException($"Hash Size must be between {HASH_SIZE_MIN} and {HASH_SIZE_MAX}", nameof(hashSize));
+            throw new ArgumentException($"Hash size must be between {HASH_SIZE_MIN} and {HASH_SIZE_MAX}", nameof(hashSize));
 
         _hashSize = hashSize;
         _createImpl = CreateImplementation;
