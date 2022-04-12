@@ -27,6 +27,7 @@ using Org.BouncyCastle.Asn1.X509;
 [Category("CI")]
 public class PasetoTestVectors
 {
+    private readonly string[] SKIP_ASSERT_ENCODE = new string[] { "v1" };
     private readonly Regex ECDsaPrivateKeyRegex = new(@"-----(BEGIN|END) EC PRIVATE KEY-----[\W]*", RegexOptions.Compiled);
     private readonly Regex RsaPrivateKeyRegex = new(@"-----(BEGIN|END) (RSA|OPENSSH|ENCRYPTED) PRIVATE KEY-----[\W]*", RegexOptions.Compiled);
     private readonly Regex RsaPublicKeyRegex = new(@"-----(BEGIN|END) PUBLIC KEY-----[\W]*", RegexOptions.Compiled);
@@ -71,20 +72,10 @@ public class PasetoTestVectors
 
                         var publicKey = CryptoBytes.ToHexStringLower(Ed25519.PublicKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
                         publicKey.Should().Be(test.PublicKey);
-
-                        // Use Public & Secret Keys
-                        builder = builder.Use(version, Purpose.Public)
-                                         .WithKey(ReadKey(test.SecretKey), Encryption.AsymmetricSecretKey);
                     }
-                    else
-                    {
-                        // Use Public & Secret Keys
-                        //builder = builder.Use(version, Purpose.Public)
-                        //                 .WithKey(ReadKey(test.SecretKeyPem), Encryption.AsymmetricSecretKey);
 
-                        builder = builder.Use(version, Purpose.Public)
-                                         .WithKey(ReadKey(test.SecretKey), Encryption.AsymmetricSecretKey);
-                    }
+                    builder = builder.Use(version, Purpose.Public)
+                                     .WithKey(ReadKey(test.SecretKey), Encryption.AsymmetricSecretKey);
                 }
 
                 if (!string.IsNullOrEmpty(test.Payload))
@@ -106,7 +97,20 @@ public class PasetoTestVectors
                 {
                     var token = builder.Encode();
 
-                    token.Should().Be(test.Token);
+                    if (SKIP_ASSERT_ENCODE.Contains(version) && test.IsPublic)
+                    {
+                        // The generated token is always different, so we just validate it can actually be decoded
+                        builder = builder.Use(version, Purpose.Public)
+                                         .WithKey(ReadKey(test.PublicKey), Encryption.AsymmetricPublicKey);
+
+                        var payload = builder.Decode(token);
+
+                        payload.Should().Be(test.Payload);
+                    }
+                    else
+                    {
+                        token.Should().Be(test.Token);
+                    }
                 }
                 catch (PasetoNotSupportedException)
                 {

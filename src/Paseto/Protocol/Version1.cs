@@ -6,20 +6,14 @@ using System.Security.Cryptography;
 
 using NaCl.Core.Internal;
 using Org.BouncyCastle.Asn1.Pkcs;
-using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.X509;
-using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Asn1;
-using Org.BouncyCastle.Crypto.Digests;
-using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Security;
 
 using Paseto.Cryptography.Key;
 using Paseto.Extensions;
 using static Paseto.Utils.EncodingHelper;
-using Org.BouncyCastle.Crypto.Generators;
 
 /// <summary>
 /// Paseto Version 1.
@@ -29,11 +23,14 @@ using Org.BouncyCastle.Crypto.Generators;
 public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
 {
     public const int KEY_SIZE_IN_INTS = 8;
-    public const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int NONCE_SPLIT_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 2; // 16
-    public const int SALT_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 6; // 48
+
+    public const int SYM_KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    public const int SYM_NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    public const int SYM_KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    public const int SYM_NONCE_SPLIT_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 2; // 16
+
+    public const int ASYM_KEY_SIZE_IN_BITS = 2048;
+    public const int ASYM_KEY_SIZE_IN_BYTES = ASYM_KEY_SIZE_IN_BITS / 8; // 256
 
     public const string EK_INFO = "paseto-encryption-key";
     public const string AK_INFO = "paseto-auth-key-for-aead";
@@ -114,25 +111,25 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (!pasetoKey.IsValidFor(this, Purpose.Local))
             throw new PasetoInvalidException($"Key is not valid for {Purpose.Local} purpose and {Version} version");
 
-        if (pasetoKey.Key.Length != KEY_SIZE_IN_BYTES)
-            throw new ArgumentException($"The key length in bytes must be {KEY_SIZE_IN_BYTES}.");
+        if (pasetoKey.Key.Length != SYM_KEY_SIZE_IN_BYTES)
+            throw new ArgumentException($"The key length in bytes must be {SYM_KEY_SIZE_IN_BYTES}.");
 
         var header = $"{Version}.{Purpose.Local.ToDescription()}.";
         var m = GetBytes(payload);
         var f = GetBytes(footer);
 
         // Calculate nonce
-        var b = GetRandomBytes(NONCE_SIZE_IN_BYTES);
+        var b = GetRandomBytes(SYM_NONCE_SIZE_IN_BYTES);
         using var hmacn = new HMACSHA384(b);
-        var nonce = hmacn.ComputeHash(m)[..NONCE_SIZE_IN_BYTES];
+        var nonce = hmacn.ComputeHash(m)[..SYM_NONCE_SIZE_IN_BYTES];
 
         // Split the key into an Encryption key and Authentication key
-        var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_INFO), salt: nonce[..NONCE_SPLIT_SIZE_IN_BYTES]);
-        var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_INFO), salt: nonce[..NONCE_SPLIT_SIZE_IN_BYTES]);
+        var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_INFO), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
+        var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_INFO), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
 
         // Encrypt using AES CTR (counter) mode cipher
         var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
-        cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce[NONCE_SPLIT_SIZE_IN_BYTES..]));
+        cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce[SYM_NONCE_SPLIT_SIZE_IN_BYTES..]));
         var c = cipher.DoFinal(GetBytes(payload));
 
         var pack = PreAuthEncode(GetBytes(header), nonce, c, f);
@@ -206,8 +203,8 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (!pasetoKey.IsValidFor(this, Purpose.Local))
             throw new PasetoInvalidException($"Key is not valid for {Purpose.Local} purpose and {Version} version");
 
-        if (pasetoKey.Key.Length != KEY_SIZE_IN_BYTES)
-            throw new ArgumentException($"The key length in bytes must be {KEY_SIZE_IN_BYTES}.");
+        if (pasetoKey.Key.Length != SYM_KEY_SIZE_IN_BYTES)
+            throw new ArgumentException($"The key length in bytes must be {SYM_KEY_SIZE_IN_BYTES}.");
 
         var header = $"{Version}.{Purpose.Local.ToDescription()}.";
 
@@ -219,22 +216,22 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var bytes = FromBase64Url(parts[2]).AsSpan();
 
-        if (bytes.Length < NONCE_SIZE_IN_BYTES + KEYDERIVATION_SIZE_IN_BYTES + NONCE_SPLIT_SIZE_IN_BYTES)
+        if (bytes.Length < SYM_NONCE_SIZE_IN_BYTES + SYM_KEYDERIVATION_SIZE_IN_BYTES + SYM_NONCE_SPLIT_SIZE_IN_BYTES)
             throw new PasetoInvalidException("Payload is not valid");
 
         try
         {
             // Decode the payload
-            var right = NONCE_SIZE_IN_BYTES + NONCE_SPLIT_SIZE_IN_BYTES;
-            var n = bytes[..NONCE_SIZE_IN_BYTES];
+            var right = SYM_NONCE_SIZE_IN_BYTES + SYM_NONCE_SPLIT_SIZE_IN_BYTES;
+            var n = bytes[..SYM_NONCE_SIZE_IN_BYTES];
             //var t = bytes[..^right]; // somehow it doesn't return the expected result... ¯\(º_o)/¯
-            var c = bytes[NONCE_SIZE_IN_BYTES..^right];
+            var c = bytes[SYM_NONCE_SIZE_IN_BYTES..^right];
             var tlen = bytes.Length - right;
             var t = bytes[tlen..];
 
             // Split the key into an Encryption key and Authentication key
-            var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_INFO), salt: n[..NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
-            var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_INFO), salt: n[..NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
+            var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_INFO), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
+            var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_INFO), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
 
             var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), GetBytes(footer));
 
@@ -247,7 +244,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
 
             // Decrypt
             var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
-            cipher.Init(false, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), n[NONCE_SPLIT_SIZE_IN_BYTES..].ToArray()));
+            cipher.Init(false, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), n[SYM_NONCE_SPLIT_SIZE_IN_BYTES..].ToArray()));
             var plaintext = cipher.DoFinal(c.ToArray());
 
             return GetString(plaintext);
@@ -330,62 +327,25 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
          */
 
         // Create Private Key
-        //var privKeyParams = pasetoKey.Key.Span.ToArray().ToPrivateKeyFromByteArray();
-        //var len = privKeyParams.Modulus.BitLength; // should be 2048
-        //var pubKeyParams = pasetoKey.Key.Span.ToArray().ToPublicKeyFromByteArray();
+        RsaPrivateCrtKeyParameters privKeyParams;
+        try
+        {
+            var seq = (Asn1Sequence)Asn1Object.FromByteArray(pasetoKey.Key.Span.ToArray());
+            var privKeyStruct = RsaPrivateKeyStructure.GetInstance(seq);
+            privKeyParams = new RsaPrivateCrtKeyParameters(privKeyStruct.Modulus, privKeyStruct.PublicExponent, privKeyStruct.PrivateExponent, privKeyStruct.Prime1, privKeyStruct.Prime2, privKeyStruct.Exponent1, privKeyStruct.Exponent2, privKeyStruct.Coefficient);
 
-        // Create Private Key (when using ExportRSAPrivateKey())
-        var seq = (Asn1Sequence)Asn1Object.FromByteArray(pasetoKey.Key.Span.ToArray());
-        var privKeyStruct = RsaPrivateKeyStructure.GetInstance(seq);
-        var privKeyParams = new RsaPrivateCrtKeyParameters(privKeyStruct.Modulus, privKeyStruct.PublicExponent, privKeyStruct.PrivateExponent, privKeyStruct.Prime1, privKeyStruct.Prime2, privKeyStruct.Exponent1, privKeyStruct.Exponent2, privKeyStruct.Coefficient);
+            if (privKeyParams.Modulus.BitLength != ASYM_KEY_SIZE_IN_BITS)
+                throw new ArgumentException($"The key length in bytes must be {ASYM_KEY_SIZE_IN_BYTES}.");
+        }
+        catch (Exception)
+        {
+            throw new ArgumentException("Secret Key is invalid", nameof(pasetoKey));
+        }
 
-        //var blindFactorGen = new RsaBlindingFactorGenerator();
-        //blindFactorGen.Init(pubKeyParams);
-        //var blindFactor = blindFactorGen.GenerateBlindingFactor();
-        //var blindParams = new RsaBlindingParameters(pubKeyParams, blindFactor);
-        //var blindEngine = new RsaBlindingEngine();
-
-        //var cert = new System.Security.Cryptography.X509Certificates.X509Certificate2(pasetoKey.Key.Span);
-        //var keyLen = (int)Math.Ceiling((cert.PrivateKey.KeySize - 1) / 8.0);
-        //var keyLen = (int)Math.Ceiling((2048 - 1) / 8.0);
-        //var keyLen = 256; // 2048
-
-        //var digest = new Sha384Digest();
-        //var saltLength = keyLen - digest.GetDigestSize() - 2;
-        //var salt = GetRandomBytes(SALT_SIZE_IN_BYTES);
-
-        //var rsa = new PssSigner(blindEngine, new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
-        //rsa.Init(true, new ParametersWithRandom(blindParams, new SecureRandom(salt)));
-        //rsa.BlockUpdate(pack, 0, pack.Length);
-        //var signature = rsa.GenerateSignature();
-
-        //var rsa = SignerUtilities.GetSigner("SHA384withRSAandMGF1");
-        //var signer = SignerUtilities.GetSigner("SHA384WITHRSAANDMGF1");
-        //signer.Init(true, privKeyParams);
-        //signer.BlockUpdate(pack, 0, pack.Length);
-        //var sig = signer.GenerateSignature();
-        //var what = $"{header}{ToBase64Url(GetBytes(payload).Concat(sig))}{footer}";
-
-        // Sign using RSA-PSS, SHA-384, MGF1(SHA-384), 48 byte salt length, 0xBC trailer
-        //var rsa = new PssSigner(new RsaEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES);
-        //rsa.Init(true, privKeyParams);
-
-        //var rsa = new PssSigner(new RsaEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
-        //rsa.Init(true, new ParametersWithRandom(privKeyParams, new SecureRandom(salt)));
-
-        //var rsa = new PssSigner(new RsaEngine(), digest, digest, saltLength);
-        //var rsa = new PssSigner(new RsaEngine(), digest, digest, saltLength, 0xBC);
-        //rsa.Init(true, new ParametersWithRandom(privKeyParams));
-        //rsa.Init(true, privKeyParams);
-
-        //var rsa = new PssSigner(new RsaBlindingEngine(), digest, digest, digest.GetDigestSize());
-        // https://github.com/novotnyllc/bc-csharp/blob/d26bf4d48964441ddafd394b8028fa88b9b5ee1d/crypto/src/security/SignerUtilities.cs#L592
+        // Sign using RSA-PSS, SHA-384, MGF1(SHA-384)
         var rsa = SignerUtilities.GetSigner("SHA384withRSAandMGF1");
         rsa.Init(true, privKeyParams);
 
-        //var rsa = new PssSigner(new RsaEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES);
-        //rsa.Init(true, new ParametersWithRandom(privKeyParams));
-        //rsa.Init(true, privKeyParams);
         rsa.BlockUpdate(pack, 0, pack.Length);
         var signature = rsa.GenerateSignature();
 
@@ -481,26 +441,13 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
          */
 
         // Create Public Key
-        //var pubKeyParams = pasetoKey.Key.Span.ToArray().ToPublicKeyFromByteArray();
-
-        // Create Public Key (when using ExportRSAPrivateKey())
         var seq = (Asn1Sequence)Asn1Object.FromByteArray(pasetoKey.Key.Span.ToArray());
         var pubKeyStruct = RsaPublicKeyStructure.GetInstance(seq);
         var pubKeyParams = new RsaKeyParameters(false, pubKeyStruct.Modulus, pubKeyStruct.PublicExponent);
 
-        // Sign using RSA-PSS, SHA-384, MGF1(SHA-384)
+        // Verify signature using RSA-PSS, SHA-384, MGF1(SHA-384)
         var rsa = SignerUtilities.GetSigner("SHA384withRSAandMGF1");
         rsa.Init(false, pubKeyParams);
-
-        // Sign using RSA-PSS, SHA-384, MGF1(SHA-384), 48 byte salt length, 0xBC trailer
-        //var rsa = new PssSigner(new RsaBlindingEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
-
-        //var blindFactorGen = new RsaBlindingFactorGenerator();
-        //blindFactorGen.Init(pubKeyParams);
-        //var blindFactor = blindFactorGen.GenerateBlindingFactor();
-        //var blindParams = new RsaBlindingParameters(pubKeyParams, blindFactor);
-        //rsa.Init(false, blindParams);
-        //rsa.Init(false, PublicKeyFactory.CreateKey(pasetoKey.Key.Span.ToArray()));
 
         rsa.BlockUpdate(pack, 0, pack.Length);
         var valid = rsa.VerifySignature(signature);
