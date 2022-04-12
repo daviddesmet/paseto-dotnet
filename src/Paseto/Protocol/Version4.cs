@@ -197,7 +197,7 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var bytes = FromBase64Url(parts[2]).AsSpan();
 
-        if (bytes.Length < NONCE_SIZE_IN_BYTES)
+        if (bytes.Length < NONCE_SIZE_IN_BYTES + KEYDERIVATION_SIZE_IN_BYTES)
             throw new PasetoInvalidException("Payload is not valid");
 
         try

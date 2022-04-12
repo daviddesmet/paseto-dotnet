@@ -5,8 +5,6 @@ VisualStudioVersion = 17.1.32228.430
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paseto", "src\Paseto\Paseto.csproj", "{AF52242B-5578-4D7D-AB4E-22ED6BF5F3F8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paseto.Cryptography", "src\Paseto.Cryptography\Paseto.Cryptography.csproj", "{5B711EBA-6E41-429F-A2AC-719C4441B663}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Paseto.Tests", "tests\Paseto.Tests\Paseto.Tests.csproj", "{2FAB1426-5BDB-4835-9323-676F3E286D57}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C0AB8266-F1F2-43C3-9D0B-0FE7EBAEAC70}"
@@ -30,10 +28,6 @@ Global
 		{AF52242B-5578-4D7D-AB4E-22ED6BF5F3F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AF52242B-5578-4D7D-AB4E-22ED6BF5F3F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AF52242B-5578-4D7D-AB4E-22ED6BF5F3F8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5B711EBA-6E41-429F-A2AC-719C4441B663}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5B711EBA-6E41-429F-A2AC-719C4441B663}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5B711EBA-6E41-429F-A2AC-719C4441B663}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5B711EBA-6E41-429F-A2AC-719C4441B663}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2FAB1426-5BDB-4835-9323-676F3E286D57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2FAB1426-5BDB-4835-9323-676F3E286D57}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{2FAB1426-5BDB-4835-9323-676F3E286D57}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -44,7 +38,6 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AF52242B-5578-4D7D-AB4E-22ED6BF5F3F8} = {C0AB8266-F1F2-43C3-9D0B-0FE7EBAEAC70}
-		{5B711EBA-6E41-429F-A2AC-719C4441B663} = {C0AB8266-F1F2-43C3-9D0B-0FE7EBAEAC70}
 		{2FAB1426-5BDB-4835-9323-676F3E286D57} = {1313DA53-FE67-4E72-8CE2-BEEE48276907}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution

@@ -53,6 +53,7 @@ public sealed class PasetoBuilder
     /// </summary>
     /// <param name="purpose">The purpose.</param>
     /// <returns>Current builder instance</returns>
+    [Obsolete("PASETO Version 1 is deprecated. Implementations should migrate to Version 3.")]
     public PasetoBuilder UseV1(Purpose purpose) => UseImpl(new Version1(), purpose);
 
     /// <summary>
@@ -60,6 +61,7 @@ public sealed class PasetoBuilder
     /// </summary>
     /// <param name="purpose">The purpose.</param>
     /// <returns>Current builder instance</returns>
+    [Obsolete("PASETO Version 2 is deprecated. Implementations should migrate to Version 4.")]
     public PasetoBuilder UseV2(Purpose purpose) => UseImpl(new Version2(), purpose);
 #pragma warning restore CS0618 // Type or member is obsolete
 
