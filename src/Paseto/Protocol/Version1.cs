@@ -330,12 +330,14 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
          */
 
         // Create Private Key
-        var privKeyParams = pasetoKey.Key.Span.ToArray().ToPrivateKeyFromByteArray();
+        //var privKeyParams = pasetoKey.Key.Span.ToArray().ToPrivateKeyFromByteArray();
+        //var len = privKeyParams.Modulus.BitLength; // should be 2048
         //var pubKeyParams = pasetoKey.Key.Span.ToArray().ToPublicKeyFromByteArray();
 
-        //var seq = (Asn1Sequence)Asn1Object.FromByteArray(pasetoKey.Key.Span.ToArray());
-        //var privKeyStruct = RsaPrivateKeyStructure.GetInstance(seq);
-        //var privKeyParams = new RsaPrivateCrtKeyParameters(privKeyStruct.Modulus, privKeyStruct.PublicExponent, privKeyStruct.PrivateExponent, privKeyStruct.Prime1, privKeyStruct.Prime2, privKeyStruct.Exponent1, privKeyStruct.Exponent2, privKeyStruct.Coefficient);
+        // Create Private Key (when using ExportRSAPrivateKey())
+        var seq = (Asn1Sequence)Asn1Object.FromByteArray(pasetoKey.Key.Span.ToArray());
+        var privKeyStruct = RsaPrivateKeyStructure.GetInstance(seq);
+        var privKeyParams = new RsaPrivateCrtKeyParameters(privKeyStruct.Modulus, privKeyStruct.PublicExponent, privKeyStruct.PrivateExponent, privKeyStruct.Prime1, privKeyStruct.Prime2, privKeyStruct.Exponent1, privKeyStruct.Exponent2, privKeyStruct.Coefficient);
 
         //var blindFactorGen = new RsaBlindingFactorGenerator();
         //blindFactorGen.Init(pubKeyParams);
@@ -343,19 +345,48 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         //var blindParams = new RsaBlindingParameters(pubKeyParams, blindFactor);
         //var blindEngine = new RsaBlindingEngine();
 
-        var salt = GetRandomBytes(SALT_SIZE_IN_BYTES);
+        //var cert = new System.Security.Cryptography.X509Certificates.X509Certificate2(pasetoKey.Key.Span);
+        //var keyLen = (int)Math.Ceiling((cert.PrivateKey.KeySize - 1) / 8.0);
+        //var keyLen = (int)Math.Ceiling((2048 - 1) / 8.0);
+        //var keyLen = 256; // 2048
+
+        //var digest = new Sha384Digest();
+        //var saltLength = keyLen - digest.GetDigestSize() - 2;
+        //var salt = GetRandomBytes(SALT_SIZE_IN_BYTES);
 
         //var rsa = new PssSigner(blindEngine, new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
         //rsa.Init(true, new ParametersWithRandom(blindParams, new SecureRandom(salt)));
         //rsa.BlockUpdate(pack, 0, pack.Length);
         //var signature = rsa.GenerateSignature();
 
+        //var rsa = SignerUtilities.GetSigner("SHA384withRSAandMGF1");
+        //var signer = SignerUtilities.GetSigner("SHA384WITHRSAANDMGF1");
+        //signer.Init(true, privKeyParams);
+        //signer.BlockUpdate(pack, 0, pack.Length);
+        //var sig = signer.GenerateSignature();
+        //var what = $"{header}{ToBase64Url(GetBytes(payload).Concat(sig))}{footer}";
+
         // Sign using RSA-PSS, SHA-384, MGF1(SHA-384), 48 byte salt length, 0xBC trailer
-        var rsa = new PssSigner(new RsaEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
-        rsa.Init(true, new ParametersWithRandom(privKeyParams, new SecureRandom(salt)));
+        //var rsa = new PssSigner(new RsaEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES);
+        //rsa.Init(true, privKeyParams);
+
+        //var rsa = new PssSigner(new RsaEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
+        //rsa.Init(true, new ParametersWithRandom(privKeyParams, new SecureRandom(salt)));
+
+        //var rsa = new PssSigner(new RsaEngine(), digest, digest, saltLength);
+        //var rsa = new PssSigner(new RsaEngine(), digest, digest, saltLength, 0xBC);
+        //rsa.Init(true, new ParametersWithRandom(privKeyParams));
+        //rsa.Init(true, privKeyParams);
+
+        //var rsa = new PssSigner(new RsaBlindingEngine(), digest, digest, digest.GetDigestSize());
+        // https://github.com/novotnyllc/bc-csharp/blob/d26bf4d48964441ddafd394b8028fa88b9b5ee1d/crypto/src/security/SignerUtilities.cs#L592
+        var rsa = SignerUtilities.GetSigner("SHA384withRSAandMGF1");
+        rsa.Init(true, privKeyParams);
+
         //var rsa = new PssSigner(new RsaEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES);
         //rsa.Init(true, new ParametersWithRandom(privKeyParams));
         //rsa.Init(true, privKeyParams);
+        rsa.BlockUpdate(pack, 0, pack.Length);
         var signature = rsa.GenerateSignature();
 
         if (!string.IsNullOrEmpty(footer))
@@ -430,8 +461,8 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         // Decode the payload
         var len = body.Length - blockSize;
-        var signature = body[..len];
-        var payload = body[len..];
+        var signature = body[len..];
+        var payload = body[..len];
 
         var pack = PreAuthEncode(new[] { GetBytes(header), payload, footer });
 
@@ -450,14 +481,27 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
          */
 
         // Create Public Key
+        //var pubKeyParams = pasetoKey.Key.Span.ToArray().ToPublicKeyFromByteArray();
+
+        // Create Public Key (when using ExportRSAPrivateKey())
         var seq = (Asn1Sequence)Asn1Object.FromByteArray(pasetoKey.Key.Span.ToArray());
         var pubKeyStruct = RsaPublicKeyStructure.GetInstance(seq);
         var pubKeyParams = new RsaKeyParameters(false, pubKeyStruct.Modulus, pubKeyStruct.PublicExponent);
 
-        // Sign using RSA-PSS, SHA-384, MGF1(SHA-384), 48 byte salt length, 0xBC trailer
-        var rsa = new PssSigner(new RsaBlindingEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
-        //rsa.Init(false, PublicKeyFactory.CreateKey(pasetoKey.Key.Span.ToArray()));
+        // Sign using RSA-PSS, SHA-384, MGF1(SHA-384)
+        var rsa = SignerUtilities.GetSigner("SHA384withRSAandMGF1");
         rsa.Init(false, pubKeyParams);
+
+        // Sign using RSA-PSS, SHA-384, MGF1(SHA-384), 48 byte salt length, 0xBC trailer
+        //var rsa = new PssSigner(new RsaBlindingEngine(), new Sha384Digest(), new Sha384Digest(), SALT_SIZE_IN_BYTES, 0xBC);
+
+        //var blindFactorGen = new RsaBlindingFactorGenerator();
+        //blindFactorGen.Init(pubKeyParams);
+        //var blindFactor = blindFactorGen.GenerateBlindingFactor();
+        //var blindParams = new RsaBlindingParameters(pubKeyParams, blindFactor);
+        //rsa.Init(false, blindParams);
+        //rsa.Init(false, PublicKeyFactory.CreateKey(pasetoKey.Key.Span.ToArray()));
+
         rsa.BlockUpdate(pack, 0, pack.Length);
         var valid = rsa.VerifySignature(signature);
 

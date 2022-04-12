@@ -405,8 +405,9 @@ public class PasetoTestVectors
             rsaSecretKey.ImportRSAPrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
 #endif
 
-            var sk = rsaSecretKey.ToCompatibleXmlString(true);
-            return GetBytes(sk);
+            //var sk = rsaSecretKey.ToCompatibleXmlString(true);
+            //return GetBytes(sk);
+            return rsaSecretKey.ExportRSAPrivateKey();
         }
 
         if (RsaPublicKeyRegex.IsMatch(key))
@@ -420,8 +421,9 @@ public class PasetoTestVectors
             rsaPublicKey.ImportRSAPublicKey(new ReadOnlySpan<byte>(publicKey), out _);
 #endif
 
-            var pk = rsaPublicKey.ToCompatibleXmlString(false);
-            return GetBytes(pk);
+            //var pk = rsaPublicKey.ToCompatibleXmlString(false);
+            //return GetBytes(pk);
+            return rsaPublicKey.ExportRSAPublicKey();
         }
 
         return CryptoBytes.FromHexString(key);
