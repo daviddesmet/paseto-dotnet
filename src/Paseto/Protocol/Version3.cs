@@ -8,6 +8,7 @@ using System.Security.Cryptography;
 using NaCl.Core.Internal;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Nist;
+using Org.BouncyCastle.Asn1.Ocsp;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.Sec;
 using Org.BouncyCastle.Asn1.X509;
@@ -429,6 +430,9 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         var signer = new ECDsaSigner(new HMacDsaKCalculator(new Sha384Digest()));
         signer.Init(true, privKeyParams);
 
+        using var sha = SHA384.Create();
+        pack = sha.ComputeHash(pack);
+
         var signature = signer.GenerateSignature(pack);
         var sig = signature[0].ToByteArrayUnsigned().Concat(signature[1].ToByteArrayUnsigned()).ToArray(); // must be 96 bytes
         var sig2 = signature[0].ToByteArray().Concat(signature[1].ToByteArray()).ToArray();
@@ -619,6 +623,9 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var pack = PreAuthEncode(pk, GetBytes(header), payload, footer, GetBytes(i));
 
+        using var sha = SHA384.Create();
+        pack = sha.ComputeHash(pack);
+
         // Verify signature using ECDSA
         var signer = new ECDsaSigner(new HMacDsaKCalculator(new Sha384Digest()));
         signer.Init(false, pubkeyParam);
@@ -638,13 +645,23 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         //using var decoder = new Asn1InputStream(pack);
         //var seq = (Asn1Sequence)decoder.ReadObject();
 
-        using var decoder2 = new Asn1InputStream(signature);
-        var seq2 = (Asn1Sequence)decoder2.ReadObject();
+        // throws =(
+        //using var decoder2 = new Asn1InputStream(signature);
+        //var seq2 = (Asn1Sequence)decoder2.ReadObject();
 
 
         // OpenSSL deviates from the DER spec by interpreting these values as unsigned, though they should not be
         // Thus, we always use the positive versions. See: http://r6.ca/blog/20111119T211504Z.html
-        var result = signer.VerifySignature(pack, ((DerInteger)seq[0]).PositiveValue, ((DerInteger)seq[1]).PositiveValue);
+        var valid = signer.VerifySignature(pack, ((DerInteger)seq[0]).PositiveValue, ((DerInteger)seq[1]).PositiveValue);
+
+
+        // nope!
+        //var signer2 = SignerUtilities.GetSigner("SHA-384withECDSA");
+        //signer2.Init(false, pubkeyParam);
+
+        //signer2.BlockUpdate(pack, 0, pack.Length);
+        //var result2 = signer2.VerifySignature(signature);
+
 
         //using (var asn1stream = Asn1OutputStream.Create(ms))
         //{
@@ -656,8 +673,6 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         //}
         //signer.VerifySignature(pack);
 
-#pragma warning disable IDE0022 // Use expression body for methods
-        throw new PasetoNotSupportedException("The Public Purpose is not supported in the Version 3 Protocol");
-#pragma warning restore IDE0022 // Use expression body for methods
+        return (valid, GetString(payload));
     }
 }
