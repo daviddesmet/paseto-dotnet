@@ -8,11 +8,6 @@ using System.Security.Cryptography;
 using NaCl.Core.Internal;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Nist;
-using Org.BouncyCastle.Asn1.Ocsp;
-using Org.BouncyCastle.Asn1.Pkcs;
-using Org.BouncyCastle.Asn1.Sec;
-using Org.BouncyCastle.Asn1.X509;
-using Org.BouncyCastle.Asn1.X9;
 using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
@@ -367,9 +362,11 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         // 
         // An ECC (ECDSA, ECDH, ECMQV, etc) key is always relative to some 'curve' (more exactly, prime-order subgroup over a curve with an identified generator aka base point).
 
+        /*
         var preKey = CryptoBytes.FromHexString(ECDSA_PRE_KEY);
         var basePoint = CryptoBytes.FromHexString(ECDSA_ID_GEN);
         var sk = CryptoBytes.Combine(preKey, pasetoKey.Key.Span.ToArray(), basePoint);
+        */
 
         /*
          * Deterministic ECDSA (RFC 6979) is currently not supported in .NET out of the box. 04/04/2022
@@ -395,28 +392,35 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
          */
 
         // Create Private Key
+
+        /*
+         * Below code depends on the ECDSA -> PEM format conversion from above
+         * 
         var seq = (Asn1Sequence)Asn1Object.FromByteArray(sk);
         var privKeyStruct = ECPrivateKeyStructure.GetInstance(seq);
         var algId = new AlgorithmIdentifier(X9ObjectIdentifiers.IdECPublicKey, privKeyStruct.GetParameters());
 
         var privKeyInfo = new PrivateKeyInfo(algId, privKeyStruct.ToAsn1Object());
         var privKeyParams = (ECPrivateKeyParameters)PrivateKeyFactory.CreateKey(privKeyInfo);
-        /*
+        */
+
+        // Same as above
         var x9Params = NistNamedCurves.GetByName("P-384"); // or SecNamedCurves.GetByName("secp384r1");
         var ecParams = new ECDomainParameters(x9Params.Curve, x9Params.G, x9Params.N, x9Params.H);
         var privKeyParams = new ECPrivateKeyParameters(new BigInteger(1, pasetoKey.Key.Span.ToArray()), ecParams);
-        */
 
         // Calculate Public Key from Private Key
         var q = privKeyParams.Parameters.G.Multiply(privKeyParams.D);
-        var publicParams = new ECPublicKeyParameters(q, privKeyParams.Parameters);
+        var pubKeyParams = new ECPublicKeyParameters(q, privKeyParams.Parameters);
 
         // Point compression of pk
-        //var x = publicParams.Q.XCoord.GetEncoded();
-        //var y = publicParams.Q.YCoord.GetEncoded();
-        //var sign = (byte)(0x02 + (y[^1] & 1));
-        //var pk = CryptoBytes.Combine(new byte[] { sign }, x);
-        var pk = publicParams.Q.GetEncoded(compressed: true);
+        /*
+        var x = publicParams.Q.XCoord.GetEncoded();
+        var y = publicParams.Q.YCoord.GetEncoded();
+        var sign = (byte)(0x02 + (y[^1] & 1));
+        var pk = CryptoBytes.Combine(new byte[] { sign }, x);
+        */
+        var pk = pubKeyParams.Q.GetEncoded(compressed: true); // same as above
 
         // Pack
         var m = GetBytes(payload);
@@ -426,92 +430,20 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
         var pack = PreAuthEncode(pk, GetBytes(header), m, f, GetBytes(i));
 
-        // Sign the data
+        // Hash the PAE
+        using var sha = SHA384.Create();
+        var packHash = sha.ComputeHash(pack);
+
+        // Sign the data using ECDSA
         var signer = new ECDsaSigner(new HMacDsaKCalculator(new Sha384Digest()));
         signer.Init(true, privKeyParams);
 
-        using var sha = SHA384.Create();
-        pack = sha.ComputeHash(pack);
-
-        var signature = signer.GenerateSignature(pack);
+        var signature = signer.GenerateSignature(packHash);
         var sig = signature[0].ToByteArrayUnsigned().Concat(signature[1].ToByteArrayUnsigned()).ToArray(); // must be 96 bytes
-        var sig2 = signature[0].ToByteArray().Concat(signature[1].ToByteArray()).ToArray();
-
-        var r = signature[0];
-        var s = signature[1];
-
-        var sigDer = new DerSequence(new DerInteger(r), new DerInteger(s)).GetDerEncoded(); // DerEncode
-        //var sigBer = new DerSequence(new DerInteger(r), new DerInteger(s)).GetEncoded();
-
-        //var pkk = Cryptography.EllipticCurve.PrivateKey.FromPem("-----BEGIN EC PARAMETERS-----\nBgUrgQQACg==\n-----END EC PARAMETERS-----\n-----BEGIN EC PRIVATE KEY-----\nMHQCAQEEIODvZuS34wFbt0X53+P5EnSj6tMjfVK01dD1dgDH02RzoAcGBSuBBAAK\noUQDQgAE/nvHu/SQQaos9TUljQsUuKI15Zr5SabPrbwtbfT/408rkVVzq8vAisbB\nRmpeRREXj5aog/Mq8RrdYy75W9q/Ig==\n-----END EC PRIVATE KEY-----\n");
-        //var sign3 = Cryptography.Ecdsa.Sign("this is a message", pkk);
-        //var sign33 = sign3.ToDer();
-
-        // Convert sig to DER
-        using var ms = new MemoryStream();
-        using var asn1stream = Asn1OutputStream.Create(ms);
-
-        //var seqgen = new DerSequenceGenerator(asn1stream);
-        //seqgen.AddObject(new DerInteger(signature[0]));
-        //seqgen.AddObject(new DerInteger(signature[1]));
-        //seqgen.Close();
-        //var what = ms.ToArray();
-
-        asn1stream.WriteObject(new DerSequence(new DerInteger(r), new DerInteger(s)));
-        var sigEncoded = ms.ToArray();
-
-        // 112, 177, 200, 113, 
-
-        // TODO: Validate key length
-        // It should be a PEM (maybe)
-        // Or it should be 48 bytes concat to prefix & sufix
-
-
-
-        //var sk1 = CryptoBytes.FromHexString("20347609607477aca8fbfbc5e6218455f3199669792ef8b466faa87bdc67798144c848dd03661eed5ac62461340cea96");
-
-        // Deterministic signatures
-        //var x9Params = NistNamedCurves.GetByName("P-384"); // or SecNamedCurves.GetByName("secp384r1");
-        //var ecParams = new ECDomainParameters(x9Params.Curve, x9Params.G, x9Params.N, x9Params.H);
-        //var privKeyParams = new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(1, sk1), ecParams);
-        //privKeyParams = new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(1, pasetoKey.Key.Span.ToArray()), ecParams);
-        //var signer = new ECDsaSigner(new HMacDsaKCalculator(new Sha384Digest()));
-        //signer.Init(true, privKeyParams);
-        //var signature = signer.GenerateSignature(pack);
-        //var sig = signature[0].ToByteArrayUnsigned().Concat(signature[1].ToByteArrayUnsigned()).ToArray(); // must be 96 bytes
-
-        //var signer = SignerUtilities.GetSigner("SHA384withECDSA");
-        //var signer = SignerUtilities.GetSigner("SHA-384withECDSA"); // SHA384withECDSAinP1363Format
-        //var signer = new ECDsaSigner();
-        //signer.Init(true, pasetoKey.Key.Span.ToArray());
-        //var ecParams = ECNamedCurveTable.GetByName("P-384");
-        //var domainParameters = new ECDomainParameters(ecParams.Curve, ecParams.G, ecParams.N, ecParams.H, ecParams.GetSeed());
-        //var pkParameters = new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(1, pasetoKey.Key.Span.ToArray()), domainParameters);
-        //var pkParameters = new ECPrivateKeyParameters(new Org.BouncyCastle.Math.BigInteger(1, pasetoKey.Key.Span.ToArray()), ecParams); // Scalar is not in the interval [1, n - 1] (Parameter 'd')
-
-
-        //signer.Init(true, ecKeyParams); // same output as above
-
-        //signer.BlockUpdate(pack, 0, pack.Length);
-        //var signatureEncoded = signer.GenerateSignature(); // must be 96 but it isn't
-
-        //var signatureEncoded = new byte[96];
-        //using (var ms = new MemoryStream())
-        //using (var asn1stream = Asn1OutputStream.Create(ms))
-        //{
-        //    var seq = new DerSequenceGenerator(asn1stream);
-        //    seq.AddObject(new DerInteger(sig[0]));
-        //    seq.AddObject(new DerInteger(sig[1]));
-        //    seq.Close();
-        //    signatureEncoded = ms.ToArray();
-        //}
-
-
 
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(f)}";
 
-        //return $"{header}{ToBase64Url(m.Concat(sig))}{footer}";
         return $"{header}{ToBase64Url(m.Concat(sig))}{footer}";
     }
 
@@ -573,9 +505,6 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (mark == ECDSA_POINT_COMPRESSION_POINTS[2] && pasetoKey.Key.Length != PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES)
             throw new ArgumentException($"The key length must be {PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES} bytes for uncompressed public keys");
 
-        //if (pasetoKey.Key.Length != PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES || pasetoKey.Key.Length != PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES)
-        //    throw new ArgumentException($"The key length must be {PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES} bytes (compressed public key) or {PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES} bytes (uncompressed public key).");
-
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
 
         if (!token.StartsWith(header))
@@ -598,7 +527,6 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         var i = ""; // implicit assertion (add assertion/implicit parameter as string)
 
         // Calculate Public Key
-        // For validation, it should be:
         // 49 bytes (compressed public key) and begin with 0x02 or 0x03 byte, and concat with prefix 3046301006072a8648ce3d020106052b81040022033200 hex
         // 97 bytes (uncompressed public key) and begin with 0x04 byte, and concat with prefix 3076301006072a8648ce3d020106052b81040022036200
 
@@ -606,72 +534,42 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         //var preKey = uncompressed ? CryptoBytes.FromHexString("3076301006072a8648ce3d020106052b81040022036200") : CryptoBytes.FromHexString("3046301006072a8648ce3d020106052b81040022033200");
         //var pubKey = CryptoBytes.Combine(preKey, pasetoKey.Key.Span.ToArray());
 
-        //var x = new BigInteger(1, pubKey.Skip(1).Take(48).ToArray());
-        //var y = new BigInteger(1, pubKey.Skip(1 + 48).ToArray());
-
-
         var ecParams = NistNamedCurves.GetByName("P-384"); // or SecNamedCurves.GetByName("secp384r1");
         var domainParameters = new ECDomainParameters(ecParams.Curve, ecParams.G, ecParams.N, ecParams.H, ecParams.GetSeed());
-        //var G = ecParams.G;
-        //var curve = ecParams.Curve;
-        //var q = curve.CreatePoint(x, y);
 
-        //var pubkeyParam = new ECPublicKeyParameters(q, domainParameters);
         //var pubkeyParam = new ECPublicKeyParameters("ECDSA", ecParams.Curve.DecodePoint(pubKey), domainParameters);
         var pubkeyParam = new ECPublicKeyParameters("ECDSA", ecParams.Curve.DecodePoint(pasetoKey.Key.Span.ToArray()), domainParameters);
-        var pk = pubkeyParam.Q.GetEncoded(compressed: true); // always compressed?
+        var pk = pubkeyParam.Q.GetEncoded(compressed: true); // always compressed? if key is already compressed it is not needed...
 
+        // Pack
         var pack = PreAuthEncode(pk, GetBytes(header), payload, footer, GetBytes(i));
 
+        // Hash the PAE
         using var sha = SHA384.Create();
-        pack = sha.ComputeHash(pack);
+        var packHash = sha.ComputeHash(pack);
 
         // Verify signature using ECDSA
         var signer = new ECDsaSigner(new HMacDsaKCalculator(new Sha384Digest()));
         signer.Init(false, pubkeyParam);
 
-        var sigLen = signature.Length / 2;
+        // Convert DER to Signature
+        var sigPartLen = signature.Length / 2;
+        /*
         using var ms = new MemoryStream();
         using var asn1stream = Asn1OutputStream.Create(ms);
         var v = new Asn1EncodableVector
         {
-            new DerInteger(new BigInteger(1, signature[..sigLen])),
-            new DerInteger(new BigInteger(1, signature[sigLen..]))
+            new DerInteger(new BigInteger(1, signature[..sigPartLen])),
+            new DerInteger(new BigInteger(1, signature[sigPartLen..]))
         };
         var seq = new DerSequence(v);
         asn1stream.WriteObject(seq);
-
-        // same as above but throws
-        //using var decoder = new Asn1InputStream(pack);
-        //var seq = (Asn1Sequence)decoder.ReadObject();
-
-        // throws =(
-        //using var decoder2 = new Asn1InputStream(signature);
-        //var seq2 = (Asn1Sequence)decoder2.ReadObject();
-
+        */
 
         // OpenSSL deviates from the DER spec by interpreting these values as unsigned, though they should not be
         // Thus, we always use the positive versions. See: http://r6.ca/blog/20111119T211504Z.html
-        var valid = signer.VerifySignature(pack, ((DerInteger)seq[0]).PositiveValue, ((DerInteger)seq[1]).PositiveValue);
-
-
-        // nope!
-        //var signer2 = SignerUtilities.GetSigner("SHA-384withECDSA");
-        //signer2.Init(false, pubkeyParam);
-
-        //signer2.BlockUpdate(pack, 0, pack.Length);
-        //var result2 = signer2.VerifySignature(signature);
-
-
-        //using (var asn1stream = Asn1OutputStream.Create(ms))
-        //{
-        //    var seq = new DerSequenceGenerator(asn1stream);
-        //    seq.AddObject(new DerInteger(sig[0]));
-        //    seq.AddObject(new DerInteger(sig[1]));
-        //    seq.Close();
-        //    signatureEncoded = ms.ToArray();
-        //}
-        //signer.VerifySignature(pack);
+        //var valid = signer.VerifySignature(packHash, ((DerInteger)seq[0]).PositiveValue, ((DerInteger)seq[1]).PositiveValue);
+        var valid = signer.VerifySignature(packHash, new BigInteger(1, signature[..sigPartLen]), new BigInteger(1, signature[sigPartLen..]));
 
         return (valid, GetString(payload));
     }
