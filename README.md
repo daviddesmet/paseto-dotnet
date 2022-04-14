@@ -10,97 +10,118 @@
 
 ## Features
 
-| purpose | v1 | v2 | v3 | v4 | 
+PASETO protocols
+
+| purpose | v1 | v2 | v3 | v4 |
 | -- | -- | -- | -- | -- |
 | local | ✅ | ✅ | ✅ | ✅ |
-| public | ✅ | ✅ | ❌ | ✅ |
+| public | ✅ | ✅ | ✅ | ✅ |
 
-## Usage
+PASERK extension
 
-### Generating keypair
-```csharp
-string secretKey = "YJExjGFZvdbSKTeVgLUQFupOzFWfSlRm"; // The secret key must have 32 chars.
-byte[] hashSeed  =  Encoding.ASCII.GetBytes(secretKey); // Convert it into byte array
+| type | support |
+| -- | -- |
+| lid | ❌ |
+| local | ✅ |
+| seal | ❌ |
+| local-wrap | ❌ |
+| local-pw | ❌ |
+| sid | ❌ |
+| public | ✅ |
+| pid | ❌ |
+| secret | ✅ |
+| secret-wrap | ❌ |
+| secret-pw | ❌ |
 
-byte[] privateKey = new byte[64];
-byte[] publicKey =  new byte[32];
+## Usage for PASETO
 
-Ed25519.KeyPairFromSeed(out publicKey, out privateKey, hashSeed);
-```
+The library exposes a Fluent API with several method overloads found in `Use()`, `WithKey()`, `AddClaim()`, `AddFooter()` and so on to provide the flexibility needed for encoding and decoding PASETO tokens and also for generating the required symmetric or asymmetric key pairs. However, you can use the Protocols and Handlers directly if you like.
 
-### Generating private key only
-```csharp
-//...
-byte[] privateKey = Ed25519.ExpandedPrivateKeyFromSeed(hashSeed);
-```
+Below are a couple of examples for the most common use cases:
 
-### Generating public key only
-```csharp
-//...
-byte[] publicKey = Ed25519.PublicKeyFromSeed(hashSeed);
-```
-
-### Building a Paseto
-```csharp
-var token = new PasetoBuilder<Version2>()
-		.WithKey(privateKey)
-		.AddClaim("example", "Hello Paseto!")
-		.Expiration(DateTime.UtcNow.AddHours(24))
-		.AsPublic() // Purpose
-		.Build();
-```
+### Generating a Symmetric Key
 
 ```csharp
-var encoder = new PasetoEncoder(cfg => cfg.Use<Version2>(privateKey)); // default is public purpose
-var token = encoder.Encode(new PasetoPayload
-{
-	{ "example", "Hello Paseto!" },
-	{ "exp", DateTime.UtcNow.AddHours(24) }
-});
+var pasetoKey = new PasetoBuilder().Use(version, Purpose.Local)
+                                   .GenerateSymmetricKey();
 ```
 
-#### Encoded Token:
-
-```
-v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV4cCI6IjIwMTgtMDQtMDdUMDU6MDQ6MDcuOTE5NjM3NVoifTuR3EYYCG12DjhIqPKiVmTkKx2ewCDrYNZHcoewiF-lpFeaFqKW3LkEgnW28UZxrBWA5wrLFCR5FP1qUlMeqQA
-```
-
-### Decoding a Paseto
+### Generating an Asymmetric Key Pair
 
 ```csharp
-var payload = new PasetoBuilder<Version2>()
-		.WithKey(publicKey)
-		.AsPublic() // Purpose
-		.Decode(token);
+var pasetoKey = new PasetoBuilder().Use(version, Purpose.Public)
+                                   .GenerateAsymmetricKeyPair(seed);
 ```
+
+**NOTE:** A seed is not required for protocol v1.
+
+### Generating a Token
 
 ```csharp
-var decoder = new PasetoDecoder(cfg => cfg.Use<Version2>(publicKey)); // default is public purpose
-var payload = decoder.Decode(token);
+var token = new PasetoBuilder().Use(version, purpose)
+                               .WithKey(key, encryption)
+                               .AddClaim("data", "this is a secret message")
+                               .Issuer("https://github.com/daviddesmet/paseto-dotnet")
+                               .Subject(Guid.NewGuid().ToString())
+                               .Audience("https://paseto.io")
+                               .NotBefore(DateTime.UtcNow.AddMinutes(5))
+                               .IssuedAt(DateTime.UtcNow)
+                               .Expiration(DateTime.UtcNow.AddHours(1))
+                               .TokenIdentifier("123456ABCD")
+                               .AddFooter("arbitrary-string-that-isn't-json")
+                               .Encode();
 ```
 
+### Decoding a Token
 
-#### Decrypted Payload:
+```csharp
+var result = new PasetoBuilder().Use(version, purpose)
+                                .WithKey(key, encryption)
+                                .Decode(token);
+```
 
-```json
-{
-  "example": "Hello Paseto!",
-  "exp": "2018-04-07T05:04:07.9196375Z"
-}
+## Usage for PASERK
+
+The library also provides the PASERK extension for encoding and decoding a key.
+
+A serialized key in PASERK has the format:
+
+```
+k[version].[type].[data]
+```
+
+### Encoding a Key
+
+```csharp
+var paserk = Paserk.Encode(pasetoKey, purpose, type);
+```
+
+### Decoding a Key
+
+```csharp
+var key = Paserk.Decode(paserk);
 ```
 
 ## Roadmap
 
-- [x] Switch from Unix DateTime to ISO 8601 compliant to adhere to [Paseto registered claims](https://github.com/paragonie/paseto/blob/master/docs/03-Implementation-Guide/01-Payload-Processing.md#registered-claims)
-- [x] Add support for local authentication for v2
-- [ ] Add support for local authentication for v1
-- [ ] Add support for version detection when decoding
-- [ ] Add payload [validation rules](https://github.com/paragonie/paseto/blob/master/docs/03-Implementation-Guide/02-Validators.md#validators)
-  - There's already an [initial implementation](https://github.com/daviddesmet/paseto-dotnet/commit/0f25cb5f7d937ebf2396d15572c16ac16690f68b) and [tests](https://github.com/idaviddesmet/paseto-dotnet/blob/9adb1a575afdc8722e1772109d0885413ff22cf8/src/Paseto.Tests/PasetoTests.cs#L554)
-- [ ] Add more documentation on the usage
+- [ ] Add support for remaining PASERK types and its [operations](https://github.com/paseto-standard/paserk/blob/master/operations).
+- [ ] Add support for version detection when decoding.
+- [ ] Add payload [validation rules](https://github.com/paragonie/paseto/blob/master/docs/03-Implementation-Guide/02-Validators.md#validators).
+  - There's already an [initial implementation](https://github.com/daviddesmet/paseto-dotnet/commit/0f25cb5f7d937ebf2396d15572c16ac16690f68b) and [tests](https://github.com/idaviddesmet/paseto-dotnet/blob/9adb1a575afdc8722e1772109d0885413ff22cf8/src/Paseto.Tests/PasetoTests.cs#L554).
+- [ ] Add more documentation on the usage.
+
+## Test Coverage
+
+- Includes the mandatory [test vectors](https://github.com/paseto-standard/test-vectors) for PASETO and PASERK.
 
 ## Cryptography
 
 * Uses Ed25519 algorithm from CodesInChaos [Chaos.NaCl](https://github.com/CodesInChaos/Chaos.NaCl) cryptography library.
 * Uses Blake2b cryptographic hash function from [Konscious.Security.Cryptography](https://github.com/kmaragon/Konscious.Security.Cryptography) repository.
+* Uses ECDSA algorithm from [Bouncy Castle](https://github.com/novotnyllc/bc-csharp) cryptography library.
 * Uses XChaCha20-Poly1305 AEAD from [NaCl.Core](https://github.com/daviddesmet/NaCl.Core) repository.
+
+## Learn More
+
+* [PASETO (Platform-Agnostic SEcurity TOkens)](https://github.com/paseto-standard/paseto-spec) is a specification and reference implementation for secure stateless tokens.
+* [PASERK (Platform-Agnostic SERialized Keys)](https://github.com/paseto-standard/paserk) is an extension to PASETO that provides key-wrapping and serialization.
