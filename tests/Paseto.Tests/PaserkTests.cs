@@ -64,8 +64,6 @@ public class PaserkTests
 
                 var paserk = Paserk.Encode(pasetoKey, purpose, type);
                 paserk.Should().Be(test.Paserk);
-
-                var decodedPasetoKey = Paserk.Decode(paserk);
             }
             catch (PaserkNotSupportedException)
             {
@@ -75,6 +73,23 @@ public class PaserkTests
             catch (Exception ex)
             {
                 _output.WriteLine($"ENCODE FAIL {test.Name}: {ex.Message}");
+            }
+
+            try
+            {
+                var decodedPasetoKey = Paserk.Decode(test.Paserk);
+                decodedPasetoKey.Should().NotBeNull();
+                decodedPasetoKey.Key.IsEmpty.Should().BeFalse();
+                decodedPasetoKey.Key.Span.ToArray().Should().BeEquivalentTo(CryptoBytes.FromHexString(test.Key));
+            }
+            catch (PaserkNotSupportedException)
+            {
+                // This could be expected
+                _output.WriteLine($"DECODE FAIL {test.Name}: since the type is not supported: {type}");
+            }
+            catch (Exception ex)
+            {
+                _output.WriteLine($"DECODE FAIL {test.Name}: {ex.Message}");
             }
         }
     }
