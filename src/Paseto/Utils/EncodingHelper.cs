@@ -147,7 +147,7 @@ internal static class EncodingHelper
     /// </summary>
     /// <param name="input">The input.</param>
     /// <returns>System.String.</returns>
-    internal static string ToBase64Url(IEnumerable<byte> input) => new Base64UrlEncoder().Encode(input.ToArray());
+    internal static string ToBase64Url(ReadOnlySpan<byte> input) => new Base64UrlEncoder().Encode(input);
 
     /// <summary>
     /// Base64 URL safe decoding.

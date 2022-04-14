@@ -90,7 +90,7 @@ public static class Ed25519
             throw new ArgumentNullException(nameof(privateKeySeed));
 
         if (privateKeySeed.Length != PrivateKeySeedSizeInBytes)
-            throw new ArgumentException(nameof(privateKeySeed));
+            throw new ArgumentException("Seed size is invalid", nameof(privateKeySeed));
 
         var pk = new byte[PublicKeySizeInBytes];
         var sk = new byte[ExpandedPrivateKeySizeInBytes];

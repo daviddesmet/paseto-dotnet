@@ -33,8 +33,8 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
     public const int PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES = 97;
     public const int SIG_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 12; // 96
 
-    private const string ECDSA_PRE_KEY = "303e0201010430";
-    private const string ECDSA_ID_GEN = "a00706052b81040022";
+    //private const string ECDSA_PRE_KEY = "303e0201010430";
+    //private const string ECDSA_ID_GEN = "a00706052b81040022";
 
     public static readonly byte[] ECDSA_POINT_COMPRESSION_POINTS = new byte[] { 0x02, 0x03, 0x04 };
 
@@ -45,6 +45,39 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// </summary>
     /// <value>The header version.</value>
     public override string Version => VERSION;
+
+    /// <summary>
+    /// Gets the unique version number with which the protocol can be identified.
+    /// </summary>
+    /// <value>The version number.</value>
+    public override int VersionNumber => 3;
+
+    /// <summary>
+    /// Generates a Symmetric Key.
+    /// </summary>
+    /// <returns><see cref="Paseto.Cryptography.Key.PasetoSymmetricKey" /></returns>
+    public virtual PasetoSymmetricKey GenerateSymmetricKey()
+    {
+        var n = new byte[KEY_SIZE_IN_BYTES];
+        RandomNumberGenerator.Fill(n);
+
+        return new PasetoSymmetricKey(n, this);
+    }
+
+    /// <summary>
+    /// Generates an Asymmetric Key Pair.
+    /// </summary>
+    /// <param name="seed">The private seed which is not required.</param>
+    /// <returns><see cref="Paseto.Cryptography.Key.PasetoAsymmetricKeyPair" /></returns>
+    public virtual PasetoAsymmetricKeyPair GenerateAsymmetricKeyPair(byte[] seed = null)
+    {
+        using var rsa = RSA.Create();
+        rsa.KeySize = SECRET_KEY_SIZE_IN_BYTES * 8;
+        var sk = rsa.ExportRSAPrivateKey();
+        var pk = rsa.ExportRSAPublicKey();
+
+        return new PasetoAsymmetricKeyPair(sk, pk, this);
+    }
 
     /// <summary>
     /// Encrypt a message using a shared secret key.
@@ -444,7 +477,7 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(f)}";
 
-        return $"{header}{ToBase64Url(m.Concat(sig))}{footer}";
+        return $"{header}{ToBase64Url(m.Concat(sig).ToArray())}{footer}";
     }
 
     /// <summary>

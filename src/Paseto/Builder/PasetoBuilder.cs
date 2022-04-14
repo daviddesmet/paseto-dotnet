@@ -249,6 +249,55 @@ public sealed class PasetoBuilder
     }
 
     /// <summary>
+    /// Generates a serialized key (PASERK) using the supplied dependencies.
+    /// </summary>
+    /// <param name="type"></param>
+    /// <returns></returns>
+    /// <exception cref="PasetoBuilderException"></exception>
+    public string GenerateSerializedKey(PaserkType type)
+    {
+        if (_protocol is null)
+            throw new PasetoBuilderException("Can't generate serialized key. Check if you have call the 'Use' method.");
+
+        // TODO: I have my doubts on this impl, I think the builder should only create a PasetoSymmetricKey or PasetoAsymmetricKeyPair and if someone wants to have it as serialized key, it should use PASERK which is meant for that
+        return Paserk.Encode(_protocol, _purpose, type);
+    }
+
+    /// <summary>
+    /// Generates an symmetric key using the supplied dependencies.
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="PasetoBuilderException">Can't generate serialized key. Check if you have call the 'Use' method.</exception>
+    /// <exception cref="PasetoBuilderException">Can't generate symmetric key. Specified purpose is not compatible.</exception>
+    public PasetoSymmetricKey GenerateSymmetricKey()
+    {
+        if (_protocol is null)
+            throw new PasetoBuilderException("Can't generate serialized key. Check if you have call the 'Use' method.");
+
+        if (_purpose == Purpose.Public)
+            throw new PasetoBuilderException($"Can't generate symmetric key. {_purpose} purpose is not compatible.");
+
+        return _protocol.GenerateSymmetricKey();
+    }
+
+    /// <summary>
+    /// Generates an asymmetric key pair using the supplied dependencies.
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="PasetoBuilderException">Can't generate serialized key. Check if you have call the 'Use' method.</exception>
+    /// <exception cref="PasetoBuilderException">Can't generate symmetric key. Specified purpose is not compatible.</exception>
+    public PasetoAsymmetricKeyPair GenerateAsymmetricKeyPair()
+    {
+        if (_protocol is null)
+            throw new PasetoBuilderException("Can't generate serialized key. Check if you have call the 'Use' method.");
+
+        if (_purpose == Purpose.Public)
+            throw new PasetoBuilderException($"Can't generate symmetric key. {_purpose} purpose is not compatible.");
+
+        return _protocol.GenerateAsymmetricKeyPair();
+    }
+
+    /// <summary>
     /// Builds a token using the supplied dependencies.
     /// </summary>
     /// <returns>The generated Paseto token.</returns>

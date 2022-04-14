@@ -14,6 +14,25 @@ public interface IPasetoProtocolVersion
     string Version { get; }
 
     /// <summary>
+    /// Gets the unique version number with which the protocol can be identified.
+    /// </summary>
+    /// <value>The version number.</value>
+    int VersionNumber { get; }
+
+    /// <summary>
+    /// Generates a Symmetric Key.
+    /// </summary>
+    /// <returns><see cref="Paseto.Cryptography.Key.PasetoSymmetricKey" /></returns>
+    PasetoSymmetricKey GenerateSymmetricKey();
+
+    /// <summary>
+    /// Generates an Asymmetric Key Pair.
+    /// </summary>
+    /// <param name="seed">The private seed if required.</param>
+    /// <returns><see cref="Paseto.Cryptography.Key.PasetoAsymmetricKeyPair" /></returns>
+    PasetoAsymmetricKeyPair GenerateAsymmetricKeyPair(byte[] seed = null);
+
+    /// <summary>
     /// Encrypt a message using a shared secret key.
     /// </summary>
     /// <param name="pasetoKey">The symmetric key.</param>

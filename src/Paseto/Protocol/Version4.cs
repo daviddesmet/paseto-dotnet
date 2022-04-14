@@ -2,6 +2,7 @@
 
 using System;
 using System.Linq;
+using System.Security.Cryptography;
 
 using NaCl.Core;
 using NaCl.Core.Internal;
@@ -30,6 +31,42 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// </summary>
     /// <value>The header version.</value>
     public override string Version => VERSION;
+
+    /// <summary>
+    /// Gets the unique version number with which the protocol can be identified.
+    /// </summary>
+    /// <value>The version number.</value>
+    public override int VersionNumber => 4;
+
+    /// <summary>
+    /// Generates a Symmetric Key.
+    /// </summary>
+    /// <returns><see cref="Paseto.Cryptography.Key.PasetoSymmetricKey" /></returns>
+    public virtual PasetoSymmetricKey GenerateSymmetricKey()
+    {
+        var n = new byte[KEY_SIZE_IN_INTS];
+        RandomNumberGenerator.Fill(n);
+
+        return new PasetoSymmetricKey(n, this);
+    }
+
+    /// <summary>
+    /// Generates an Asymmetric Key Pair.
+    /// </summary>
+    /// <param name="seed">The private seed.</param>
+    /// <returns><see cref="Paseto.Cryptography.Key.PasetoAsymmetricKeyPair" /></returns>
+    public virtual PasetoAsymmetricKeyPair GenerateAsymmetricKeyPair(byte[] seed = null)
+    {
+        if (seed is null)
+            throw new ArgumentNullException(nameof(seed));
+
+        if (seed.Length != Ed25519.PrivateKeySeedSizeInBytes)
+            throw new ArgumentException($"The seed length in bytes must be {Ed25519.PrivateKeySeedSizeInBytes}.");
+
+        Ed25519.KeyPairFromSeed(out var pk, out var sk, seed);
+
+        return new PasetoAsymmetricKeyPair(sk, pk, this);
+    }
 
     /// <summary>
     /// Encrypt a message using a shared secret key.
@@ -126,7 +163,7 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(footer)}";
 
-        return $"{header}{ToBase64Url(n.Concat(ciphertext).Concat(mac))}{footer}";
+        return $"{header}{ToBase64Url(n.Concat(ciphertext).Concat(mac).ToArray())}{footer}";
     }
 
     public string Decrypt(string token, PasetoSymmetricKey pasetoKey)
@@ -287,7 +324,7 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(GetBytes(footer))}";
 
-        return $"{header}{ToBase64Url(GetBytes(payload).Concat(signature))}{footer}";
+        return $"{header}{ToBase64Url(GetBytes(payload).Concat(signature).ToArray())}{footer}";
     }
 
     public (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)

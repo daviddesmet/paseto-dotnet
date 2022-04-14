@@ -1,7 +1,6 @@
 ﻿namespace Paseto.Utils;
 
 using System;
-using System.Collections.Generic;
 
 /// <summary>
 /// A standards-compliant implementation of web/url-safe base64 encoding and decoding for .NET targets.
@@ -29,7 +28,18 @@ public class Base64UrlEncoder : IBase64UrlEncoder
     /// <param name="input">bytes to encode.</param>
     /// <param name="policy">The padding policy.</param>
     /// <returns>Base64Url encoding of the UTF8 bytes.</returns>
-    public string Encode(byte[] input, PaddingPolicy policy = PaddingPolicy.Discard)
+    public string Encode(byte[] input, PaddingPolicy policy = PaddingPolicy.Discard) => Encode((ReadOnlySpan<byte>)input, policy);
+
+    /// <summary>
+    /// The following functions perform base64url encoding which differs from regular base64 encoding as follows
+    /// * padding is skipped so the pad character '=' doesn't have to be percent encoded
+    /// * the 62nd and 63rd regular base64 encoding characters ('+' and '/') are replace with ('-' and '_')
+    /// The changes make the encoding alphabet file and URL safe.
+    /// </summary>
+    /// <param name="input">bytes to encode.</param>
+    /// <param name="policy">The padding policy.</param>
+    /// <returns>Base64Url encoding of the UTF8 bytes.</returns>
+    public string Encode(ReadOnlySpan<byte> input, PaddingPolicy policy = PaddingPolicy.Discard)
     {
         var encoded = Convert.ToBase64String(input).Replace(Char62, UrlChar62).Replace(Char63, UrlChar63);
         if (policy == PaddingPolicy.Discard)

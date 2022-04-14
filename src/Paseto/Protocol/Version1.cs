@@ -41,6 +41,39 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     public override string Version => VERSION;
 
     /// <summary>
+    /// Gets the unique version number with which the protocol can be identified.
+    /// </summary>
+    /// <value>The version number.</value>
+    public override int VersionNumber => 1;
+
+    /// <summary>
+    /// Generates a Symmetric Key.
+    /// </summary>
+    /// <returns><see cref="Paseto.Cryptography.Key.PasetoSymmetricKey" /></returns>
+    public virtual PasetoSymmetricKey GenerateSymmetricKey()
+    {
+        var n = new byte[SYM_KEY_SIZE_IN_BYTES];
+        RandomNumberGenerator.Fill(n);
+
+        return new PasetoSymmetricKey(n, this);
+    }
+
+    /// <summary>
+    /// Generates an Asymmetric Key Pair.
+    /// </summary>
+    /// <param name="seed">The private seed which is not required.</param>
+    /// <returns><see cref="Paseto.Cryptography.Key.PasetoAsymmetricKeyPair" /></returns>
+    public virtual PasetoAsymmetricKeyPair GenerateAsymmetricKeyPair(byte[] seed = null)
+    {
+        using var rsa = RSA.Create();
+        rsa.KeySize = ASYM_KEY_SIZE_IN_BITS;
+        var sk = rsa.ExportRSAPrivateKey();
+        var pk = rsa.ExportRSAPublicKey();
+
+        return new PasetoAsymmetricKeyPair(sk, pk, this);
+    }
+
+    /// <summary>
     /// Encrypt a message using a shared secret key.
     /// </summary>
     /// <param name="pasetoKey">The symmetric key.</param>
@@ -349,7 +382,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(GetBytes(footer))}";
 
-        return $"{header}{ToBase64Url(GetBytes(payload).Concat(signature))}{footer}";
+        return $"{header}{ToBase64Url(GetBytes(payload).Concat(signature).ToArray())}{footer}";
     }
 
     /// <summary>

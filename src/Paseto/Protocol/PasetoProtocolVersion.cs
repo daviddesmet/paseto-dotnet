@@ -14,6 +14,12 @@ public abstract class PasetoProtocolVersion
     public abstract string Version { get; }
 
     /// <summary>
+    /// Gets the unique version number with which the protocol can be identified.
+    /// </summary>
+    /// <value>The version number.</value>
+    public abstract int VersionNumber { get; }
+
+    /// <summary>
     /// Gets the nonce which was set for testing purposes;
     /// </summary>
     protected byte[] TestNonce { get; set; }
