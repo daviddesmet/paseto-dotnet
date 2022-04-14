@@ -1,11 +1,11 @@
-﻿using System.Security.Cryptography;
+﻿namespace Paseto.Protocol;
 
-namespace Paseto.Protocol;
+using System.Security.Cryptography;
 
 public abstract class PasetoProtocolVersion
 {
-    public const string EK_DOMAIN_SEPARATION = "paseto-encryption-key";
-    public const string AK_DOMAIN_SEPARATION = "paseto-auth-key-for-aead";
+    protected const string EK_DOMAIN_SEPARATION = "paseto-encryption-key";
+    protected const string AK_DOMAIN_SEPARATION = "paseto-auth-key-for-aead";
 
     /// <summary>
     /// Gets the unique header version string with which the protocol can be identified.

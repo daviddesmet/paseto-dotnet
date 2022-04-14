@@ -227,9 +227,9 @@ public sealed class PasetoBuilder
     public PasetoBuilder AddClaim(RegisteredClaims name, object value) => AddClaim(name.GetRegisteredClaimName(), value);
 
     /// <summary>
-    /// Adds a footer to the Paseto.
+    /// Adds a raw footer to the Paseto.
     /// </summary>
-    /// <param name="footer">The footer.</param>
+    /// <param name="footer">The raw footer.</param>
     /// <returns>PasetoBuilder&lt;TProtocol&gt;.</returns>
     public PasetoBuilder AddFooter(string footer)
     {
@@ -238,9 +238,9 @@ public sealed class PasetoBuilder
     }
 
     /// <summary>
-    /// Adds a footer to the Paseto.
+    /// Adds a footer payload to the Paseto.
     /// </summary>
-    /// <param name="footer">The footer.</param>
+    /// <param name="footer">The footer payload.</param>
     /// <returns>PasetoBuilder&lt;TProtocol&gt;.</returns>
     public PasetoBuilder AddFooter(PasetoPayload footer)
     {
@@ -286,15 +286,15 @@ public sealed class PasetoBuilder
     /// <returns></returns>
     /// <exception cref="PasetoBuilderException">Can't generate serialized key. Check if you have call the 'Use' method.</exception>
     /// <exception cref="PasetoBuilderException">Can't generate symmetric key. Specified purpose is not compatible.</exception>
-    public PasetoAsymmetricKeyPair GenerateAsymmetricKeyPair()
+    public PasetoAsymmetricKeyPair GenerateAsymmetricKeyPair(byte[] seed = null)
     {
         if (_protocol is null)
             throw new PasetoBuilderException("Can't generate serialized key. Check if you have call the 'Use' method.");
 
-        if (_purpose == Purpose.Public)
+        if (_purpose == Purpose.Local)
             throw new PasetoBuilderException($"Can't generate symmetric key. {_purpose} purpose is not compatible.");
 
-        return _protocol.GenerateAsymmetricKeyPair();
+        return _protocol.GenerateAsymmetricKeyPair(seed);
     }
 
     /// <summary>

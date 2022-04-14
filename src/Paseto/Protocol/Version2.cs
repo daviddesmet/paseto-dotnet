@@ -19,11 +19,11 @@ using static Paseto.Utils.EncodingHelper;
 [Obsolete("PASETO Version 2 is deprecated. Implementations should migrate to Version 4.")]
 public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
 {
-    public const string VERSION = "v2";
+    internal const int KEY_SIZE_IN_INTS = 8;
+    internal const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    internal const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 3; // 24 crypto_aead_xchacha20poly1305_ietf_NPUBBYTES
 
-    public const int KEY_SIZE_IN_INTS = 8;
-    public const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 3; // 24 crypto_aead_xchacha20poly1305_ietf_NPUBBYTES
+    internal const string VERSION = "v2";
 
     /// <summary>
     /// Gets the unique header version string with which the protocol can be identified.

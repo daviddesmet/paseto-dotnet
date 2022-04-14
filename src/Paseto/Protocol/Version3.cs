@@ -1,4 +1,6 @@
-﻿namespace Paseto.Protocol;
+﻿using Org.BouncyCastle.Crypto.Generators;
+
+namespace Paseto.Protocol;
 
 using System;
 using System.IO;
@@ -24,21 +26,22 @@ using static Paseto.Utils.EncodingHelper;
 /// <seealso cref="Paseto.Protocol.IPasetoProtocolVersion" />
 public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
 {
-    public const int KEY_SIZE_IN_INTS = 8;
-    public const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 6; // 48
-    public const int SECRET_KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 6; // 48
-    public const int PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES = 49;
-    public const int PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES = 97;
-    public const int SIG_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 12; // 96
+    internal const int KEY_SIZE_IN_INTS = 8;
+    internal const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    internal const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    internal const int KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 6; // 48
+    internal const int SECRET_KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 6; // 48
+    internal const int PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES = 49;
+    internal const int PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES = 97;
+    internal const int SIG_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 12; // 96
+    internal const int SEED_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
 
     //private const string ECDSA_PRE_KEY = "303e0201010430";
     //private const string ECDSA_ID_GEN = "a00706052b81040022";
 
-    public static readonly byte[] ECDSA_POINT_COMPRESSION_POINTS = new byte[] { 0x02, 0x03, 0x04 };
+    internal static readonly byte[] ECDSA_POINT_COMPRESSION_POINTS = new byte[] { 0x02, 0x03, 0x04 };
 
-    public const string VERSION = "v3";
+    internal const string VERSION = "v3";
 
     /// <summary>
     /// Gets the unique header version string with which the protocol can be identified.
@@ -67,14 +70,29 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <summary>
     /// Generates an Asymmetric Key Pair.
     /// </summary>
-    /// <param name="seed">The private seed which is not required.</param>
+    /// <param name="seed">The private seed.</param>
     /// <returns><see cref="Paseto.Cryptography.Key.PasetoAsymmetricKeyPair" /></returns>
     public virtual PasetoAsymmetricKeyPair GenerateAsymmetricKeyPair(byte[] seed = null)
     {
-        using var rsa = RSA.Create();
-        rsa.KeySize = SECRET_KEY_SIZE_IN_BYTES * 8;
-        var sk = rsa.ExportRSAPrivateKey();
-        var pk = rsa.ExportRSAPublicKey();
+        if (seed is null)
+            throw new ArgumentNullException(nameof(seed));
+
+        if (seed.Length != SEED_SIZE_IN_BYTES)
+            throw new ArgumentException($"The seed length in bytes must be {SEED_SIZE_IN_BYTES}.");
+
+        var secureRandom = new SecureRandom(seed);
+        var x9Params = NistNamedCurves.GetByName("P-384"); // or SecNamedCurves.GetByName("secp384r1");
+        var ecParams = new ECDomainParameters(x9Params.Curve, x9Params.G, x9Params.N, x9Params.H);
+        var keyParams = new ECKeyGenerationParameters(ecParams, secureRandom);
+        var keyPairGenerator = new ECKeyPairGenerator();
+        keyPairGenerator.Init(keyParams);
+
+        var keyPair = keyPairGenerator.GenerateKeyPair();
+        var privKeyParams = (ECPrivateKeyParameters)keyPair.Private;
+        var pubKeyParams = (ECPublicKeyParameters)keyPair.Public;
+
+        var sk = privKeyParams.D.ToByteArrayUnsigned();
+        var pk = pubKeyParams.Q.GetEncoded(compressed: true);
 
         return new PasetoAsymmetricKeyPair(sk, pk, this);
     }
@@ -323,31 +341,31 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         /*
          * ECDSA Public Key Point Compression
          * -------
-         * 
+         *
          * Given a public key consisting of two coordinates (X, Y):
          *   1. Set the header to `0x02`.
          *   2. Take the least significant bit of `Y` and add it to the header.
          *   3. Append the X coordinate (in big-endian byte order) to the header.
-         *   
+         *
          *   In pseudocode:
-         *   
+         *
          *      lsb(y):
          *          return y[y.length - 1] & 1
          *      pubKeyCompress(x, y):
          *          header = [0x02 + lsb(y)]
          *          return header.concat(x)
-         *   
+         *
          */
 
         /*
          * Sign Specification
          * -------
-         * 
+         *
          * Given a message `m`, 384-bit ECDSA secret key `sk`, and optional footer `f` (which defaults to empty string), and an optional implicit assertion `i` (which defaults to empty string):
          *   1. Before signing, first assert that the key being used is intended for use with `v3.public` tokens, and is the secret key of the intended keypair. See [Algorithm Lucidity](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/03-Algorithm-Lucidity.md) for more information.
          *   2. Set `h` to `v3.public.`
          *   3. Pack `pk`, `h`, `m`, `f`, and `i` together using PAE (pre-authentication encoding). We'll call this `m2`.
-         *      - Note: `pk` is the public key corresponding to `sk` (which **MUST** use [point compression](https://www.secg.org/sec1-v2.pdf)). `pk` **MUST** be 49 bytes long, and the first byte **MUST** be `0x02` or `0x03` 
+         *      - Note: `pk` is the public key corresponding to `sk` (which **MUST** use [point compression](https://www.secg.org/sec1-v2.pdf)). `pk` **MUST** be 49 bytes long, and the first byte **MUST** be `0x02` or `0x03`
          *        (depending on the [last significant bit of Y](https://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.202.2977&rep=rep1&type=pdf); section 4.3.6, step 2.2). The remaining bytes **MUST** be the X coordinate, using big-endian byte order.
          *   4. Sign `m2` using ECDSA over P-384 AND SHA-384 with the private key `sk`. We'll call this `sig`. The output of `sig` MUST be in the format `r || s` (where `||` means concatenate), for a total length of 96 bytes.
          *      - Signatures **SHOULD** use deterministic nonces ([RFC 6979](https://tools.ietf.org/html/rfc6979)) if possible, to mitigate the risk of [k-value reuse](https://blog.trailofbits.com/2020/06/11/ecdsa-handle-with-care/).
@@ -362,7 +380,7 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
          *      - Non-empty: return "h || base64url(m || sig) || . || base64url(f)"
          *      - ...where || means "concatenate"
          *      - Note: `base64url()` means Base64url from RFC 4648 without `=` padding.
-         *   
+         *
          */
 
         if (pasetoKey is null)
@@ -392,7 +410,7 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         //
         // Please note that public keys are never encrypted and private keys in OpenSSL's 'traditional' aka 'legacy' algorithm-specific DER formats (for ECC, defined by [SECG SEC1](https://www.secg.org/)) cannot be encrypted.
         // (OTOH private keys in PKCS8 format can be password-encrypted in either DER or PEM, although PEM is more convenient. And FWIW PKCS12 format is always password-encrypted, and always DER.).
-        // 
+        //
         // An ECC (ECDSA, ECDH, ECMQV, etc) key is always relative to some 'curve' (more exactly, prime-order subgroup over a curve with an identified generator aka base point).
 
         /*
@@ -403,7 +421,7 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         /*
          * Deterministic ECDSA (RFC 6979) is currently not supported in .NET out of the box. 04/04/2022
-         * 
+         *
         using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP384); // There's no way to control K =(
         //ecdsa.ImportECPrivateKey(pasetoKey.Key.Span, out _); // will work as long as Key is a PEM
         ecdsa.ImportECPrivateKey(sk, out _);
@@ -428,7 +446,7 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         /*
          * Below code depends on the ECDSA -> PEM format conversion from above
-         * 
+         *
         var seq = (Asn1Sequence)Asn1Object.FromByteArray(sk);
         var privKeyStruct = ECPrivateKeyStructure.GetInstance(seq);
         var algId = new AlgorithmIdentifier(X9ObjectIdentifiers.IdECPublicKey, privKeyStruct.GetParameters());

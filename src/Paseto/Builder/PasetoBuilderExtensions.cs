@@ -53,7 +53,6 @@ public static class PasetoBuilderExtensions
 
     /// <summary>
     /// Adds a token identifier claim to the Paseto.
-    /// The Utc time will be converted to Unix time.
     /// </summary>
     /// <param name="jti">The token identifier.</param>
     /// <returns>Current builder instance</returns>

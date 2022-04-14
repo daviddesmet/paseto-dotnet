@@ -18,13 +18,13 @@ using static Paseto.Utils.EncodingHelper;
 /// <seealso cref="Paseto.Protocol.IPasetoProtocolVersion" />
 public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
 {
-    public const int KEY_SIZE_IN_INTS = 8;
-    public const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int COUNTER_NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 3; // 24
+    internal const int KEY_SIZE_IN_INTS = 8;
+    internal const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    internal const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    internal const int KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    internal const int COUNTER_NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 3; // 24
 
-    public const string VERSION = "v4";
+    internal const string VERSION = "v4";
 
     /// <summary>
     /// Gets the unique header version string with which the protocol can be identified.
@@ -44,7 +44,7 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <returns><see cref="Paseto.Cryptography.Key.PasetoSymmetricKey" /></returns>
     public virtual PasetoSymmetricKey GenerateSymmetricKey()
     {
-        var n = new byte[KEY_SIZE_IN_INTS];
+        var n = new byte[KEY_SIZE_IN_BYTES];
         RandomNumberGenerator.Fill(n);
 
         return new PasetoSymmetricKey(n, this);

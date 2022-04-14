@@ -22,17 +22,17 @@ using static Paseto.Utils.EncodingHelper;
 [Obsolete("PASETO Version 1 is deprecated. Implementations should migrate to Version 3.")]
 public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
 {
-    public const int KEY_SIZE_IN_INTS = 8;
+    internal const int KEY_SIZE_IN_INTS = 8;
 
-    public const int SYM_KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int SYM_NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int SYM_KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
-    public const int SYM_NONCE_SPLIT_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 2; // 16
+    internal const int SYM_KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    internal const int SYM_NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    internal const int SYM_KEYDERIVATION_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
+    internal const int SYM_NONCE_SPLIT_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 2; // 16
 
-    public const int ASYM_KEY_SIZE_IN_BITS = 2048;
-    public const int ASYM_KEY_SIZE_IN_BYTES = ASYM_KEY_SIZE_IN_BITS / 8; // 256
+    internal const int ASYM_KEY_SIZE_IN_BITS = 2048;
+    internal const int ASYM_KEY_SIZE_IN_BYTES = ASYM_KEY_SIZE_IN_BITS / 8; // 256
 
-    public const string VERSION = "v1";
+    internal const string VERSION = "v1";
 
     /// <summary>
     /// Gets the unique header version string with which the protocol can be identified.
@@ -86,17 +86,17 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         /*
          * Get Nonce Specification
          * -------
-         * 
+         *
          * Given a message (m) and a nonce (n):
          *   1. Calculate HMAC-SHA384 of the message m with n as the key.
          *   2. Return the leftmost 32 bytes of step 1.
-         *   
+         *
          */
 
         /*
          * Encrypt Specification
          * -------
-         * 
+         *
          * Given a message `m`, key `k`, and optional footer `f` (which defaults to empty string):
          *   1. Before encrypting, first assert that the key being used is intended for use with `v1.local` tokens, and has a length of 256 bits (32 bytes). See [Algorithm Lucidity](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/03-Algorithm-Lucidity.md) for more information.
          *   2. Set header `h` to `v1.local`.
@@ -129,7 +129,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
          *      - Non-empty: return "h || base64url(n || c || t) || . || base64url(f)"
          *      - ...where || means "concatenate"
          *      - Note: `base64url()` means Base64url from RFC 4648 without `=` padding.
-         *   
+         *
          */
 
         if (pasetoKey is null)
@@ -186,7 +186,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         /*
          * Decrypt Specification
          * -------
-         * 
+         *
          * Given a message `m`, key `k`, and optional footer `f` (which defaults to empty string):
          *   1. Before decrypting, first assert that the key being used is intended for use with `v1.local` tokens, and has a length of 256 bits (32 bytes). See [Algorithm Lucidity](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/03-Algorithm-Lucidity.md) for more information.
          *   2. If `f` is not empty, verify that the value appended to the token matches `f`, using a constant-time string compare function. If it does not, throw an exception.
@@ -221,7 +221,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
          *          nonce = n[16:].
          *          key = Ek
          *      );
-         *   
+         *
          */
 
         if (string.IsNullOrWhiteSpace(token))
@@ -300,7 +300,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         /*
          * Sign Specification
          * -------
-         * 
+         *
          * Given a message `m`, 2048-bit RSA secret key `sk`, and optional footer `f` (which defaults to empty string):
          *   1. Before signing, first assert that the key being used is intended for use with `v1.public` tokens, and is the secret key of the intended keypair. See [Algorithm Lucidity](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/03-Algorithm-Lucidity.md) for more information.
          *   2. Set `h` to `v1.public.`
@@ -324,7 +324,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
          *      - Non-empty: return "h || base64url(m || sig) || . || base64url(f)"
          *      - ...where || means "concatenate"
          *      - Note: `base64url()` means Base64url from RFC 4648 without `=` padding.
-         *   
+         *
          */
 
         if (pasetoKey is null)
@@ -344,7 +344,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         /*
          * BCL doesn't support RSA-PSS SHA-384 MGF1
-         * 
+         *
         using var rsa = RSA.Create();
         //rsa.KeySize = 2048; // Default
         rsa.FromCompatibleXmlString(GetString(pasetoKey.Key.Span));
@@ -399,7 +399,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         /*
          * Verify Specification
          * -------
-         * 
+         *
          * Given a signed message `sm`, RSA public key `pk`, and optional footer `f` (which defaults to empty string):
          *   1. Before verifying, first assert that the key being used is intended for use with `v1.public` tokens, and the public key of the intended keypair. See [Algorithm Lucidity](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/03-Algorithm-Lucidity.md) for more information.
          *   2. If `f` is not empty, verify that the value appended to the token matches `f`, using a constant-time string compare function. If it does not, throw an exception.
@@ -420,7 +420,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
          *          mgf = "mgf1+sha384"
          *      );
          *   7. If the signature is valid, return `m`. Otherwise, throw an exception.
-         *   
+         *
          */
 
         if (string.IsNullOrWhiteSpace(token))
@@ -458,7 +458,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         /*
          * BCL doesn't support RSA-PSS SHA-384 MGF1
-         * 
+         *
         using var rsa = RSA.Create();
         //rsa.KeySize = 2048; // Default
         rsa.FromCompatibleXmlString(GetString(pasetoKey.Key.Span));

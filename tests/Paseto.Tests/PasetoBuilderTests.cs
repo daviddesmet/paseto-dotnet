@@ -4,6 +4,7 @@ using System;
 using System.Security.Cryptography;
 
 using FluentAssertions;
+using NaCl.Core.Internal;
 using Xunit;
 
 using Paseto.Builder;
@@ -11,6 +12,9 @@ using Paseto.Cryptography;
 
 public class PasetoBuilderTests
 {
+    private const string LocalKey = "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f";
+    private const string Footer = "arbitrary-string-that-isn't-json";
+
     private const string HelloPaseto = "Hello Paseto!";
     private const string IssuedBy = "Paragon Initiative Enterprises";
     private const string PublicKeyV1 = "<RSAKeyValue><Modulus>2Q3n8GRPEbcxAtT+uwsBnY08hhJF+Fby0MM1v5JbwlnQer7HmjKsaS97tbfnl87BwF15eKkxqHI12ntCSezxozhaUrgXCGVAXnUmZoioXTdtJgapFzBob88tLKhpWuoHdweRu9yGcWW3pD771zdFrRwa3h5alC1MAqAMHNid2D56TTsRj4CAfLSZpSsfmswfmHhDGqX7ZN6g/TND6kXjq4fPceFsb6yaKxy0JmtMomVqVTW3ggbVJhqJFOabwZ83/DjwqWEAJvfldz5g9LjvuislO5mJ9QEHBu7lnogKuX5g9PRTqP3c6Kus0/ldZ8CZvwWpxnxnwMRH10/UZ8TepQ==</Modulus><Exponent>AQAB</Exponent></RSAKeyValue>";
@@ -23,6 +27,142 @@ public class PasetoBuilderTests
     private const string ExpectedPublicPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T05:04:07.9196375Z\"}";
     private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T04:57:18.5865183Z\"}";
     private const string ExpectedFooter = "{\"kid\":\"gandalf0\"}";
+
+    [Theory(DisplayName = "Should succeed on GenerateSymmetricKey when dependencies are provided")]
+    [InlineData(ProtocolVersion.V1, 32)]
+    [InlineData(ProtocolVersion.V2, 32)]
+    [InlineData(ProtocolVersion.V3, 32)]
+    [InlineData(ProtocolVersion.V4, 32)]
+    public void ShouldSucceedOnGenerateSymmetricKeyWhenDependenciesAreProvided(ProtocolVersion version, int keySize)
+    {
+        var pasetoKey = new PasetoBuilder().Use(version, Purpose.Local)
+                                           .GenerateSymmetricKey();
+
+        pasetoKey.Should().NotBeNull();
+        pasetoKey.Key.IsEmpty.Should().BeFalse();
+        pasetoKey.Key.Length.Should().Be(keySize);
+    }
+
+    [Fact(DisplayName = "Should throw exception on GenerateSymmetricKey when no dependencies are provided")]
+    public void ShouldThrowExceptionOnGenerateSymmetricKeyWhenNoDependenciesAreProvided()
+    {
+        Action act = () => new PasetoBuilder().GenerateSymmetricKey();
+
+        act.Should().Throw<PasetoBuilderException>().WithMessage("Can't generate serialized key. Check if you have call the 'Use' method.");
+    }
+
+    [Theory(DisplayName = "Should throw exception on GenerateSymmetricKey when incorrect purpose is provided")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldThrowExceptionOnGenerateSymmetricKeyWhenIncorrectPurposeIsProvided(ProtocolVersion version)
+    {
+        var incorrectPurpose = Purpose.Public;
+
+        Action act = () => new PasetoBuilder().Use(version, incorrectPurpose)
+                                              .GenerateSymmetricKey();
+
+        act.Should().Throw<PasetoBuilderException>().WithMessage($"Can't generate symmetric key. {incorrectPurpose} purpose is not compatible.");
+    }
+
+    [Theory(DisplayName = "Should succeed on GenerateAsymmetricKeyPair when Seed is provided")]
+    [InlineData(ProtocolVersion.V1, 0, 0)]
+    [InlineData(ProtocolVersion.V2, 64, 32)]
+    [InlineData(ProtocolVersion.V3, 64, 32)]
+    [InlineData(ProtocolVersion.V4, 48, 49)]
+    public void ShouldSucceedOnGenerateAsymmetricKeyPairWhenSeedIsProvided(ProtocolVersion version, int secretKeyLength, int publicKeyLength)
+    {
+        var seed = new byte[32];
+        RandomNumberGenerator.Fill(seed);
+
+        var pasetoKey = new PasetoBuilder().Use(version, Purpose.Public)
+                                           .GenerateAsymmetricKeyPair(seed);
+
+        pasetoKey.Should().NotBeNull();
+        pasetoKey.SecretKey.Key.IsEmpty.Should().BeFalse();
+        pasetoKey.PublicKey.Key.IsEmpty.Should().BeFalse();
+
+        if (version == ProtocolVersion.V1) return;
+        pasetoKey.SecretKey.Key.Length.Should().Be(secretKeyLength);
+        pasetoKey.PublicKey.Key.Length.Should().Be(publicKeyLength);
+    }
+
+    [Fact(DisplayName = "Should throw exception on GenerateAsymmetricKeyPair when no dependencies are provided")]
+    public void ShouldThrowExceptionOnGenerateAsymmetricKeyPairWhenNoDependenciesAreProvided()
+    {
+        Action act = () => new PasetoBuilder().GenerateAsymmetricKeyPair();
+
+        act.Should().Throw<PasetoBuilderException>().WithMessage("Can't generate serialized key. Check if you have call the 'Use' method.");
+    }
+
+    [Theory(DisplayName = "Should throw exception on GenerateAsymmetricKeyPair when incorrect purpose is provided")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldThrowExceptionOnGenerateAsymmetricKeyPairWhenIncorrectPurposeIsProvided(ProtocolVersion version)
+    {
+        var incorrectPurpose = Purpose.Local;
+
+        Action act = () => new PasetoBuilder().Use(version, incorrectPurpose)
+                                              .GenerateAsymmetricKeyPair();
+
+        act.Should().Throw<PasetoBuilderException>().WithMessage($"Can't generate symmetric key. {incorrectPurpose} purpose is not compatible.");
+    }
+
+    [Theory(DisplayName = "Should throw exception on GenerateAsymmetricKeyPair when incorrect seed is provided")]
+    [InlineData(ProtocolVersion.V2, null)]
+    [InlineData(ProtocolVersion.V2, new byte[0])]
+    [InlineData(ProtocolVersion.V2, new byte[] { 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V2, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V3, null)]
+    [InlineData(ProtocolVersion.V3, new byte[0])]
+    [InlineData(ProtocolVersion.V3, new byte[] { 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V3, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V4, null)]
+    [InlineData(ProtocolVersion.V4, new byte[0])]
+    [InlineData(ProtocolVersion.V4, new byte[] { 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V4, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 })]
+    public void ShouldThrowExceptionOnGenerateAsymmetricKeyPairWhenIncorrectSeedIsProvided(ProtocolVersion version, byte[] seed)
+    {
+        Action act = () => new PasetoBuilder().Use(version, Purpose.Public)
+                                              .GenerateAsymmetricKeyPair(seed);
+
+        if (seed is null)
+            act.Should().Throw<ArgumentNullException>();
+        else
+            act.Should().Throw<ArgumentException>().WithMessage("The seed length in bytes must be*");
+    }
+
+    [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key when dependencies are provided")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldSucceedOnLocalEncodeWithByteArrayKeyWhenDependenciesAreProvided(ProtocolVersion version)
+    {
+        var token = new PasetoBuilder().Use(version, Purpose.Local)
+                                                   .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+                                                   .AddClaim("data", "this is a secret message")
+                                                   .Issuer("https://github.com/daviddesmet/paseto-dotnet")
+                                                   .Subject(Guid.NewGuid().ToString())
+                                                   .Audience("https://paseto.io")
+                                                   .NotBefore(DateTime.UtcNow.AddMinutes(5))
+                                                   .IssuedAt(DateTime.UtcNow)
+                                                   .Expiration(DateTime.UtcNow.AddHours(1))
+                                                   .TokenIdentifier("123456ABCD")
+                                                   .AddFooter(Footer)
+                                                   .Encode();
+
+        token.Should().NotBeNull();
+        token.Should().StartWith($"v{(int)version}.local.");
+        token.Split('.').Should().HaveCount(4);
+    }
+
+
+
+
 
     #region Version 2
 
