@@ -64,8 +64,10 @@ public class PaserkTests
 
                 var paserk = Paserk.Encode(pasetoKey, purpose, type);
                 paserk.Should().Be(test.Paserk);
+
+                var decodedPasetoKey = Paserk.Decode(paserk);
             }
-            catch (PasetoNotSupportedException)
+            catch (PaserkNotSupportedException)
             {
                 // This could be expected
                 _output.WriteLine($"ENCODE FAIL {test.Name}: since the type is not supported: {type}");
@@ -84,7 +86,7 @@ public class PaserkTests
             case PaserkType.Lid:
                 break;
             case PaserkType.Local:
-                return new PasetoSymmetricKey(CryptoBytes.FromHexString(key), CreateProtocolVersion(version));
+                return new PasetoSymmetricKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
             case PaserkType.LocalWrap:
                 break;
             case PaserkType.LocalPassword:
@@ -94,7 +96,7 @@ public class PaserkTests
             case PaserkType.Sid:
                 break;
             case PaserkType.Secret:
-                return new PasetoAsymmetricSecretKey(CryptoBytes.FromHexString(key), CreateProtocolVersion(version));
+                return new PasetoAsymmetricSecretKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
             case PaserkType.SecretWrap:
                 break;
             case PaserkType.SecretPassword:
@@ -102,26 +104,12 @@ public class PaserkTests
             case PaserkType.Pid:
                 break;
             case PaserkType.Public:
-                return new PasetoAsymmetricPublicKey(CryptoBytes.FromHexString(key), CreateProtocolVersion(version));
+                return new PasetoAsymmetricPublicKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
             default:
                 throw new ArgumentOutOfRangeException(nameof(type), type, "Type not supported");
         }
 
-        throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
-    }
-
-    private static IPasetoProtocolVersion CreateProtocolVersion(ProtocolVersion version)
-    {
-#pragma warning disable IDE0022 // Use expression body for methods
-        return version switch
-        {
-            ProtocolVersion.V1 => new Version1(),
-            ProtocolVersion.V2 => new Version2(),
-            ProtocolVersion.V3 => new Version3(),
-            ProtocolVersion.V4 => new Version4(),
-            _ => throw new PasetoNotSupportedException($"The protocol version {version} is currently not supported."),
-        };
-#pragma warning restore IDE0022 // Use expression body for methods
+        throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.");
     }
 
     private static string GetPaserkTestVector(int version, string type)
