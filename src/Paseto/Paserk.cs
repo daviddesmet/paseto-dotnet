@@ -13,104 +13,81 @@ using static Paseto.Utils.EncodingHelper;
 
 public static class Paserk
 {
-    public static string Encode(IPasetoProtocolVersion proto, Purpose purpose, PaserkType type)
+    public static string Encode(PasetoKey pasetoKey, Purpose purpose, PaserkType type)
     {
         if (GetCompatibility(type) != purpose)
             throw new PasetoNotSupportedException($"The PASERK type is not compatible with the {purpose} purpose.");
 
-        var header = $"k{proto.VersionNumber}.{GetCompatibility(type).ToDescription()}.";
+        var header = $"k{pasetoKey.Protocol.VersionNumber}.{GetCompatibility(type).ToDescription()}.";
 
-        switch (type)
+        return type switch
         {
-            case PaserkType.Local:
-                return $"{header}{ToBase64Url(proto.GenerateSymmetricKey().Key.Span)}";
-            case PaserkType.Public:
-                return $"{header}{ToBase64Url(proto.GenerateAsymmetricKeyPair().PublicKey.Key.Span)}";
-            case PaserkType.Secret:
-                return $"{header}{ToBase64Url(proto.GenerateAsymmetricKeyPair().SecretKey.Key.Span)}";
-            default:
-                throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
-        }
+            PaserkType.Local => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
+            PaserkType.Public => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
+            PaserkType.Secret => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
+            _ => throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.")
+        };
     }
 
-    public static string Encode(ProtocolVersion version, Purpose purpose, PaserkType type, PasetoKey pasetoKey)
+    public static string Encode(PasetoSymmetricKey pasetoKey, PaserkType type)
     {
-        var proto = CreateProtocolVersion(version);
-
-        if (!pasetoKey.IsValidFor(proto, purpose))
-            throw new PasetoNotSupportedException($"The PASETO key is not compatible with the {purpose} purpose.");
-
-        if (GetCompatibility(type) != purpose)
-            throw new PasetoNotSupportedException($"The PASERK type is not compatible with the {purpose} purpose.");
-
-        var header = $"k{proto.VersionNumber}.{GetCompatibility(type).ToDescription()}.";
-
-        switch (type)
-        {
-            case PaserkType.Local:
-                return $"{header}{ToBase64Url(pasetoKey.Key.Span)}";
-            case PaserkType.Public:
-                return $"{header}{ToBase64Url(pasetoKey.Key.Span)}";
-            case PaserkType.Secret:
-                return $"{header}{ToBase64Url(pasetoKey.Key.Span)}";
-            default:
-                throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
-        }
-    }
-
-    public static string Encode(ProtocolVersion version, PaserkType type, PasetoSymmetricKey pasetoKey)
-    {
-        var header = $"k{(int)version}.{GetCompatibility(type).ToDescription()}.";
+        var header = $"k{pasetoKey.Protocol.VersionNumber}.{GetCompatibility(type).ToDescription()}.";
 
         switch (type)
         {
             case PaserkType.Lid:
-                throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
+                break;
             case PaserkType.Local:
                 return $"{header}{ToBase64Url(pasetoKey.Key.Span)}";
             case PaserkType.LocalWrap:
-                throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
+                break;
             case PaserkType.LocalPassword:
-                throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
+                break;
             case PaserkType.Seal:
-                throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
+                break;
             default:
                 throw new PasetoNotSupportedException($"The PASETO key is not compatible with the PASERK type {type}.");
         }
+
+        throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
     }
 
-    public static string Encode(ProtocolVersion version, PaserkType type, PasetoAsymmetricSecretKey pasetoKey)
+    public static string Encode(PasetoAsymmetricSecretKey pasetoKey, PaserkType type)
     {
-        var header = $"k{(int)version}.{GetCompatibility(type).ToDescription()}.";
+        var header = $"k{pasetoKey.Protocol.VersionNumber}.{GetCompatibility(type).ToDescription()}.";
 
         switch (type)
         {
             case PaserkType.Sid:
-                throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
+                break;
             case PaserkType.Secret:
                 return $"{header}{ToBase64Url(pasetoKey.Key.Span)}";
             case PaserkType.SecretWrap:
-                throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
+                break;
             case PaserkType.SecretPassword:
-                throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
+                break;
             default:
                 throw new PasetoNotSupportedException($"The PASETO key is not compatible with the PASERK type {type}.");
         }
+
+        throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
     }
 
-    public static string Encode(ProtocolVersion version, PaserkType type, PasetoAsymmetricPublicKey pasetoKey)
+    public static string Encode(PasetoAsymmetricPublicKey pasetoKey, PaserkType type)
     {
-        var header = $"k{(int)version}.{GetCompatibility(type).ToDescription()}.";
+        var header = $"k{pasetoKey.Protocol.VersionNumber}.{GetCompatibility(type).ToDescription()}.";
 
         switch (type)
         {
             case PaserkType.Pid:
-                throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
+                break;
             case PaserkType.Public:
                 return $"{header}{ToBase64Url(pasetoKey.Key.Span)}";
             default:
                 throw new PasetoNotSupportedException($"The PASETO key is not compatible with the PASERK type {type}.");
         }
+
+        throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported.");
     }
 
     public static PasetoKey Decode(string serializedKey)
@@ -118,21 +95,7 @@ public static class Paserk
         throw new NotImplementedException();
     }
 
-    private static IPasetoProtocolVersion CreateProtocolVersion(ProtocolVersion version)
-    {
-#pragma warning disable IDE0022 // Use expression body for methods
-        return version switch
-        {
-            ProtocolVersion.V1 => new Version1(),
-            ProtocolVersion.V2 => new Version2(),
-            ProtocolVersion.V3 => new Version3(),
-            ProtocolVersion.V4 => new Version4(),
-            _ => throw new PasetoNotSupportedException($"The protocol version {version} is currently not supported."),
-        };
-#pragma warning restore IDE0022 // Use expression body for methods
-    }
-
-    private static Purpose GetCompatibility(PaserkType type) => type switch
+    public static Purpose GetCompatibility(PaserkType type) => type switch
     {
         PaserkType.Lid => Purpose.Local,
         PaserkType.Local => Purpose.Local,
@@ -148,7 +111,7 @@ public static class Paserk
         _ => throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported."),
     };
 
-    private static bool IsDataEncoded(PaserkType type) => type switch
+    public static bool IsDataEncoded(PaserkType type) => type switch
     {
         PaserkType.Lid => true,
         PaserkType.Local => true,
@@ -164,7 +127,7 @@ public static class Paserk
         _ => throw new PasetoNotSupportedException($"The PASERK type {type} is currently not supported."),
     };
 
-    private static bool IsFooterSafe(PaserkType type) => type switch
+    public static bool IsFooterSafe(PaserkType type) => type switch
     {
         PaserkType.Lid => true,
         PaserkType.Local => false,

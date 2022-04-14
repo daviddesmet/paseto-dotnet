@@ -30,8 +30,8 @@ public class PasetoPublicPurposeHandler : PasetoPurposeHandler
     /// </summary>
     /// <param name="protocol">The protocol version.</param>
     /// <param name="token">The token.</param>
-    /// <returns><c>true</c> if verified, <c>false</c> otherwise.</returns>
-    public (bool Valid, string Payload) Verify(IPasetoProtocolVersion protocol, string token)
+    /// <returns>a <see cref="PasetoVerifyResult"/> that represents a PASETO token verify operation.</returns>
+    public PasetoVerifyResult Verify(IPasetoProtocolVersion protocol, string token)
     {
         Validate(protocol);
         return protocol.Verify(token, (PasetoAsymmetricPublicKey)PasetoKey);

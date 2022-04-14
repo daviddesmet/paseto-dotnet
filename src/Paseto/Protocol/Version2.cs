@@ -321,11 +321,11 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// </summary>
     /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The asymmetric public key.</param>
-    /// <returns><c>true</c> if verified, <c>false</c> otherwise.</returns>
+    /// <returns>a <see cref="PasetoVerifyResult"/> that represents a PASETO token verify operation.</returns>
     /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload does not contain signature</exception>
-    public virtual (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
+    public virtual PasetoVerifyResult Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
     {
         /*
          * Verify Specification
@@ -388,6 +388,6 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var valid = Ed25519.Verify(signature, pack, pasetoKey.Key.ToArray());
 
-        return (valid, GetString(payload));
+        return valid ? PasetoVerifyResult.Success(GetString(payload)) : PasetoVerifyResult.Failed;
     }
 }

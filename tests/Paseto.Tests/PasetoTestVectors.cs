@@ -122,21 +122,6 @@ public class PasetoTestVectors
                 {
                     _output.WriteLine($"ENCODE FAIL {test.Name}: {ex.Message}");
                 }
-
-                // 1-S-1
-                // v1.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwIjoiMjAxOS0wMS0wMVQwMDowMDowMCswMDowMCJ9ITaOgxZh43XkefPOcWykJaYdvpNyo3e7N4ZCx9bzz_iycyiZISO3M_bh6ifGWSC5-Es7b0rF9gMiEMzfO-bVojgvtC8YUB-Zrw9MTCYl2MKi2FSCMnbpx5UIaOSt5SzFRI2ofvDO9dNbBB9NInCNtnb8TtjTIi9s6o5QipTiZwsdcK7wl_u8MM4p42WSL-QY_yBnmbm5x5ayN29OA30ZnrP-9oN2xXD1G5F39Uf-QeMBtuhT4VIV4FhbSK-54V-z48iLf94N6SQ_OlbtyC0Yvld9HJGBnH-wmF-CGPc1bdgSGshGjwXxqvbaMed2wrY0B44fbEWA8l03sZyh9legvQ
-                // v1.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwIjoiMjAxOS0wMS0wMVQwMDowMDowMCswMDowMCJ9cIZKahKeGM5kiAS_4D70Qbz9FIThZpxetJ6n6E6kXP_119SvQcnfCSfY_gG3D0Q2v7FEtm2Cmj04lE6YdgiZ0RwA41WuOjXq7zSnmmHK9xOSH6_2yVgt207h1_LphJzVztmZzq05xxhZsV3nFPm2cCu8oPceWy-DBKjALuMZt_Xj6hWFFie96SfQ6i85lOsTX8Kc6SQaG-3CgThrJJ6W9DC-YfQ3lZ4TJUoY3QNYdtEgAvp1QuWWK6xmIb8BwvkBPej5t88QUb7NcvZ15VyNw3qemQGn2ITSdpdDgwMtpflZOeYdtuxQr1DSGO2aQyZl7s0WYn1IjdQFx6VjSQ4yfw
-
-                // 2-E-1
-                // Expected
-                // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ
-                // NaCl
-                // v2.local.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsm4Ts6wA4yoeuodTyTrK_gjl1bDexnpI8IAIJAqdDelBIifDmJT9QUYX0NctSsZGBKqh5wHHyvhCMWoY99CNCkWAEHLnHkPSVZPA-oJQPlinqKUHrA
-                // v2.local.ENG98mfmCWo7p8qEha5nuyv4lP5y8248xqXFWNxuWGBIaU0yo_xm2htHeZho7vO_Xog1c6VPPrOvsEYZCdUqBIjUZegA6CJbtTwd-_VbOU33Ow02Z5pPl1wql7K75d7SeAEwAcGzapF8XMJR-Q // using nonce as nKey with original Blake2B class
-                // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ // using NSec and nonce as nKey
-                // v2.local.97TTOvgwIxNGvV80XKiGZg_kD3tsXM_-qB4dZGHOeN1cTkgQ4PnW8888l802W8d9AvEGnoNBY3BnqHORy8a5cC8aKpbA0En8XELw2yDk2f1sVODyfnDbi6rEGMY3pSfCbLWMM2oHJxvlEl2XbQ // Using Blake2bMac https://github.com/kmaragon/Konscious.Security.Cryptography
-                // NSec
-                // v2.local.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAsm4Ts6wA4yoeuodTyTrK_gjl1bDexnpI8IAIJAqdDelBIifDmJT9QUYX0NctSsZGBKqh5wHHyvhCMWoY99CNCkWAEHLnHkPSVZPA-oJQPlinqKUHrA
             }
 
             /*

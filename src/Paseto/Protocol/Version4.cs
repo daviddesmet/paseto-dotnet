@@ -166,6 +166,15 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
         return $"{header}{ToBase64Url(n.Concat(ciphertext).Concat(mac).ToArray())}{footer}";
     }
 
+    /// <summary>
+    /// Decrypts the specified token using a shared key.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <param name="pasetoKey">The symmetric key.</param>
+    /// <returns>System.String.</returns>
+    /// exception cref="System.ArgumentException">Shared Key is missing or invalid</exception>
+    /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
+    /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload is not valid or Hash is not valid</exception>
     public string Decrypt(string token, PasetoSymmetricKey pasetoKey)
     {
         /*
@@ -279,6 +288,16 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
         }
     }
 
+    /// <summary>
+    /// Signs the specified payload.
+    /// </summary>
+    /// <param name="pasetoKey">The asymmetric secret key.</param>
+    /// <param name="payload">The payload.</param>
+    /// <param name="footer">The optional footer.</param>
+    /// <returns>System.String.</returns>
+    /// <exception cref="System.ArgumentException">Secret Key is missing</exception>
+    /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
+    /// <exception cref="Paseto.PasetoInvalidException">Key is not valid</exception>
     public string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "")
     {
         /*
@@ -327,7 +346,16 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
         return $"{header}{ToBase64Url(GetBytes(payload).Concat(signature).ToArray())}{footer}";
     }
 
-    public (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
+    /// <summary>
+    /// Verifies the specified token.
+    /// </summary>
+    /// <param name="token">The token.</param>
+    /// <param name="pasetoKey">The asymmetric public key.</param>
+    /// <returns>a <see cref="PasetoVerifyResult"/> that represents a PASETO token verify operation.</returns>
+    /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
+    /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
+    /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload does not contain signature</exception>
+    public PasetoVerifyResult Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
     {
         /*
          * Verify Specification
@@ -392,6 +420,6 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var valid = Ed25519.Verify(signature, pack, pasetoKey.Key.ToArray());
 
-        return (valid, GetString(payload));
+        return valid ? PasetoVerifyResult.Success(GetString(payload)) : PasetoVerifyResult.Failed;
     }
 }

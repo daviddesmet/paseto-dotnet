@@ -46,6 +46,7 @@ public interface IPasetoProtocolVersion
     /// </summary>
     /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The symmetric key.</param>
+    /// <returns>System.String.</returns>
     string Decrypt(string token, PasetoSymmetricKey pasetoKey);
 
     /// <summary>
@@ -62,6 +63,6 @@ public interface IPasetoProtocolVersion
     /// </summary>
     /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The asymmetric public key.</param>
-    /// <returns><c>true</c> if verified, <c>false</c> otherwise.</returns>
-    (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey);
+    /// <returns>a <see cref="PasetoVerifyResult"/> that represents a PASETO token verify operation.</returns>
+    PasetoVerifyResult Verify(string token, PasetoAsymmetricPublicKey pasetoKey);
 }

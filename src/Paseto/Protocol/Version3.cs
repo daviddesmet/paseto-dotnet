@@ -80,7 +80,9 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (seed.Length != SEED_SIZE_IN_BYTES)
             throw new ArgumentException($"The seed length in bytes must be {SEED_SIZE_IN_BYTES}.");
 
-        var secureRandom = new SecureRandom(seed);
+        //var secureRandom = new SecureRandom(seed);
+        var secureRandom = SecureRandom.GetInstance("SHA384PRNG", false);
+        secureRandom.SetSeed(seed);
         var x9Params = NistNamedCurves.GetByName("P-384"); // or SecNamedCurves.GetByName("secp384r1");
         var ecParams = new ECDomainParameters(x9Params.Curve, x9Params.G, x9Params.N, x9Params.H);
         var keyParams = new ECKeyGenerationParameters(ecParams, secureRandom);
@@ -503,11 +505,11 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// </summary>
     /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The asymmetric public key.</param>
-    /// <returns><c>true</c> if verified, <c>false</c> otherwise.</returns>
+    /// <returns>a <see cref="PasetoVerifyResult"/> that represents a PASETO token verify operation.</returns>
     /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload does not contain signature</exception>
-    public virtual (bool Valid, string Payload) Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
+    public virtual PasetoVerifyResult Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
     {
         /*
          * Verify Specification
@@ -622,6 +624,6 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         //var valid = signer.VerifySignature(packHash, ((DerInteger)seq[0]).PositiveValue, ((DerInteger)seq[1]).PositiveValue);
         var valid = signer.VerifySignature(packHash, new BigInteger(1, signature[..sigPartLen]), new BigInteger(1, signature[sigPartLen..]));
 
-        return (valid, GetString(payload));
+        return valid ? PasetoVerifyResult.Success(GetString(payload)) : PasetoVerifyResult.Failed;
     }
 }

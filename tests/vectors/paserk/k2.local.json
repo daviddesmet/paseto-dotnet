@@ -1,0 +1,20 @@
+{
+  "name": "PASERK k2.local Test Vectors",
+  "tests": [
+    {
+      "name": "k2.local-1",
+      "key": "0000000000000000000000000000000000000000000000000000000000000000",
+      "paserk": "k2.local.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    {
+      "name": "k2.local-2",
+      "key": "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f",
+      "paserk": "k2.local.cHFyc3R1dnd4eXp7fH1-f4CBgoOEhYaHiImKi4yNjo8"
+    },
+    {
+      "name": "k2.local-3",
+      "key": "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e90",
+      "paserk": "k2.local.cHFyc3R1dnd4eXp7fH1-f4CBgoOEhYaHiImKi4yNjpA"
+    }
+  ]
+}

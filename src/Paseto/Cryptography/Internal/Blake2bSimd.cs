@@ -59,7 +59,9 @@ internal class Blake2bSimd : Blake2bBase
 
             for (var i = 0; i < 12; ++i)
             {
+#pragma warning disable CA2014
                 var sigmaodd = stackalloc ulong[4];
+#pragma warning restore CA2014
                 sigmaodd[0] = m[Blake2Constants.Sigma[i][0]];
                 sigmaodd[1] = m[Blake2Constants.Sigma[i][2]];
                 sigmaodd[2] = m[Blake2Constants.Sigma[i][4]];

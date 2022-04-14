@@ -7,6 +7,7 @@ using Paseto.Extensions;
 using Paseto.Cryptography.Key;
 using Paseto.Handlers;
 using Paseto.Protocol;
+using Paseto.Serializers;
 using static Paseto.Utils.EncodingHelper;
 
 /// <summary>
@@ -14,7 +15,7 @@ using static Paseto.Utils.EncodingHelper;
 /// </summary>
 public sealed class PasetoBuilder
 {
-    private readonly PasetoData _paseto = new();
+    private readonly PasetoPayload _payload = new();
     private readonly Dictionary<string, Func<IPasetoProtocolVersion>> _supportedVersions = new()
     {
 #pragma warning disable CS0618 // Type or member is obsolete
@@ -37,7 +38,7 @@ public sealed class PasetoBuilder
         }
     };
 
-    //private IJsonSerializer _serializer = new JsonNetSerializer();
+    private IJsonSerializer _serializer = new JsonNetSerializer();
     //private IBase64UrlEncoder _urlEncoder = new Base64UrlEncoder();
 
     private IPasetoProtocolVersion _protocol;
@@ -45,7 +46,6 @@ public sealed class PasetoBuilder
     private PasetoKey _pasetoKey;
     private byte[] _nonce;
     private string _footer;
-    private bool _verify;
 
 #pragma warning disable CS0618 // Type or member is obsolete
     /// <summary>
@@ -126,6 +126,18 @@ public sealed class PasetoBuilder
     }
 
     /// <summary>
+    /// Sets the custom JSON serializer to use.
+    /// </summary>
+    /// <param name="serializer">The custom JSON serializer to use.</param>
+    /// <returns>Current builder instance</returns>
+    public PasetoBuilder WithJsonSerializer(IJsonSerializer serializer)
+    {
+        _serializer = serializer ?? throw new ArgumentNullException(nameof(serializer));
+        _payload.SetSerializer(_serializer);
+        return this;
+    }
+
+    /// <summary>
     /// Sets the paseto key.
     /// </summary>
     /// <param name="pasetoKey">The paseto key.</param>
@@ -198,7 +210,7 @@ public sealed class PasetoBuilder
     /// <returns>Current builder instance</returns>
     public PasetoBuilder AddClaim(string name, object value)
     {
-        _paseto.Payload.Add(name, value);
+        _payload.Add(name, value);
         return this;
     }
 
@@ -244,23 +256,10 @@ public sealed class PasetoBuilder
     /// <returns>PasetoBuilder&lt;TProtocol&gt;.</returns>
     public PasetoBuilder AddFooter(PasetoPayload footer)
     {
+        footer.SetSerializer(_serializer);
+
         _footer = footer.SerializeToJson();
         return this;
-    }
-
-    /// <summary>
-    /// Generates a serialized key (PASERK) using the supplied dependencies.
-    /// </summary>
-    /// <param name="type"></param>
-    /// <returns></returns>
-    /// <exception cref="PasetoBuilderException"></exception>
-    public string GenerateSerializedKey(PaserkType type)
-    {
-        if (_protocol is null)
-            throw new PasetoBuilderException("Can't generate serialized key. Check if you have call the 'Use' method.");
-
-        // TODO: I have my doubts on this impl, I think the builder should only create a PasetoSymmetricKey or PasetoAsymmetricKeyPair and if someone wants to have it as serialized key, it should use PASERK which is meant for that
-        return Paserk.Encode(_protocol, _purpose, type);
     }
 
     /// <summary>
@@ -313,10 +312,10 @@ public sealed class PasetoBuilder
         if (_pasetoKey is null || _pasetoKey.Key.IsEmpty)
             throw new PasetoBuilderException("Can't build a token. Check if you have call the 'WithKey' method.");
 
-        if (_paseto.Payload is null || _paseto.Payload.Count == 0)
+        if (_payload is null || _payload.Count == 0)
             throw new PasetoBuilderException("Can't build a token. Check if you have call the 'AddClaim' method.");
 
-        var payload = _paseto.Payload.SerializeToJson();
+        var payload = _payload.SerializeToJson();
 
         return _purpose switch
         {
@@ -330,12 +329,12 @@ public sealed class PasetoBuilder
     /// Decodes a token using the supplied dependencies.
     /// </summary>
     /// <param name="token">The Paseto token.</param>
-    /// <returns>The JSON payload</returns>
+    /// <returns>a <see cref="PasetoDecodeResult"/> that represents a PASETO token decode operation.</returns>
     /// <exception cref="PasetoBuilderException">Can't decode token. Check if you have call the 'Use' method.</exception>
     /// <exception cref="PasetoBuilderException">Can't decode token. Check if you have call the 'WithKey' method.</exception>
     /// <exception cref="PasetoVerificationException">Invalid signature!</exception>
     /// <exception cref="PasetoNotSupportedException"></exception>
-    public string Decode(string token)
+    public PasetoDecodeResult Decode(string token)
     {
         if (string.IsNullOrWhiteSpace(token))
             throw new ArgumentNullException(nameof(token));
@@ -346,21 +345,28 @@ public sealed class PasetoBuilder
         if (_pasetoKey is null || _pasetoKey.Key.IsEmpty)
             throw new PasetoBuilderException("Can't decode token. Check if you have call the 'WithKey' method.");
 
-        switch (_purpose)
+        // TODO: Validate payload
+
+        try
         {
-            case Purpose.Local:
-                return new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey).Decrypt(_protocol, token);
-            case Purpose.Public:
-                if (!_verify) // _verify is not set, should return PasetoToken object with a verify property or always handle verify and throw if not valid?
-                    return new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey).Verify(_protocol, token).Payload;
+            switch (_purpose)
+            {
+                case Purpose.Local:
+                    var payload = new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey).Decrypt(_protocol, token);
+                    return PasetoDecodeResult.Success(new PasetoToken(token, payload));
+                case Purpose.Public:
+                    var result = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey).Verify(_protocol, token);
+                    if (!result.IsValid)
+                        return PasetoDecodeResult.Failed(new PasetoVerificationException("The token signature is not valid"));
 
-                var (valid, payload) = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey).Verify(_protocol, token);
-                if (!valid)
-                    throw new PasetoVerificationException("Invalid signature!");
-
-                return payload;
-            default:
-                throw new PasetoNotSupportedException($"The {_purpose} purpose is not supported!");
+                    return PasetoDecodeResult.Success(new PasetoToken(token, result.Payload));
+                default:
+                    return PasetoDecodeResult.Failed(new PasetoNotSupportedException($"The {_purpose} purpose is not supported"));
+            }
+        }
+        catch (Exception ex)
+        {
+            return PasetoDecodeResult.Failed(ex);
         }
     }
 
@@ -383,12 +389,13 @@ public sealed class PasetoBuilder
     /// Decodes the payload using the supplied dependencies.
     /// </summary>
     /// <param name="token">The Paseto token.</param>
+    /// <param name="verify">If decoding should throw an exception if is invalid.</param>
     /// <returns>The JSON payload</returns>
     /// <exception cref="PasetoBuilderException">Can't decode token. Check if you have call the 'Use' method.</exception>
     /// <exception cref="PasetoBuilderException">Can't decode token. Check if you have call the 'WithKey' method.</exception>
     /// <exception cref="PasetoVerificationException">Invalid signature!</exception>
     /// <exception cref="PasetoNotSupportedException"></exception>
-    public string DecodePayload(string token)
+    public string DecodePayload(string token, bool verify = false)
     {
         if (string.IsNullOrWhiteSpace(token))
             throw new ArgumentNullException(nameof(token));
@@ -399,19 +406,18 @@ public sealed class PasetoBuilder
         if (_pasetoKey is null || _pasetoKey.Key.IsEmpty)
             throw new PasetoBuilderException("Can't decode token. Check if you have call the 'WithKey' method.");
 
+        // TODO: Validate payload
+
         switch (_purpose)
         {
             case Purpose.Local:
                 return new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey).Decrypt(_protocol, token);
             case Purpose.Public:
-                if (!_verify) // _verify is not set, should return PasetoToken object with a verify property or always handle verify and throw if not valid?
-                    return new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey).Verify(_protocol, token).Payload;
+                var result = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey).Verify(_protocol, token);
+                if (verify && !result.IsValid)
+                    throw new PasetoVerificationException("The token signature is not valid");
 
-                var (valid, payload) = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey).Verify(_protocol, token);
-                if (!valid)
-                    throw new PasetoVerificationException("Invalid signature!");
-
-                return payload;
+                return result.Payload;
             default:
                 throw new PasetoNotSupportedException($"The {_purpose} purpose is not supported!");
         }
@@ -427,11 +433,4 @@ public sealed class PasetoBuilder
         var parts = token.Split('.');
         return GetString(FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty));
     }
-
-    /// <summary>
-    /// Decodes a token into a PasetoData object using the supplied dependencies.
-    /// </summary>
-    /// <param name="token">The Paseto token.</param>
-    /// <returns>PasetoData.</returns>
-    public PasetoData DecodeToObject(string token) => new(DecodeHeader(token), PasetoPayload.DeserializeFromJson(Decode(token)), DecodeFooter(token));
 }

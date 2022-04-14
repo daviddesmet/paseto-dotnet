@@ -135,12 +135,12 @@ public class PasetoBuilderTests
             act.Should().Throw<ArgumentException>().WithMessage("The seed length in bytes must be*");
     }
 
-    [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key when dependencies are provided")]
+    [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key and optional Footer when dependencies are provided")]
     [InlineData(ProtocolVersion.V1)]
     [InlineData(ProtocolVersion.V2)]
     [InlineData(ProtocolVersion.V3)]
     [InlineData(ProtocolVersion.V4)]
-    public void ShouldSucceedOnLocalEncodeWithByteArrayKeyWhenDependenciesAreProvided(ProtocolVersion version)
+    public void ShouldSucceedOnLocalEncodeWithByteArrayKeyAndOptionalFooterWhenDependenciesAreProvided(ProtocolVersion version)
     {
         var token = new PasetoBuilder().Use(version, Purpose.Local)
                                                    .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
@@ -155,11 +155,63 @@ public class PasetoBuilderTests
                                                    .AddFooter(Footer)
                                                    .Encode();
 
-        token.Should().NotBeNull();
+        token.Should().NotBeNullOrEmpty();
         token.Should().StartWith($"v{(int)version}.local.");
         token.Split('.').Should().HaveCount(4);
     }
 
+    [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key and optional Footer Payload when dependencies are provided")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldSucceedOnLocalEncodeWithByteArrayKeyAndOptionalFooterPayloadWhenDependenciesAreProvided(ProtocolVersion version)
+    {
+        var token = new PasetoBuilder().Use(version, Purpose.Local)
+            .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+            .AddClaim("data", "this is a secret message")
+            .Issuer("https://github.com/daviddesmet/paseto-dotnet")
+            .Subject(Guid.NewGuid().ToString())
+            .Audience("https://paseto.io")
+            .NotBefore(DateTime.UtcNow.AddMinutes(5))
+            .IssuedAt(DateTime.UtcNow)
+            .Expiration(DateTime.UtcNow.AddHours(1))
+            .TokenIdentifier("123456ABCD")
+            .AddFooter(new PasetoPayload { { "kid", "gandalf0" } })
+            .Encode();
+
+        token.Should().NotBeNullOrEmpty();
+        token.Should().StartWith($"v{(int)version}.local.");
+        token.Split('.').Should().HaveCount(4);
+    }
+
+    [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key when dependencies are provided")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldSucceedOnLocalEncodeWithByteArrayKeyWhenDependenciesAreProvided(ProtocolVersion version)
+    {
+        var token = new PasetoBuilder().Use(version, Purpose.Local)
+            .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+            .AddClaim("data", "this is a secret message")
+            .Issuer("https://github.com/daviddesmet/paseto-dotnet")
+            .Subject(Guid.NewGuid().ToString())
+            .Audience("https://paseto.io")
+            .NotBefore(DateTime.UtcNow.AddMinutes(5))
+            .IssuedAt(DateTime.UtcNow)
+            .Expiration(DateTime.UtcNow.AddHours(1))
+            .TokenIdentifier("123456ABCD")
+            .Encode();
+
+        token.Should().NotBeNullOrEmpty();
+        token.Should().StartWith($"v{(int)version}.local.");
+        token.Split('.').Should().HaveCount(3);
+    }
+
+    // TODO: Public encode tests
+    // TODO: Null payload tests
+    // TODO: Decode fails tests, include invalid header v1.remote.
 
 
 
@@ -181,49 +233,6 @@ public class PasetoBuilderTests
                                        .WithKey(sk, Encryption.AsymmetricSecretKey)
                                        .AddClaim("example", HelloPaseto)
                                        .Expiration(DateTime.UtcNow.AddHours(24))
-                                       .Encode();
-
-        // Assert
-        token.Should().NotBeNullOrEmpty();
-    }
-
-    [Fact]
-    public void Version2BuilderLocalTokenGenerationTest()
-    {
-        // Arrange
-        var key = new byte[32];
-        RandomNumberGenerator.Create().GetBytes(key);
-
-        //key = Convert.FromBase64String(LocalKeyV2);
-
-        // Act
-        var token = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
-                                       .WithKey(key, Encryption.SymmetricKey)
-                                       .AddClaim("example", HelloPaseto)
-                                       .Expiration(DateTime.UtcNow.AddHours(24))
-                                       //.Expiration(DateTime.Parse("2018-04-07T04:57:18.5865183Z").ToUniversalTime())
-                                       .Encode();
-
-        // Assert
-        token.Should().NotBeNullOrEmpty();
-    }
-
-    [Fact]
-    public void Version2BuilderLocalTokenWithFooterGenerationTest()
-    {
-        // Arrange
-        var key = new byte[32];
-        RandomNumberGenerator.Create().GetBytes(key);
-
-        //key = Convert.FromBase64String(LocalKeyV2);
-
-        // Act
-        var token = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
-                                       .WithKey(key, Encryption.SymmetricKey)
-                                       .AddClaim("example", HelloPaseto)
-                                       .Expiration(DateTime.UtcNow.AddHours(24))
-                                       //.Expiration(DateTime.Parse("2018-04-07T04:57:18.5865183Z").ToUniversalTime())
-                                       .AddFooter(new PasetoPayload { { "kid", "gandalf0" } })
                                        .Encode();
 
         // Assert
@@ -278,55 +287,58 @@ public class PasetoBuilderTests
         Assert.Throws<PasetoBuilderException>(() => new PasetoBuilder().UseV2(Purpose.Local).WithKey(sk, Encryption.SymmetricKey).Encode());
     }
 
-    [Fact]
-    public void Version2BuilderPublicTokenDecodingTest()
-    {
-        // Arrange & Act
-        var payload = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Public)
-                                         .WithKey(Convert.FromBase64String(PublicKeyV2), Encryption.AsymmetricPublicKey)
-                                         .Decode(TokenV2);
-
-        // Assert
-        payload.Should().NotBeNull();
-        payload.Should().Be(ExpectedPublicPayload);
-    }
+    // [Fact]
+    // public void Version2BuilderPublicTokenDecodingTest()
+    // {
+    //     // Arrange & Act
+    //     var payload = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Public)
+    //                                      .WithKey(Convert.FromBase64String(PublicKeyV2), Encryption.AsymmetricPublicKey)
+    //                                      .Decode(TokenV2);
+    //
+    //     // Assert
+    //     payload.Should().NotBeNull();
+    //     payload.Should().Be(ExpectedPublicPayload);
+    // }
 
     [Fact]
     public void Version2BuilderLocalTokenDecodingTest()
     {
         // Arrange & Act
-        var payload = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
+        var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
                                          .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
                                          .Decode(LocalTokenV2);
 
         // Assert
-        payload.Should().NotBeNull();
-        payload.Should().Be(ExpectedLocalPayload);
+        result.Should().NotBeNull();
+        result.Paseto.Should().NotBeNull();
+        result.Paseto.RawPayload.Should().Be(ExpectedLocalPayload);
     }
 
     [Fact]
     public void Version2BuilderLocalTokenWithFooterDecodingTest()
     {
         // Arrange & Act
-        var payload = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
+        var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
                                          .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
                                          .Decode(LocalTokenWithFooterV2);
 
         // Assert
-        payload.Should().NotBeNull();
-        payload.Should().Be(ExpectedLocalPayload);
+        result.Should().NotBeNull();
+        result.Paseto.Should().NotBeNull();
+        result.Paseto.RawPayload.Should().Be(ExpectedLocalPayload);
     }
 
     [Fact]
     public void Version2BuilderLocalTokenWithFooterDecodingToObjectTest()
     {
         // Arrange & Act
-        var data = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
+        var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
                                       .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
-                                      .DecodeToObject(LocalTokenWithFooterV2);
+                                      .Decode(LocalTokenWithFooterV2);
 
         // Assert
-        data.Should().NotBeNull();
+        result.IsValid.Should().BeTrue();
+        result.Paseto.Should().NotBeNull();
     }
 
     [Fact]
