@@ -13,9 +13,9 @@
     <Copyright>Copyright © 2018-2022 David De Smet</Copyright>
     <PackageTags>paseto cryptography dotnet dotnet-core netstandard</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/idaviddesmet/paseto-dotnet</PackageProjectUrl>
-    <PackageReleaseNotes>https://github.com/idaviddesmet/paseto-dotnet/releases</PackageReleaseNotes>
-    <RepositoryUrl>https://github.com/idaviddesmet/paseto-dotnet.git</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/daviddesmet/paseto-dotnet</PackageProjectUrl>
+    <PackageReleaseNotes>https://github.com/daviddesmet/paseto-dotnet/releases</PackageReleaseNotes>
+    <RepositoryUrl>https://github.com/daviddesmet/paseto-dotnet.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryBranch>master</RepositoryBranch>
   </PropertyGroup>
