@@ -12,7 +12,7 @@
     <Description>A Paseto (Platform-Agnostic Security Tokens) implementation for .NET</Description>
     <Copyright>Copyright © 2018-2022 David De Smet</Copyright>
     <PackageId>Paseto.Core</PackageId>
-    <PackageTags>paseto cryptography dotnet dotnet-core netstandard</PackageTags>
+    <PackageTags>paseto paserk tokens cryptography dotnet dotnet-core netstandard</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/daviddesmet/paseto-dotnet</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
