@@ -1,6 +1,7 @@
 ﻿namespace Paseto.Tests;
 
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 
 using FluentAssertions;
@@ -9,6 +10,7 @@ using Xunit;
 
 using Paseto.Builder;
 using Paseto.Cryptography;
+using static Paseto.Tests.TestHelper;
 
 public class PasetoBuilderTests
 {
@@ -27,6 +29,58 @@ public class PasetoBuilderTests
     private const string ExpectedPublicPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T05:04:07.9196375Z\"}";
     private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T04:57:18.5865183Z\"}";
     private const string ExpectedFooter = "{\"kid\":\"gandalf0\"}";
+
+    public static IEnumerable<object[]> LocalDecodeData => new[]
+    {
+        new object[] { ProtocolVersion.V1, "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f", "v1.local.4VyfcVcFAOAbB8yEM1j1Ob7Iez5VZJy5kHNsQxmlrAwKUbOtq9cv39T2fC0MDWafX0nQJ4grFZzTdroMvU772RW-X1oTtoFBjsl_3YYHWnwgqzs0aFc3ejjORmKP4KUM339W3szA28OabR192eRqiyspQ6xPM35NMR-04-FhRJZEWiF0W5oWjPVtGPjeVjm2DI4YtJg.eyJraWQiOiJVYmtLOFk2aXY0R1poRnA2VHgzSVdMV0xmTlhTRXZKY2RUM3pkUjY1WVp4byJ9", "{\"kid\":\"UbkK8Y6iv4GZhFp6Tx3IWLWLfNXSEvJcdT3zdR65YZxo\"}" },
+        new object[] { ProtocolVersion.V2, "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f", "v2.local.5K4SCXNhItIhyNuVIZcwrdtaDKiyF81-eWHScuE0idiVqCo72bbjo07W05mqQkhLZdVbxEa5I_u5sgVk1QLkcWEcOSlLHwNpCkvmGGlbCdNExn6Qclw3qTKIIl5-zSLIrxZqOLwcFLYbVK1SrQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9", "{\"kid\":\"zVhMiPBP9fRf2snEcT7gFTioeA9COcNy9DfgL1W60haN\"}" },
+        new object[] { ProtocolVersion.V3, "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f", "v3.local.JvdVM1RIKh2R1HhGJ4VLjaa4BCp5ZlI8K0BOjbvn9_LwY78vQnDait-Q-sjhF88dG2B0ROIIykcrGHn8wzPbTrqObHhyoKpjy3cwZQzLdiwRsdEK5SDvl02_HjWKJW2oqGMOQJlkYSIbXOgVuIQL65UMdW9WcjOpmqvjqD40NNzed-XPqn1T3w-bJvitYpUJL_rmihc.eyJraWQiOiJVYmtLOFk2aXY0R1poRnA2VHgzSVdMV0xmTlhTRXZKY2RUM3pkUjY1WVp4byJ9", "{\"kid\":\"UbkK8Y6iv4GZhFp6Tx3IWLWLfNXSEvJcdT3zdR65YZxo\"}" },
+        new object[] { ProtocolVersion.V4, "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f", "v4.local.32VIErrEkmY4JVILovbmfPXKW9wT1OdQepjMTC_MOtjA4kiqw7_tcaOM5GNEcnTxl60WkwMsYXw6FSNb_UdJPXjpzm0KW9ojM5f4O2mRvE2IcweP-PRdoHjd5-RHCiExR1IK6t4x-RMNXtQNbz7FvFZ_G-lFpk5RG3EOrwDL6CgDqcerSQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9", "{\"kid\":\"zVhMiPBP9fRf2snEcT7gFTioeA9COcNy9DfgL1W60haN\"}" }
+    };
+
+    public static IEnumerable<object[]> PublicEncodeData => new[]
+    {
+        new object[] { ProtocolVersion.V1, "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAyaTgTt53ph3p5GHgwoGWwz5hRfWXSQA08NCOwe0FEgALWos9\nGCjNFCd723nCHxBtN1qd74MSh/uN88JPIbwxKheDp4kxo4YMN5trPaF0e9G6Bj1N\n02HnanxFLW+gmLbgYO/SZYfWF/M8yLBcu5Y1Ot0ZxDDDXS9wIQTtBE0ne3YbxgZJ\nAZTU5XqyQ1DxdzYyC5lF6yBaR5UQtCYTnXAApVRuUI2Sd6L1E2vl9bSBumZ5IpNx\nkRnAwIMjeTJB/0AIELh0mE5vwdihOCbdV6alUyhKC1+1w/FW6HWcp/JG1kKC8DPI\nidZ78Bbqv9YFzkAbNni5eSBOsXVBKG78Zsc8owIDAQABAoIBAF22jLDa34yKdns3\nqfd7to+C3D5hRzAcMn6Azvf9qc+VybEI6RnjTHxDZWK5EajSP4/sQ15e8ivUk0Jo\nWdJ53feL+hnQvwsab28gghSghrxM2kGwGA1XgO+SVawqJt8SjvE+Q+//01ZKK0Oy\nA0cDJjX3L9RoPUN/moMeAPFw0hqkFEhm72GSVCEY1eY+cOXmL3icxnsnlUD//SS9\nq33RxF2y5oiW1edqcRqhW/7L1yYMbxHFUcxWh8WUwjn1AAhoCOUzF8ZB+0X/PPh+\n1nYoq6xwqL0ZKDwrQ8SDhW/rNDLeO9gic5rl7EetRQRbFvsZ40AdsX2wU+lWFUkB\n42AjuoECgYEA5z/CXqDFfZ8MXCPAOeui8y5HNDtu30aR+HOXsBDnRI8huXsGND04\nFfmXR7nkghr08fFVDmE4PeKUk810YJb+IAJo8wrOZ0682n6yEMO58omqKin+iIUV\nrPXLSLo5CChrqw2J4vgzolzPw3N5I8FJdLomb9FkrV84H+IviPIylyECgYEA3znw\nAG29QX6ATEfFpGVOcogorHCntd4niaWCq5ne5sFL+EwLeVc1zD9yj1axcDelICDZ\nxCZynU7kDnrQcFkT0bjH/gC8Jk3v7XT9l1UDDqC1b7rm/X5wFIZ/rmNa1rVZhL1o\n/tKx5tvM2syJ1q95v7NdygFIEIW+qbIKbc6Wz0MCgYBsUZdQD+qx/xAhELX364I2\nepTryHMUrs+tGygQVrqdiJX5dcDgM1TUJkdQV6jLsKjPs4Vt6OgZRMrnuLMsk02R\n3M8gGQ25ok4f4nyyEZxGGWnVujn55KzUiYWhGWmhgp18UCkoYa59/Q9ss+gocV9h\nB9j9Q43vD80QUjiF4z0DQQKBgC7XQX1VibkMim93QAnXGDcAS0ij+w02qKVBjcHk\nb9mMBhz8GAxGOIu7ZJafYmxhwMyVGB0I1FQeEczYCJUKnBYN6Clsjg6bnBT/z5bJ\nx/Jx1qCzX3Uh6vLjpjc5sf4L39Tyye1u2NXQmZPwB5x9BdcsFConSq/s4K1LJtUT\n3KFxAoGBANGcQ8nObi3m4wROyKrkCWcWxFFMnpwxv0pW727Hn9wuaOs4UbesCnwm\npcMTfzGUDuzYXCtAq2pJl64HG6wsdkWmjBTJEpm6b9ibOBN3qFV2zQ0HyyKlMWxI\nuVSj9gOo61hF7UH9XB6R4HRdlpBOuIbgAWZ46dkj9/HM9ovdP0Iy\n-----END RSA PRIVATE KEY-----" },
+        new object[] { ProtocolVersion.V2, "b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a37741eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2" },
+        new object[] { ProtocolVersion.V3, "20347609607477aca8fbfbc5e6218455f3199669792ef8b466faa87bdc67798144c848dd03661eed5ac62461340cea96" },
+        new object[] { ProtocolVersion.V4, "b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a37741eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2" }
+    };
+
+    public static IEnumerable<object[]> PublicDecodeData => new[]
+    {
+        new object[]
+        {
+            ProtocolVersion.V1,
+            "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyaTgTt53ph3p5GHgwoGW\nwz5hRfWXSQA08NCOwe0FEgALWos9GCjNFCd723nCHxBtN1qd74MSh/uN88JPIbwx\nKheDp4kxo4YMN5trPaF0e9G6Bj1N02HnanxFLW+gmLbgYO/SZYfWF/M8yLBcu5Y1\nOt0ZxDDDXS9wIQTtBE0ne3YbxgZJAZTU5XqyQ1DxdzYyC5lF6yBaR5UQtCYTnXAA\npVRuUI2Sd6L1E2vl9bSBumZ5IpNxkRnAwIMjeTJB/0AIELh0mE5vwdihOCbdV6al\nUyhKC1+1w/FW6HWcp/JG1kKC8DPIidZ78Bbqv9YFzkAbNni5eSBOsXVBKG78Zsc8\nowIDAQAB\n-----END PUBLIC KEY-----",
+            "v1.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwIjoiMjAxOS0wMS0wMVQwMDowMDowMCswMDowMCJ9sBTIb0J_4misAuYc4-6P5iR1rQighzktpXhJ8gtrrp2MqSSDkbb8q5WZh3FhUYuW_rg2X8aflDlTWKAqJkM3otjYwtmfwfOhRyykxRL2AfmIika_A-_MaLp9F0iw4S1JetQQDV8GUHjosd87TZ20lT2JQLhxKjBNJSwWue8ucGhTgJcpOhXcthqaz7a2yudGyd0layzeWziBhdQpoBR6ryTdtIQX54hP59k3XCIxuYbB9qJMpixiPAEKBcjHT74sA-uukug9VgKO7heWHwJL4Rl9ad21xyNwaxAnwAJ7C0fN5oGv8Rl0dF11b3tRmsmbDoIokIM0Dba29x_T3YzOyg.eyJraWQiOiJkWWtJU3lseFFlZWNFY0hFTGZ6Rjg4VVpyd2JMb2xOaUNkcHpVSEd3OVVxbiJ9",
+            "{\"kid\":\"dYkISylxQeecEcHELfzF88UZrwbLolNiCdpzUHGw9Uqn\"}",
+            "discarded-anyway"
+        },
+        new object[]
+        {
+            ProtocolVersion.V2,
+            "1eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2",
+            "v2.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwIjoiMjAxOS0wMS0wMVQwMDowMDowMCswMDowMCJ9flsZsx_gYCR0N_Ec2QxJFFpvQAs7h9HtKwbVK2n1MJ3Rz-hwe8KUqjnd8FAnIJZ601tp7lGkguU63oGbomhoBw.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9",
+            "{\"kid\":\"zVhMiPBP9fRf2snEcT7gFTioeA9COcNy9DfgL1W60haN\"}",
+            "discarded-anyway"
+        },
+        new object[]
+        {
+            ProtocolVersion.V3,
+            "02fbcb7c69ee1c60579be7a334134878d9c5c5bf35d552dab63c0140397ed14cef637d7720925c44699ea30e72874c72fb",
+            "v3.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwIjoiMjAyMi0wMS0wMVQwMDowMDowMCswMDowMCJ94SjWIbjmS7715GjLSnHnpJrC9Z-cnwK45dmvnVvCRQDCCKAXaKEopTajX0DKYx1Xqr6gcTdfqscLCAbiB4eOW9jlt-oNqdG8TjsYEi6aloBfTzF1DXff_45tFlnBukEX.eyJraWQiOiJkWWtJU3lseFFlZWNFY0hFTGZ6Rjg4VVpyd2JMb2xOaUNkcHpVSEd3OVVxbiJ9",
+            "{\"kid\":\"dYkISylxQeecEcHELfzF88UZrwbLolNiCdpzUHGw9Uqn\"}",
+            "{\"test-vector\":\"3-S-3\"}"
+        },
+        new object[]
+        {
+            ProtocolVersion.V4,
+            "1eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2",
+            "v4.public.eyJkYXRhIjoidGhpcyBpcyBhIHNpZ25lZCBtZXNzYWdlIiwiZXhwIjoiMjAyMi0wMS0wMVQwMDowMDowMCswMDowMCJ9NPWciuD3d0o5eXJXG5pJy-DiVEoyPYWs1YSTwWHNJq6DZD3je5gf-0M4JR9ipdUSJbIovzmBECeaWmaqcaP0DQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9",
+            "{\"kid\":\"zVhMiPBP9fRf2snEcT7gFTioeA9COcNy9DfgL1W60haN\"}",
+            "{\"test-vector\":\"4-S-3\"}"
+        }
+    };
 
     [Theory(DisplayName = "Should succeed on GenerateSymmetricKey when dependencies are provided")]
     [InlineData(ProtocolVersion.V1, 32)]
@@ -209,7 +263,48 @@ public class PasetoBuilderTests
         token.Split('.').Should().HaveCount(3);
     }
 
-    // TODO: Public Encode
+    [Theory(DisplayName = "Should succeed on Public Encode with Byte Array Key and optional Footer Payload when dependencies are provided")]
+    [MemberData(nameof(PublicEncodeData))]
+    public void ShouldSucceedOnPublicEncodeWithByteArrayKeyAndOptionalFooterPayloadWhenDependenciesAreProvided(ProtocolVersion version, string secretKey)
+    {
+        var token = new PasetoBuilder().Use(version, Purpose.Public)
+            .WithKey(ReadKey(secretKey), Encryption.AsymmetricSecretKey)
+            .AddClaim("data", "this is a secret message")
+            .Issuer("https://github.com/daviddesmet/paseto-dotnet")
+            .Subject(Guid.NewGuid().ToString())
+            .Audience("https://paseto.io")
+            .NotBefore(DateTime.UtcNow.AddMinutes(5))
+            .IssuedAt(DateTime.UtcNow)
+            .Expiration(DateTime.UtcNow.AddHours(1))
+            .TokenIdentifier("123456ABCD")
+            .AddFooter(new PasetoPayload { { "kid", "gandalf0" } })
+            .Encode();
+
+        token.Should().NotBeNullOrEmpty();
+        token.Should().StartWith($"v{(int)version}.public.");
+        token.Split('.').Should().HaveCount(4);
+    }
+
+    [Theory(DisplayName = "Should succeed on Public Encode with Byte Array Key when dependencies are provided")]
+    [MemberData(nameof(PublicEncodeData))]
+    public void ShouldSucceedOnPublicEncodeWithByteArrayKeyWhenDependenciesAreProvided(ProtocolVersion version, string secretKey)
+    {
+        var token = new PasetoBuilder().Use(version, Purpose.Public)
+            .WithKey(ReadKey(secretKey), Encryption.AsymmetricSecretKey)
+            .AddClaim("data", "this is a secret message")
+            .Issuer("https://github.com/daviddesmet/paseto-dotnet")
+            .Subject(Guid.NewGuid().ToString())
+            .Audience("https://paseto.io")
+            .NotBefore(DateTime.UtcNow.AddMinutes(5))
+            .IssuedAt(DateTime.UtcNow)
+            .Expiration(DateTime.UtcNow.AddHours(1))
+            .TokenIdentifier("123456ABCD")
+            .Encode();
+
+        token.Should().NotBeNullOrEmpty();
+        token.Should().StartWith($"v{(int)version}.public.");
+        token.Split('.').Should().HaveCount(3);
+    }
 
     [Fact(DisplayName = "Should throw exception on Encode when Use is not called")]
     public void ShouldThrowExceptionOnEncodeWhenUseIsNotCalled()
@@ -319,166 +414,106 @@ public class PasetoBuilderTests
         act.Should().Throw<ArgumentException>();
     }
 
-    // TODO: Public encode success tests (need specific keys for each version, take from json tests)
-    // TODO: Decode tests (local and public)
-    // TODO: Decode fails tests, include invalid header v1.remote.
+    [Theory(DisplayName = "Should succeed on Local Decode with Byte Array Key and optional Footer when dependencies are provided")]
+    [MemberData(nameof(LocalDecodeData))]
+    public void ShouldSucceedOnLocalDecodeWithByteArrayKeyAndOptionalFooterWhenDependenciesAreProvided(ProtocolVersion version, string sharedKey, string token, string footer)
+    {
+        var result = new PasetoBuilder().Use(version, Purpose.Local)
+            .WithKey(CryptoBytes.FromHexString(sharedKey), Encryption.SymmetricKey)
+            .AddFooter(footer)
+            .Decode(token);
+
+        result.IsValid.Should().BeTrue();
+        result.Paseto.Should().NotBeNull();
+        result.Paseto.Payload["data"].Should().NotBeNull();
+        result.Paseto.Payload["exp"].Should().NotBeNull();
+        result.Exception.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "Should succeed on Public Decode with Byte Array Key and optional Footer and optional implicit assertion when dependencies are provided")]
+    [MemberData(nameof(PublicDecodeData))]
+    public void ShouldSucceedOnPublicDecodeWithByteArrayKeyAndOptionalFooterAndOptionalImplicitAssertionWhenDependenciesAreProvided(ProtocolVersion version, string sharedKey, string token, string footer, string assertion)
+    {
+        var result = new PasetoBuilder().Use(version, Purpose.Public)
+            .WithKey(ReadKey(sharedKey), Encryption.AsymmetricPublicKey)
+            .AddFooter(footer)
+            .AddImplicitAssertion(assertion)
+            .Decode(token);
+
+        result.IsValid.Should().BeTrue();
+        result.Paseto.Should().NotBeNull();
+        result.Paseto.Payload["data"].Should().NotBeNull();
+        result.Paseto.Payload["exp"].Should().NotBeNull();
+        result.Exception.Should().BeNull();
+    }
+
+    [Theory(DisplayName = "Should fail on Local Decode when Token is not valid")]
+    [InlineData(ProtocolVersion.V1, "x1.local.4VyfcVcFAOAbB8yEM1j1Ob7Iez5VZJy5kHNsQxmlrAwKUbOtq9cv39T2fC0MDWafX0nQJ4grFZzTdroMvU772RW-X1oTtoFBjsl_3YYHWnwgqzs0aFc3ejjORmKP4KUM339W3syBYyjKIOeWnsFQB6Yef-1ov9rvqt7TmwONUHeJUYk4IK_JEdUeo_uFRqAIgHsiGCg")]
+    [InlineData(ProtocolVersion.V1, "v1.remote.4VyfcVcFAOAbB8yEM1j1Ob7Iez5VZJy5kHNsQxmlrAwKUbOtq9cv39T2fC0MDWafX0nQJ4grFZzTdroMvU772RW-X1oTtoFBjsl_3YYHWnwgqzs0aFc3ejjORmKP4KUM339W3syBYyjKIOeWnsFQB6Yef-1ov9rvqt7TmwONUHeJUYk4IK_JEdUeo_uFRqAIgHsiGCg")]
+    [InlineData(ProtocolVersion.V2, "x2.local.5K4SCXNhItIhyNuVIZcwrdtaDKiyF81-eWHScuE0idiVqCo72bbjo07W05mqQkhLZdVbxEa5I_u5sgVk1QLkcWEcOSlLHwNpCkvmGGlbCdNExn6Qclw3qTKIIl5-O5xRBN076fSDPo5xUCPpBA")]
+    [InlineData(ProtocolVersion.V2, "v2.remote.5K4SCXNhItIhyNuVIZcwrdtaDKiyF81-eWHScuE0idiVqCo72bbjo07W05mqQkhLZdVbxEa5I_u5sgVk1QLkcWEcOSlLHwNpCkvmGGlbCdNExn6Qclw3qTKIIl5-O5xRBN076fSDPo5xUCPpBA")]
+    [InlineData(ProtocolVersion.V3, "x3.local.JvdVM1RIKh2R1HhGJ4VLjaa4BCp5ZlI8K0BOjbvn9_LwY78vQnDait-Q-sjhF88dG2B0ROIIykcrGHn8wzPbTrqObHhyoKpjy3cwZQzLdiwRsdEK5SDvl02_HjWKJW2oqGMOQJlxnt5xyhQjFJomwnt7WW_7r2VT0G704ifult011-TgLCyQ2X8imQhniG_hAQ4BydM")]
+    [InlineData(ProtocolVersion.V3, "v3.remote.JvdVM1RIKh2R1HhGJ4VLjaa4BCp5ZlI8K0BOjbvn9_LwY78vQnDait-Q-sjhF88dG2B0ROIIykcrGHn8wzPbTrqObHhyoKpjy3cwZQzLdiwRsdEK5SDvl02_HjWKJW2oqGMOQJlxnt5xyhQjFJomwnt7WW_7r2VT0G704ifult011-TgLCyQ2X8imQhniG_hAQ4BydM")]
+    [InlineData(ProtocolVersion.V4, "x4.local.32VIErrEkmY4JVILovbmfPXKW9wT1OdQepjMTC_MOtjA4kiqw7_tcaOM5GNEcnTxl60WkwMsYXw6FSNb_UdJPXjpzm0KW9ojM5f4O2mRvE2IcweP-PRdoHjd5-RHCiExR1IK6t4x-RMNXtQNbz7FvFZ_G-lFpk5RG3EOrwDL6CgDqcerSQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9")]
+    [InlineData(ProtocolVersion.V4, "v4.remote.32VIErrEkmY4JVILovbmfPXKW9wT1OdQepjMTC_MOtjA4kiqw7_tcaOM5GNEcnTxl60WkwMsYXw6FSNb_UdJPXjpzm0KW9ojM5f4O2mRvE2IcweP-PRdoHjd5-RHCiExR1IK6t4x-RMNXtQNbz7FvFZ_G-lFpk5RG3EOrwDL6CgDqcerSQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9")]
+    public void ShouldFailOnLocalDecodeWhenTokenIsInvalid(ProtocolVersion version, string token)
+    {
+        var result = new PasetoBuilder().Use(version, Purpose.Local)
+            .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+            .Decode(token);
+
+        result.IsValid.Should().BeFalse();
+        result.Exception.Should().NotBeNull();
+    }
+
+    [Theory(DisplayName = "Should fail on Local Decode when Token's Footer is not valid")]
+    [InlineData(ProtocolVersion.V1, "v1.local.4VyfcVcFAOAbB8yEM1j1Ob7Iez5VZJy5kHNsQxmlrAwKUbOtq9cv39T2fC0MDWafX0nQJ4grFZzTdroMvU772RW-X1oTtoFBjsl_3YYHWnwgqzs0aFc3ejjORmKP4KUM339W3szA28OabR192eRqiyspQ6xPM35NMR-04-FhRJZEWiF0W5oWjPVtGPjeVjm2DI4YtJg.eyJraWQiOiJVYmtLOFk2aXY0R1poRnA2VHgzSVdMV0xmTlhTRXZKY2RUM3pkUjY1WVp6byJ9", "{\"kid\":\"UbkK8Y6iv4GZhFp6Tx3IWLWLfNXSEvJcdT3zdR65YZxo\"}")]
+    [InlineData(ProtocolVersion.V2, "v2.local.5K4SCXNhItIhyNuVIZcwrdtaDKiyF81-eWHScuE0idiVqCo72bbjo07W05mqQkhLZdVbxEa5I_u5sgVk1QLkcWEcOSlLHwNpCkvmGGlbCdNExn6Qclw3qTKIIl5-zSLIrxZqOLwcFLYbVK1SrQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc6MGhhTiJ9", "{\"kid\":\"zVhMiPBP9fRf2snEcT7gFTioeA9COcNy9DfgL1W60haN\"}")]
+    [InlineData(ProtocolVersion.V3, "v3.local.JvdVM1RIKh2R1HhGJ4VLjaa4BCp5ZlI8K0BOjbvn9_LwY78vQnDait-Q-sjhF88dG2B0ROIIykcrGHn8wzPbTrqObHhyoKpjy3cwZQzLdiwRsdEK5SDvl02_HjWKJW2oqGMOQJlkYSIbXOgVuIQL65UMdW9WcjOpmqvjqD40NNzed-XPqn1T3w-bJvitYpUJL_rmihc.eyJraWQiOiJVYmtLOFk2aXY0R1poRnA2VHgzSVdMV0xmTlhTRXZKY2RUM3pkUjY1WVp6byJ9", "{\"kid\":\"UbkK8Y6iv4GZhFp6Tx3IWLWLfNXSEvJcdT3zdR65YZxo\"}")]
+    [InlineData(ProtocolVersion.V4, "v4.local.32VIErrEkmY4JVILovbmfPXKW9wT1OdQepjMTC_MOtjA4kiqw7_tcaOM5GNEcnTxl60WkwMsYXw6FSNb_UdJPXjpzm0KW9ojM5f4O2mRvE2IcweP-PRdoHjd5-RHCiExR1IK6t4x-RMNXtQNbz7FvFZ_G-lFpk5RG3EOrwDL6CgDqcerSQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc6MGhhTiJ9", "{\"kid\":\"zVhMiPBP9fRf2snEcT7gFTioeA9COcNy9DfgL1W60haN\"}")]
+    public void ShouldFailOnLocalDecodeWhenTokenFooterIsInvalid(ProtocolVersion version, string token, string footer)
+    {
+        var result = new PasetoBuilder().Use(version, Purpose.Local)
+            .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+            .AddFooter(footer)
+            .Decode(token);
+
+        result.IsValid.Should().BeFalse();
+        result.Exception.Should().NotBeNull();
+    }
+
+    // TODO: Public Decode fails tests, include invalid header v1.remote.
     // TODO: Decode with payload validation (success and fails)
-    // TODO: Decode only header and footer
-    // TODO: Handle specific scenarios like out-of-order parameters WithKey before Use, etc...
 
-
-
-
-    #region Version 2
-
-    [Fact]
-    public void Version2BuilderPublicTokenGenerationTest()
+    [Theory(DisplayName = "Should fail on Local Decode when Token's Footer is not valid")]
+    [InlineData(ProtocolVersion.V1, "v1.local.4VyfcVcFAOAbB8yEM1j1Ob7Iez5VZJy5kHNsQxmlrAwKUbOtq9cv39T2fC0MDWafX0nQJ4grFZzTdroMvU772RW-X1oTtoFBjsl_3YYHWnwgqzs0aFc3ejjORmKP4KUM339W3szA28OabR192eRqiyspQ6xPM35NMR-04-FhRJZEWiF0W5oWjPVtGPjeVjm2DI4YtJg.eyJraWQiOiJVYmtLOFk2aXY0R1poRnA2VHgzSVdMV0xmTlhTRXZKY2RUM3pkUjY1WVp4byJ9", "{\"kid\":\"UbkK8Y6iv4GZhFp6Tx3IWLWLfNXSEvJcdT3zdR65YZxo\"}")]
+    [InlineData(ProtocolVersion.V2, "v2.local.5K4SCXNhItIhyNuVIZcwrdtaDKiyF81-eWHScuE0idiVqCo72bbjo07W05mqQkhLZdVbxEa5I_u5sgVk1QLkcWEcOSlLHwNpCkvmGGlbCdNExn6Qclw3qTKIIl5-zSLIrxZqOLwcFLYbVK1SrQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9", "{\"kid\":\"zVhMiPBP9fRf2snEcT7gFTioeA9COcNy9DfgL1W60haN\"}")]
+    [InlineData(ProtocolVersion.V3, "v3.local.JvdVM1RIKh2R1HhGJ4VLjaa4BCp5ZlI8K0BOjbvn9_LwY78vQnDait-Q-sjhF88dG2B0ROIIykcrGHn8wzPbTrqObHhyoKpjy3cwZQzLdiwRsdEK5SDvl02_HjWKJW2oqGMOQJlkYSIbXOgVuIQL65UMdW9WcjOpmqvjqD40NNzed-XPqn1T3w-bJvitYpUJL_rmihc.eyJraWQiOiJVYmtLOFk2aXY0R1poRnA2VHgzSVdMV0xmTlhTRXZKY2RUM3pkUjY1WVp4byJ9", "{\"kid\":\"UbkK8Y6iv4GZhFp6Tx3IWLWLfNXSEvJcdT3zdR65YZxo\"}")]
+    [InlineData(ProtocolVersion.V4, "v4.local.32VIErrEkmY4JVILovbmfPXKW9wT1OdQepjMTC_MOtjA4kiqw7_tcaOM5GNEcnTxl60WkwMsYXw6FSNb_UdJPXjpzm0KW9ojM5f4O2mRvE2IcweP-PRdoHjd5-RHCiExR1IK6t4x-RMNXtQNbz7FvFZ_G-lFpk5RG3EOrwDL6CgDqcerSQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9", "{\"kid\":\"zVhMiPBP9fRf2snEcT7gFTioeA9COcNy9DfgL1W60haN\"}")]
+    public void ShouldSucceedOnDecodeHeaderAndFooterOnly(ProtocolVersion version, string token, string expectedFooter)
     {
-        // Arrange
-        var seed = new byte[32]; // signingKey
-        RandomNumberGenerator.Create().GetBytes(seed);
-        var sk = Ed25519.ExpandedPrivateKeyFromSeed(seed);
+        var header = new PasetoBuilder().DecodeHeader(token);
+        var footer = new PasetoBuilder().DecodeFooter(token);
 
-        //var secret = Convert.ToBase64String(sk); //BitConverter.ToString(sk).Replace("-", string.Empty); // Hex Encoded
-
-        // Act
-        var token = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Public)
-                                       .WithKey(sk, Encryption.AsymmetricSecretKey)
-                                       .AddClaim("example", HelloPaseto)
-                                       .Expiration(DateTime.UtcNow.AddHours(24))
-                                       .Encode();
-
-        // Assert
-        token.Should().NotBeNullOrEmpty();
+        header.Should().NotBeNullOrEmpty();
+        header.Should().Be($"v{(int)version}.local");
+        footer.Should().NotBeNullOrEmpty();
+        footer.Should().Be(expectedFooter);
     }
 
-    [Fact]
-    public void Version2BuilderPublicTokenGenerationNullKeyFails()
+    [Theory(DisplayName = "Should throw exception on Decode when Token is missing")]
+    [InlineData(ProtocolVersion.V1, null)]
+    [InlineData(ProtocolVersion.V1, "")]
+    [InlineData(ProtocolVersion.V2, null)]
+    [InlineData(ProtocolVersion.V2, "")]
+    [InlineData(ProtocolVersion.V3, null)]
+    [InlineData(ProtocolVersion.V3, "")]
+    [InlineData(ProtocolVersion.V4, null)]
+    [InlineData(ProtocolVersion.V4, "")]
+    public void ShouldThrowExceptionOnDecodeWhenTokenIsMissing(ProtocolVersion version, string token)
     {
-        Assert.Throws<PasetoBuilderException>(() => new PasetoBuilder().UseV2(Purpose.Public).WithKey(null, Encryption.AsymmetricSecretKey).Encode());
+        Action act = () => new PasetoBuilder().Decode(token);
+
+        act.Should().Throw<ArgumentNullException>().WithParameterName("token");
     }
-
-    [Fact]
-    public void Version2BuilderPublicTokenGenerationEmptyKeyFails()
-    {
-        Assert.Throws<PasetoBuilderException>(() => new PasetoBuilder().UseV2(Purpose.Public).WithKey(new byte[0], Encryption.AsymmetricSecretKey).Encode());
-    }
-
-    [Fact]
-    public void Version2BuilderLocalTokenGenerationNullKeyFails()
-    {
-        Assert.Throws<PasetoBuilderException>(() => new PasetoBuilder().UseV2(Purpose.Local).WithKey(null, Encryption.SymmetricKey).Encode());
-    }
-
-    [Fact]
-    public void Version2BuilderLocalTokenGenerationEmptyKeyFails()
-    {
-        Assert.Throws<PasetoBuilderException>(() => new PasetoBuilder().UseV2(Purpose.Local).WithKey(new byte[0], Encryption.SymmetricKey).Encode());
-    }
-
-    [Fact]
-    public void Version2BuilderPublicTokenGenerationEmptyPayloadFails()
-    {
-        // Arrange
-        var seed = new byte[32]; // signingKey
-        RandomNumberGenerator.Create().GetBytes(seed);
-        var sk = Ed25519.ExpandedPrivateKeyFromSeed(seed);
-
-        // Act & Assert
-        Assert.Throws<PasetoBuilderException>(() => new PasetoBuilder().UseV2(Purpose.Public).WithKey(sk, Encryption.AsymmetricSecretKey).Encode());
-    }
-
-    [Fact]
-    public void Version2BuilderLocalTokenGenerationEmptyPayloadFails()
-    {
-        // Arrange
-        var seed = new byte[32]; // signingKey
-        RandomNumberGenerator.Create().GetBytes(seed);
-        var sk = Ed25519.ExpandedPrivateKeyFromSeed(seed);
-
-        // Act & Assert
-        Assert.Throws<PasetoBuilderException>(() => new PasetoBuilder().UseV2(Purpose.Local).WithKey(sk, Encryption.SymmetricKey).Encode());
-    }
-
-    // [Fact]
-    // public void Version2BuilderPublicTokenDecodingTest()
-    // {
-    //     // Arrange & Act
-    //     var payload = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Public)
-    //                                      .WithKey(Convert.FromBase64String(PublicKeyV2), Encryption.AsymmetricPublicKey)
-    //                                      .Decode(TokenV2);
-    //
-    //     // Assert
-    //     payload.Should().NotBeNull();
-    //     payload.Should().Be(ExpectedPublicPayload);
-    // }
-
-    // [Fact]
-    // public void Version2BuilderLocalTokenDecodingTest()
-    // {
-    //     // Arrange & Act
-    //     var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
-    //                                      .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
-    //                                      .Decode(LocalTokenV2);
-    //
-    //     // Assert
-    //     result.Should().NotBeNull();
-    //     result.Paseto.Should().NotBeNull();
-    //     result.Paseto.RawPayload.Should().Be(ExpectedLocalPayload);
-    // }
-
-    // [Fact]
-    // public void Version2BuilderLocalTokenWithFooterDecodingTest()
-    // {
-    //     // Arrange & Act
-    //     var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
-    //                                      .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
-    //                                      .Decode(LocalTokenWithFooterV2);
-    //
-    //     // Assert
-    //     result.Should().NotBeNull();
-    //     result.Paseto.Should().NotBeNull();
-    //     result.Paseto.RawPayload.Should().Be(ExpectedLocalPayload);
-    // }
-
-    // [Fact]
-    // public void Version2BuilderLocalTokenWithFooterDecodingToObjectTest()
-    // {
-    //     // Arrange & Act
-    //     var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
-    //                                   .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
-    //                                   .Decode(LocalTokenWithFooterV2);
-    //
-    //     // Assert
-    //     result.IsValid.Should().BeTrue();
-    //     result.Paseto.Should().NotBeNull();
-    // }
-
-    [Fact]
-    public void Version2BuilderLocalTokenWithFooterDecodingFooterOnlyTest()
-    {
-        // Arrange & Act
-        var footer = new PasetoBuilder().DecodeFooter(LocalTokenWithFooterV2);
-
-        // Assert
-        footer.Should().NotBeNull();
-        footer.Should().Be(ExpectedFooter);
-    }
-
-    [Fact]
-    public void Version2BuilderTokenDecodingNullKeyFails() => Assert.Throws<ArgumentNullException>(() => new PasetoBuilder().UseV2(Purpose.Local).WithKey(null).Decode(null));
-
-    [Fact]
-    public void Version2BuilderTokenDecodingEmptyKeyFails() => Assert.Throws<ArgumentNullException>(() => new PasetoBuilder().UseV2(Purpose.Local).WithKey(new byte[0], Encryption.SymmetricKey).Decode(null));
-
-    [Fact]
-    public void Version2BuilderTokenDecodingNullTokenFails() => Assert.Throws<ArgumentNullException>(() => new PasetoBuilder().UseV2(Purpose.Public).WithKey(new byte[32], Encryption.AsymmetricPublicKey).Decode(null));
-
-    [Fact]
-    public void Version2BuilderTokenDecodingEmptyTokenFails() => Assert.Throws<ArgumentNullException>(() => new PasetoBuilder().UseV2(Purpose.Public).WithKey(new byte[32], Encryption.AsymmetricPublicKey).Decode(string.Empty));
-
-    //[Fact]
-    //public void Version2BuilderTokenDecodingInvalidTokenFails() => Assert.Throws<SignatureVerificationException>(() => new PasetoBuilder().UseV2(Purpose.Public).WithKey(Convert.FromBase64String(PublicKeyV2), Encryption.AsymmetricPublicKey).Decode("v2.public.eyJleGFtcGxlIjoiSGVsbG8gUGFzZXRvISIsImV2cCI6IjE1MjEyNDU0NTAifQ2jznA4Tl8r2PM8xu0FIJhyWkm4SiwvCxavTSFt7bo7JtnsFdWgXBOgbYybi5-NAkmpm94uwJCRjCApOXBSIgs"));
-
-    #endregion
 }

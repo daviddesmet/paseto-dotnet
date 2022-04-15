@@ -46,6 +46,7 @@ public sealed class PasetoBuilder
     private PasetoKey _pasetoKey;
     private byte[] _nonce;
     private string _footer;
+    private string _assertion;
 
 #pragma warning disable CS0618 // Type or member is obsolete
     /// <summary>
@@ -261,6 +262,30 @@ public sealed class PasetoBuilder
     }
 
     /// <summary>
+    /// Adds a raw implicit assertion to the Paseto.
+    /// </summary>
+    /// <param name="assertion">The raw implicit assertion.</param>
+    /// <returns>PasetoBuilder&lt;TProtocol&gt;.</returns>
+    public PasetoBuilder AddImplicitAssertion(string assertion)
+    {
+        _assertion = assertion;
+        return this;
+    }
+
+    /// <summary>
+    /// Adds a implicit assertion payload to the Paseto.
+    /// </summary>
+    /// <param name="footer">The implicit assertion payload.</param>
+    /// <returns>PasetoBuilder&lt;TProtocol&gt;.</returns>
+    public PasetoBuilder AddImplicitAssertion(PasetoPayload assertion)
+    {
+        assertion.SetSerializer(_serializer);
+
+        _assertion = assertion.ToJson();
+        return this;
+    }
+
+    /// <summary>
     /// Generates an symmetric key using the supplied dependencies.
     /// </summary>
     /// <returns></returns>
@@ -317,8 +342,8 @@ public sealed class PasetoBuilder
 
         return _purpose switch
         {
-            Purpose.Local => new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey).Encrypt(_protocol, _nonce, payload, _footer ?? string.Empty),
-            Purpose.Public => new PasetoPublicPurposeHandler((PasetoAsymmetricSecretKey)_pasetoKey).Sign(_protocol, payload, _footer ?? string.Empty),
+            Purpose.Local => new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey).Encrypt(_protocol, _nonce, payload, _footer ?? string.Empty, _assertion ?? string.Empty),
+            Purpose.Public => new PasetoPublicPurposeHandler((PasetoAsymmetricSecretKey)_pasetoKey).Sign(_protocol, payload, _footer ?? string.Empty, _assertion ?? string.Empty),
             _ => throw new PasetoNotSupportedException($"The {_purpose} purpose is not supported!"),
         };
     }
@@ -350,11 +375,11 @@ public sealed class PasetoBuilder
             {
                 case Purpose.Local:
                     var localHandler = new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey);
-                    var payload = localHandler.Decrypt(_protocol, token);
+                    var payload = localHandler.Decrypt(_protocol, token, _footer ?? string.Empty, _assertion ?? string.Empty);
                     return localHandler.ValidateTokenPayload(new PasetoToken(token, payload), validationParameters);
                 case Purpose.Public:
                     var publicHandler = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey);
-                    var result = publicHandler.Verify(_protocol, token);
+                    var result = publicHandler.Verify(_protocol, token, _footer ?? string.Empty, _assertion ?? string.Empty);
                     if (!result.IsValid)
                         return PasetoTokenValidationResult.Failed(new PasetoTokenValidationException("The token signature is not valid"));
 
@@ -411,7 +436,7 @@ public sealed class PasetoBuilder
         {
             case Purpose.Local:
                 var localHandler = new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey);
-                var payload = localHandler.Decrypt(_protocol, token);
+                var payload = localHandler.Decrypt(_protocol, token, _footer ?? string.Empty, _assertion ?? string.Empty);
                 var localResult = localHandler.ValidateTokenPayload(new PasetoToken(token, payload), validationParameters);
                 if (!localResult.IsValid)
                     throw localResult.Exception;
@@ -419,7 +444,7 @@ public sealed class PasetoBuilder
                 return payload;
             case Purpose.Public:
                 var publicHandler = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey);
-                var result = publicHandler.Verify(_protocol, token);
+                var result = publicHandler.Verify(_protocol, token, _footer ?? string.Empty, _assertion ?? string.Empty);
                 if (!result.IsValid)
                     throw new PasetoTokenValidationException("The token signature is not valid");
 

@@ -47,6 +47,11 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     public override int VersionNumber => 1;
 
     /// <summary>
+    /// Gets a value indicating if the protocol supports implicit assertions.
+    /// </summary>
+    public override bool SupportsImplicitAssertions => false;
+
+    /// <summary>
     /// Generates a Symmetric Key.
     /// </summary>
     /// <returns><see cref="Paseto.Cryptography.Key.PasetoSymmetricKey" /></returns>
@@ -79,9 +84,10 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The symmetric key.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>System.String.</returns>
     /// <exception cref="PasetoNotSupportedException"></exception>
-    public virtual string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "")
+    public virtual string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "", string assertion = "")
     {
         /*
          * Get Nonce Specification
@@ -177,11 +183,13 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <summary>
     /// Decrypts the specified token using a shared key.
     /// </summary>
-    /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The symmetric key.</param>
+    /// <param name="token">The token.</param>
+    /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>System.String.</returns>
     /// <exception cref="PasetoNotSupportedException"></exception>
-    public virtual string Decrypt(string token, PasetoSymmetricKey pasetoKey)
+    public virtual string Decrypt(PasetoSymmetricKey pasetoKey, string token, string footer = "", string assertion = "")
     {
         /*
          * Decrypt Specification
@@ -242,7 +250,8 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
             throw new PasetoInvalidException($"The specified token is not valid for {Purpose.Local} purpose and {Version} version");
 
         var parts = token.Split('.');
-        var footer = GetString(FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty));
+        var f = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
+        VerifyFooter(f, footer);
 
         var bytes = FromBase64Url(parts[2]).AsSpan();
 
@@ -263,7 +272,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
             var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_DOMAIN_SEPARATION), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
             var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_DOMAIN_SEPARATION), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
 
-            var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), GetBytes(footer));
+            var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), f);
 
             // Recalculate MAC
             using var hmac = new HMACSHA384(ak);
@@ -291,11 +300,12 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The asymmetric secret key.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>System.String.</returns>
     /// <exception cref="System.ArgumentException">Secret Key is missing</exception>
     /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid</exception>
-    public virtual string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "")
+    public virtual string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "", string assertion = "")
     {
         /*
          * Sign Specification
@@ -388,13 +398,15 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <summary>
     /// Verifies the specified token.
     /// </summary>
-    /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The asymmetric public key.</param>
+    /// <param name="token">The token.</param>
+    /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>a <see cref="PasetoVerifyResult"/> that represents a PASETO token verify operation.</returns>
     /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload does not contain signature</exception>
-    public virtual PasetoVerifyResult Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
+    public virtual PasetoVerifyResult Verify(PasetoAsymmetricPublicKey pasetoKey, string token, string footer = "", string assertion = "")
     {
         /*
          * Verify Specification
@@ -441,7 +453,8 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
             throw new PasetoInvalidException($"The specified token is not valid for {Purpose.Public} purpose and {Version} version");
 
         var parts = token.Split('.');
-        var footer = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
+        var f = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
+        VerifyFooter(f, footer);
 
         var body = FromBase64Url(parts[2]);
 
@@ -454,7 +467,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         var signature = body[len..];
         var payload = body[..len];
 
-        var pack = PreAuthEncode(new[] { GetBytes(header), payload, footer });
+        var pack = PreAuthEncode(new[] { GetBytes(header), payload, f });
 
         /*
          * BCL doesn't support RSA-PSS SHA-384 MGF1
