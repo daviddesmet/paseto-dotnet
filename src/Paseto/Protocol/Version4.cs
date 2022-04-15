@@ -39,6 +39,11 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
     public override int VersionNumber => 4;
 
     /// <summary>
+    /// Gets a value indicating if the protocol supports implicit assertions.
+    /// </summary>
+    public override bool SupportsImplicitAssertions => true;
+
+    /// <summary>
     /// Generates a Symmetric Key.
     /// </summary>
     /// <returns><see cref="Paseto.Cryptography.Key.PasetoSymmetricKey" /></returns>
@@ -74,11 +79,12 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The symmetric key.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>System.String.</returns>
     /// <exception cref="System.ArgumentException">Shared Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid</exception>
-    public string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "")
+    public string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "", string assertion = "")
     {
         /*
          * Encrypt Specification
@@ -145,8 +151,6 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var ak = new Blake2bMac(pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES * 8).ComputeHash(CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n));
 
-        var i = ""; // implicit assertion (add assertion/implicit parameter as string)
-
         var header = $"{Version}.{Purpose.Local.ToDescription()}.";
         var m = GetBytes(payload);
         var ciphertext = new byte[m.Length];
@@ -155,7 +159,7 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
         var algo = new XChaCha20(ek, 0);
         algo.Encrypt(m, n2, ciphertext);
 
-        var pack = PreAuthEncode(GetBytes(header), n, ciphertext, GetBytes(footer), GetBytes(i));
+        var pack = PreAuthEncode(GetBytes(header), n, ciphertext, GetBytes(footer), GetBytes(assertion));
 
         // Calculate MAC
         var mac = new Blake2bMac(ak, NONCE_SIZE_IN_BYTES * 8).ComputeHash(pack);
@@ -169,13 +173,15 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <summary>
     /// Decrypts the specified token using a shared key.
     /// </summary>
-    /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The symmetric key.</param>
+    /// <param name="token">The token.</param>
+    /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>System.String.</returns>
     /// exception cref="System.ArgumentException">Shared Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload is not valid or Hash is not valid</exception>
-    public string Decrypt(string token, PasetoSymmetricKey pasetoKey)
+    public string Decrypt(PasetoSymmetricKey pasetoKey, string token, string footer = "", string assertion = "")
     {
         /*
          * Decrypt Specification
@@ -239,7 +245,8 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
             throw new PasetoInvalidException($"The specified token is not valid for {Purpose.Local} purpose and {Version} version");
 
         var parts = token.Split('.');
-        var footer = GetString(FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty));
+        var f = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
+        VerifyFooter(f, footer);
 
         var bytes = FromBase64Url(parts[2]).AsSpan();
 
@@ -262,9 +269,7 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
 
             var ak = new Blake2bMac(pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES * 8).ComputeHash(CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n.ToArray()));
 
-            var i = ""; // implicit assertion (add assertion/implicit parameter as string)
-
-            var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), GetBytes(footer), GetBytes(i));
+            var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), f, GetBytes(assertion));
 
             // Calculate MAC
             var mac = new Blake2bMac(ak, NONCE_SIZE_IN_BYTES * 8);
@@ -294,11 +299,12 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The asymmetric secret key.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>System.String.</returns>
     /// <exception cref="System.ArgumentException">Secret Key is missing</exception>
     /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid</exception>
-    public string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "")
+    public string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "", string assertion = "")
     {
         /*
          * Sign Specification
@@ -333,10 +339,8 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
         if (pasetoKey.Key.Length == 0)
             throw new ArgumentException("Secret Key is missing", nameof(pasetoKey));
 
-        var i = ""; // implicit assertion (add assertion/implicit parameter as string)
-
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
-        var pack = PreAuthEncode(new[] { header, payload, footer, i });
+        var pack = PreAuthEncode(new[] { header, payload, footer, assertion });
 
         var signature = Ed25519.Sign(pack, pasetoKey.Key.ToArray());
 
@@ -349,13 +353,15 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <summary>
     /// Verifies the specified token.
     /// </summary>
-    /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The asymmetric public key.</param>
+    /// <param name="token">The token.</param>
+    /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>a <see cref="PasetoVerifyResult"/> that represents a PASETO token verify operation.</returns>
     /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
     /// <exception cref="Paseto.PasetoInvalidException">Key is not valid or The specified token is not valid or Payload does not contain signature</exception>
-    public PasetoVerifyResult Verify(string token, PasetoAsymmetricPublicKey pasetoKey)
+    public PasetoVerifyResult Verify(PasetoAsymmetricPublicKey pasetoKey, string token, string footer = "", string assertion = "")
     {
         /*
          * Verify Specification
@@ -401,7 +407,8 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
             throw new PasetoInvalidException($"The specified token is not valid for {Purpose.Public} purpose and {Version} version");
 
         var parts = token.Split('.');
-        var footer = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
+        var f = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
+        VerifyFooter(f, footer);
 
         var body = FromBase64Url(parts[2]);
 
@@ -411,12 +418,10 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         // Decode the payload
         var len = body.Length - blockSize;
-        var signature = body[..len];
-        var payload = body[len..];
+        var signature = body[len..];
+        var payload = body[..len];
 
-        var i = ""; // implicit assertion (add assertion/implicit parameter as string)
-
-        var pack = PreAuthEncode(new[] { GetBytes(header), payload, footer, GetBytes(i) });
+        var pack = PreAuthEncode(new[] { GetBytes(header), payload, f, GetBytes(assertion) });
 
         var valid = Ed25519.Verify(signature, pack, pasetoKey.Key.ToArray());
 

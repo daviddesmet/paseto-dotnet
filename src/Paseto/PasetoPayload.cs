@@ -12,25 +12,24 @@ using Paseto.Serializers;
 /// <seealso cref="System.Collections.Generic.Dictionary{string, object}" />
 public class PasetoPayload : Dictionary<string, object>
 {
-    public PasetoPayload(IJsonSerializer serializer = null) => Serializer = serializer ?? new JsonNetSerializer();
+    private IJsonSerializer _serializer;
 
-    /// <summary>
-    /// Gets the Serializer used for serializing and deserializing the payload.
-    /// </summary>
-    public IJsonSerializer Serializer { get; private set; }
+    public PasetoPayload() => _serializer = new JsonNetSerializer();
+
+    public PasetoPayload(IJsonSerializer serializer = null) => _serializer = serializer ?? new JsonNetSerializer();
 
     /// <summary>
     /// Serializes this instance to JSON.
     /// </summary>
     /// <returns>This instance as JSON.</returns>
-    public string ToJson() => Serializer.Serialize(this);
+    public string ToJson() => _serializer.Serialize(this);
 
     /// <summary>
     /// Deserializes JSON into a <see cref="PasetoPayload"/> instance.
     /// </summary>
     /// <param name="jsonString">The JSON to deserialize.</param>
     /// <returns>An instance of <see cref="PasetoPayload"/>.</returns>
-    public PasetoPayload FromJson(string jsonString) => Serializer.Deserialize<PasetoPayload>(jsonString);
+    public PasetoPayload FromJson(string jsonString) => _serializer.Deserialize<PasetoPayload>(jsonString);
 
     public bool HasAudience() => ContainsKey(RegisteredClaims.Audience.ToDescription());
 
@@ -50,5 +49,5 @@ public class PasetoPayload : Dictionary<string, object>
 
     public bool HasTokenIdentifier() => ContainsKey(RegisteredClaims.TokenIdentifier.ToDescription());
 
-    internal void SetSerializer(IJsonSerializer serializer) => Serializer = serializer;
+    internal void SetSerializer(IJsonSerializer serializer) => _serializer = serializer;
 }

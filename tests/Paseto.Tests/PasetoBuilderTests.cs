@@ -1,6 +1,7 @@
 ﻿namespace Paseto.Tests;
 
 using System;
+using System.Collections.Generic;
 using System.Security.Cryptography;
 
 using FluentAssertions;
@@ -9,6 +10,7 @@ using Xunit;
 
 using Paseto.Builder;
 using Paseto.Cryptography;
+using static Paseto.Tests.TestHelper;
 
 public class PasetoBuilderTests
 {
@@ -27,6 +29,22 @@ public class PasetoBuilderTests
     private const string ExpectedPublicPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T05:04:07.9196375Z\"}";
     private const string ExpectedLocalPayload = "{\"example\":\"Hello Paseto!\",\"exp\":\"2018-04-07T04:57:18.5865183Z\"}";
     private const string ExpectedFooter = "{\"kid\":\"gandalf0\"}";
+
+    public static IEnumerable<object[]> LocalDecodeData => new[]
+    {
+        new object[] { ProtocolVersion.V1, "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f", "v1.local.4VyfcVcFAOAbB8yEM1j1Ob7Iez5VZJy5kHNsQxmlrAwKUbOtq9cv39T2fC0MDWafX0nQJ4grFZzTdroMvU772RW-X1oTtoFBjsl_3YYHWnwgqzs0aFc3ejjORmKP4KUM339W3szA28OabR192eRqiyspQ6xPM35NMR-04-FhRJZEWiF0W5oWjPVtGPjeVjm2DI4YtJg.eyJraWQiOiJVYmtLOFk2aXY0R1poRnA2VHgzSVdMV0xmTlhTRXZKY2RUM3pkUjY1WVp4byJ9" },
+        new object[] { ProtocolVersion.V2, "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f", "v2.local.5K4SCXNhItIhyNuVIZcwrdtaDKiyF81-eWHScuE0idiVqCo72bbjo07W05mqQkhLZdVbxEa5I_u5sgVk1QLkcWEcOSlLHwNpCkvmGGlbCdNExn6Qclw3qTKIIl5-zSLIrxZqOLwcFLYbVK1SrQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9" },
+        new object[] { ProtocolVersion.V3, "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f", "v3.local.JvdVM1RIKh2R1HhGJ4VLjaa4BCp5ZlI8K0BOjbvn9_LwY78vQnDait-Q-sjhF88dG2B0ROIIykcrGHn8wzPbTrqObHhyoKpjy3cwZQzLdiwRsdEK5SDvl02_HjWKJW2oqGMOQJlkYSIbXOgVuIQL65UMdW9WcjOpmqvjqD40NNzed-XPqn1T3w-bJvitYpUJL_rmihc.eyJraWQiOiJVYmtLOFk2aXY0R1poRnA2VHgzSVdMV0xmTlhTRXZKY2RUM3pkUjY1WVp4byJ9" },
+        new object[] { ProtocolVersion.V4, "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f", "v4.local.32VIErrEkmY4JVILovbmfPXKW9wT1OdQepjMTC_MOtjA4kiqw7_tcaOM5GNEcnTxl60WkwMsYXw6FSNb_UdJPXjpzm0KW9ojM5f4O2mRvE2IcweP-PRdoHjd5-RHCiExR1IK6t4x-RMNXtQNbz7FvFZ_G-lFpk5RG3EOrwDL6CgDqcerSQ.eyJraWQiOiJ6VmhNaVBCUDlmUmYyc25FY1Q3Z0ZUaW9lQTlDT2NOeTlEZmdMMVc2MGhhTiJ9" }
+    };
+
+    public static IEnumerable<object[]> PublicEncodeData => new[]
+    {
+        new object[] { ProtocolVersion.V1, "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAyaTgTt53ph3p5GHgwoGWwz5hRfWXSQA08NCOwe0FEgALWos9\nGCjNFCd723nCHxBtN1qd74MSh/uN88JPIbwxKheDp4kxo4YMN5trPaF0e9G6Bj1N\n02HnanxFLW+gmLbgYO/SZYfWF/M8yLBcu5Y1Ot0ZxDDDXS9wIQTtBE0ne3YbxgZJ\nAZTU5XqyQ1DxdzYyC5lF6yBaR5UQtCYTnXAApVRuUI2Sd6L1E2vl9bSBumZ5IpNx\nkRnAwIMjeTJB/0AIELh0mE5vwdihOCbdV6alUyhKC1+1w/FW6HWcp/JG1kKC8DPI\nidZ78Bbqv9YFzkAbNni5eSBOsXVBKG78Zsc8owIDAQABAoIBAF22jLDa34yKdns3\nqfd7to+C3D5hRzAcMn6Azvf9qc+VybEI6RnjTHxDZWK5EajSP4/sQ15e8ivUk0Jo\nWdJ53feL+hnQvwsab28gghSghrxM2kGwGA1XgO+SVawqJt8SjvE+Q+//01ZKK0Oy\nA0cDJjX3L9RoPUN/moMeAPFw0hqkFEhm72GSVCEY1eY+cOXmL3icxnsnlUD//SS9\nq33RxF2y5oiW1edqcRqhW/7L1yYMbxHFUcxWh8WUwjn1AAhoCOUzF8ZB+0X/PPh+\n1nYoq6xwqL0ZKDwrQ8SDhW/rNDLeO9gic5rl7EetRQRbFvsZ40AdsX2wU+lWFUkB\n42AjuoECgYEA5z/CXqDFfZ8MXCPAOeui8y5HNDtu30aR+HOXsBDnRI8huXsGND04\nFfmXR7nkghr08fFVDmE4PeKUk810YJb+IAJo8wrOZ0682n6yEMO58omqKin+iIUV\nrPXLSLo5CChrqw2J4vgzolzPw3N5I8FJdLomb9FkrV84H+IviPIylyECgYEA3znw\nAG29QX6ATEfFpGVOcogorHCntd4niaWCq5ne5sFL+EwLeVc1zD9yj1axcDelICDZ\nxCZynU7kDnrQcFkT0bjH/gC8Jk3v7XT9l1UDDqC1b7rm/X5wFIZ/rmNa1rVZhL1o\n/tKx5tvM2syJ1q95v7NdygFIEIW+qbIKbc6Wz0MCgYBsUZdQD+qx/xAhELX364I2\nepTryHMUrs+tGygQVrqdiJX5dcDgM1TUJkdQV6jLsKjPs4Vt6OgZRMrnuLMsk02R\n3M8gGQ25ok4f4nyyEZxGGWnVujn55KzUiYWhGWmhgp18UCkoYa59/Q9ss+gocV9h\nB9j9Q43vD80QUjiF4z0DQQKBgC7XQX1VibkMim93QAnXGDcAS0ij+w02qKVBjcHk\nb9mMBhz8GAxGOIu7ZJafYmxhwMyVGB0I1FQeEczYCJUKnBYN6Clsjg6bnBT/z5bJ\nx/Jx1qCzX3Uh6vLjpjc5sf4L39Tyye1u2NXQmZPwB5x9BdcsFConSq/s4K1LJtUT\n3KFxAoGBANGcQ8nObi3m4wROyKrkCWcWxFFMnpwxv0pW727Hn9wuaOs4UbesCnwm\npcMTfzGUDuzYXCtAq2pJl64HG6wsdkWmjBTJEpm6b9ibOBN3qFV2zQ0HyyKlMWxI\nuVSj9gOo61hF7UH9XB6R4HRdlpBOuIbgAWZ46dkj9/HM9ovdP0Iy\n-----END RSA PRIVATE KEY-----" },
+        new object[] { ProtocolVersion.V2, "b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a37741eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2" },
+        new object[] { ProtocolVersion.V3, "20347609607477aca8fbfbc5e6218455f3199669792ef8b466faa87bdc67798144c848dd03661eed5ac62461340cea96" },
+        new object[] { ProtocolVersion.V4, "b4cbfb43df4ce210727d953e4a713307fa19bb7d9f85041438d9e11b942a37741eb9dbbbbc047c03fd70604e0071f0987e16b28b757225c11f00415d0e20b1a2" }
+    };
 
     [Theory(DisplayName = "Should succeed on GenerateSymmetricKey when dependencies are provided")]
     [InlineData(ProtocolVersion.V1, 32)]
@@ -209,7 +227,48 @@ public class PasetoBuilderTests
         token.Split('.').Should().HaveCount(3);
     }
 
-    // TODO: Public Encode
+    [Theory(DisplayName = "Should succeed on Public Encode with Byte Array Key and optional Footer Payload when dependencies are provided")]
+    [MemberData(nameof(PublicEncodeData))]
+    public void ShouldSucceedOnPublicEncodeWithByteArrayKeyAndOptionalFooterPayloadWhenDependenciesAreProvided(ProtocolVersion version, string secretKey)
+    {
+        var token = new PasetoBuilder().Use(version, Purpose.Public)
+            .WithKey(ReadKey(secretKey), Encryption.AsymmetricSecretKey)
+            .AddClaim("data", "this is a secret message")
+            .Issuer("https://github.com/daviddesmet/paseto-dotnet")
+            .Subject(Guid.NewGuid().ToString())
+            .Audience("https://paseto.io")
+            .NotBefore(DateTime.UtcNow.AddMinutes(5))
+            .IssuedAt(DateTime.UtcNow)
+            .Expiration(DateTime.UtcNow.AddHours(1))
+            .TokenIdentifier("123456ABCD")
+            .AddFooter(new PasetoPayload { { "kid", "gandalf0" } })
+            .Encode();
+
+        token.Should().NotBeNullOrEmpty();
+        token.Should().StartWith($"v{(int)version}.public.");
+        token.Split('.').Should().HaveCount(4);
+    }
+
+    [Theory(DisplayName = "Should succeed on Public Encode with Byte Array Key when dependencies are provided")]
+    [MemberData(nameof(PublicEncodeData))]
+    public void ShouldSucceedOnPublicEncodeWithByteArrayKeyWhenDependenciesAreProvided(ProtocolVersion version, string secretKey)
+    {
+        var token = new PasetoBuilder().Use(version, Purpose.Public)
+            .WithKey(ReadKey(secretKey), Encryption.AsymmetricSecretKey)
+            .AddClaim("data", "this is a secret message")
+            .Issuer("https://github.com/daviddesmet/paseto-dotnet")
+            .Subject(Guid.NewGuid().ToString())
+            .Audience("https://paseto.io")
+            .NotBefore(DateTime.UtcNow.AddMinutes(5))
+            .IssuedAt(DateTime.UtcNow)
+            .Expiration(DateTime.UtcNow.AddHours(1))
+            .TokenIdentifier("123456ABCD")
+            .Encode();
+
+        token.Should().NotBeNullOrEmpty();
+        token.Should().StartWith($"v{(int)version}.public.");
+        token.Split('.').Should().HaveCount(3);
+    }
 
     [Fact(DisplayName = "Should throw exception on Encode when Use is not called")]
     public void ShouldThrowExceptionOnEncodeWhenUseIsNotCalled()
@@ -319,7 +378,19 @@ public class PasetoBuilderTests
         act.Should().Throw<ArgumentException>();
     }
 
-    // TODO: Public encode success tests (need specific keys for each version, take from json tests)
+    [Theory(DisplayName = "Should succeed on Local Decode with Byte Array Key when dependencies are provided")]
+    [MemberData(nameof(LocalDecodeData))]
+    public void ShouldSucceedOnLocalDecodeWithByteArrayKeyWhenDependenciesAreProvided(ProtocolVersion version, string sharedKey, string token)
+    {
+        var result = new PasetoBuilder().Use(version, Purpose.Local)
+            .WithKey(CryptoBytes.FromHexString(sharedKey), Encryption.SymmetricKey)
+            .Decode(token);
+
+        result.IsValid.Should().BeTrue();
+        result.Paseto.Should().NotBeNull();
+        result.Exception.Should().BeNull();
+    }
+
     // TODO: Decode tests (local and public)
     // TODO: Decode fails tests, include invalid header v1.remote.
     // TODO: Decode with payload validation (success and fails)

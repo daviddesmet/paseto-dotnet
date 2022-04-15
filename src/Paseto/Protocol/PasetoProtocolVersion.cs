@@ -1,6 +1,8 @@
 ﻿namespace Paseto.Protocol;
 
 using System.Security.Cryptography;
+using NaCl.Core.Internal;
+using static Paseto.Utils.EncodingHelper;
 
 public abstract class PasetoProtocolVersion
 {
@@ -18,6 +20,11 @@ public abstract class PasetoProtocolVersion
     /// </summary>
     /// <value>The version number.</value>
     public abstract int VersionNumber { get; }
+
+    /// <summary>
+    /// Gets a value indicating if the protocol supports implicit assertions.
+    /// </summary>
+    public abstract bool SupportsImplicitAssertions { get; }
 
     /// <summary>
     /// Gets the nonce which was set for testing purposes;
@@ -43,5 +50,15 @@ public abstract class PasetoProtocolVersion
         var n = new byte[size];
         RandomNumberGenerator.Fill(n);
         return n;
+    }
+
+    protected void VerifyFooter(byte[] f1, string footer)
+    {
+        if (string.IsNullOrEmpty(footer))
+            return;
+
+        var f2 = GetBytes(footer);
+        if (!CryptoBytes.ConstantTimeEquals(f1, f2))
+            throw new PasetoInvalidException("Footer is not valid");
     }
 }

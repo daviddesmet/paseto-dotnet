@@ -20,6 +20,11 @@ public interface IPasetoProtocolVersion
     int VersionNumber { get; }
 
     /// <summary>
+    /// Gets a value indicating if the protocol supports implicit assertions.
+    /// </summary>
+    bool SupportsImplicitAssertions { get; }
+
+    /// <summary>
     /// Generates a Symmetric Key.
     /// </summary>
     /// <returns><see cref="Paseto.Cryptography.Key.PasetoSymmetricKey" /></returns>
@@ -38,16 +43,19 @@ public interface IPasetoProtocolVersion
     /// <param name="pasetoKey">The symmetric key.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>System.String.</returns>
-    string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "");
+    string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "", string assertion = "");
 
     /// <summary>
     /// Decrypts the specified token using a shared key.
     /// </summary>
-    /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The symmetric key.</param>
+    /// <param name="token">The token.</param>
+    /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>System.String.</returns>
-    string Decrypt(string token, PasetoSymmetricKey pasetoKey);
+    string Decrypt(PasetoSymmetricKey pasetoKey, string token, string footer = "", string assertion = "");
 
     /// <summary>
     /// Signs the specified payload.
@@ -55,14 +63,17 @@ public interface IPasetoProtocolVersion
     /// <param name="pasetoKey">The asymmetric secret key.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>System.String.</returns>
-    string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "");
+    string Sign(PasetoAsymmetricSecretKey pasetoKey, string payload, string footer = "", string assertion = "");
 
     /// <summary>
     /// Verifies the specified token.
     /// </summary>
-    /// <param name="token">The token.</param>
     /// <param name="pasetoKey">The asymmetric public key.</param>
+    /// <param name="token">The token.</param>
+    /// <param name="footer">The optional footer.</param>
+    /// <param name="assertion">The optional implicit assertion.</param>
     /// <returns>a <see cref="PasetoVerifyResult"/> that represents a PASETO token verify operation.</returns>
-    PasetoVerifyResult Verify(string token, PasetoAsymmetricPublicKey pasetoKey);
+    PasetoVerifyResult Verify(PasetoAsymmetricPublicKey pasetoKey, string token, string footer = "", string assertion = "");
 }
