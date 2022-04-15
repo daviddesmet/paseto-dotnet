@@ -16,5 +16,5 @@ public class PasetoAsymmetricSecretKey : PasetoKey
     public PasetoAsymmetricSecretKey(ReadOnlyMemory<byte> key, IPasetoProtocolVersion protocol) : base(key, protocol) { }
 
     /// <inheritdoc/>
-    public override bool IsValidFor(IPasetoProtocolVersion protocol, Purpose purpose) => Protocol.Version == protocol.Version && purpose == Purpose.Public;
+    public override bool IsValidFor(IPasetoProtocolVersion protocol, Purpose purpose) => Protocol?.Version == protocol.Version && purpose == Purpose.Public;
 }

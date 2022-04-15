@@ -209,9 +209,14 @@ public class PasetoBuilderTests
         token.Split('.').Should().HaveCount(3);
     }
 
-    // TODO: Public encode tests
-    // TODO: Null payload tests
+    // TODO: null, empty, invalid keys for public and local encode
+    // TODO: Public encode success tests (need specific keys for each version, take from json tests)
+    // TODO: Null payload tests for encode for local and public
+    // TODO: Decode tests (local and public)
     // TODO: Decode fails tests, include invalid header v1.remote.
+    // TODO: Decode with payload validation (success and fails)
+    // TODO: Decode only header and footer
+    // TODO: Handle specific scenarios like out-of-order parameters WithKey before Use, etc...
 
 
 
@@ -300,46 +305,46 @@ public class PasetoBuilderTests
     //     payload.Should().Be(ExpectedPublicPayload);
     // }
 
-    [Fact]
-    public void Version2BuilderLocalTokenDecodingTest()
-    {
-        // Arrange & Act
-        var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
-                                         .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
-                                         .Decode(LocalTokenV2);
+    // [Fact]
+    // public void Version2BuilderLocalTokenDecodingTest()
+    // {
+    //     // Arrange & Act
+    //     var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
+    //                                      .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
+    //                                      .Decode(LocalTokenV2);
+    //
+    //     // Assert
+    //     result.Should().NotBeNull();
+    //     result.Paseto.Should().NotBeNull();
+    //     result.Paseto.RawPayload.Should().Be(ExpectedLocalPayload);
+    // }
 
-        // Assert
-        result.Should().NotBeNull();
-        result.Paseto.Should().NotBeNull();
-        result.Paseto.RawPayload.Should().Be(ExpectedLocalPayload);
-    }
+    // [Fact]
+    // public void Version2BuilderLocalTokenWithFooterDecodingTest()
+    // {
+    //     // Arrange & Act
+    //     var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
+    //                                      .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
+    //                                      .Decode(LocalTokenWithFooterV2);
+    //
+    //     // Assert
+    //     result.Should().NotBeNull();
+    //     result.Paseto.Should().NotBeNull();
+    //     result.Paseto.RawPayload.Should().Be(ExpectedLocalPayload);
+    // }
 
-    [Fact]
-    public void Version2BuilderLocalTokenWithFooterDecodingTest()
-    {
-        // Arrange & Act
-        var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
-                                         .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
-                                         .Decode(LocalTokenWithFooterV2);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Paseto.Should().NotBeNull();
-        result.Paseto.RawPayload.Should().Be(ExpectedLocalPayload);
-    }
-
-    [Fact]
-    public void Version2BuilderLocalTokenWithFooterDecodingToObjectTest()
-    {
-        // Arrange & Act
-        var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
-                                      .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
-                                      .Decode(LocalTokenWithFooterV2);
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-        result.Paseto.Should().NotBeNull();
-    }
+    // [Fact]
+    // public void Version2BuilderLocalTokenWithFooterDecodingToObjectTest()
+    // {
+    //     // Arrange & Act
+    //     var result = new PasetoBuilder().Use(ProtocolVersion.V2, Purpose.Local)
+    //                                   .WithKey(Convert.FromBase64String(LocalKeyV2), Encryption.SymmetricKey)
+    //                                   .Decode(LocalTokenWithFooterV2);
+    //
+    //     // Assert
+    //     result.IsValid.Should().BeTrue();
+    //     result.Paseto.Should().NotBeNull();
+    // }
 
     [Fact]
     public void Version2BuilderLocalTokenWithFooterDecodingFooterOnlyTest()

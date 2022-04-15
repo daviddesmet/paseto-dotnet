@@ -157,16 +157,14 @@ public sealed class PasetoBuilder
     /// <returns>Current builder instance</returns>
     public PasetoBuilder WithKey(byte[] key, Encryption encryption)
     {
-        if (_protocol is null)
-            throw new PasetoBuilderException("Can't set Key. Check if you have call the 'Use' method.");
-
         _pasetoKey = encryption switch
         {
-            Encryption.SymmetricKey => new PasetoSymmetricKey(key, _protocol),// TODO: could be null if we get rid of the above check which is what we want (to be null, not to blow up)
-            Encryption.AsymmetricSecretKey => new PasetoAsymmetricSecretKey(key, _protocol),// TODO: could be null if we get rid of the above check which is what we want (to be null, not to blow up)
-            Encryption.AsymmetricPublicKey => new PasetoAsymmetricPublicKey(key, _protocol),// TODO: could be null if we get rid of the above check which is what we want (to be null, not to blow up)
+            Encryption.SymmetricKey => new PasetoSymmetricKey(key, _protocol),
+            Encryption.AsymmetricSecretKey => new PasetoAsymmetricSecretKey(key, _protocol),
+            Encryption.AsymmetricPublicKey => new PasetoAsymmetricPublicKey(key, _protocol),
             _ => throw new PasetoNotSupportedException($"The encryption classification {encryption} is currently not supported."),
         };
+        _pasetoKey.SetProtocol(_protocol);
         return this;
     }
 

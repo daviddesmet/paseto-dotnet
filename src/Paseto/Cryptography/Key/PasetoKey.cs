@@ -14,11 +14,10 @@ public abstract class PasetoKey
     /// </summary>
     /// <param name="key">The secret key.</param>
     /// <param name="protocol">The protocol version.</param>
-    /// <exception cref="CryptographicException"></exception>
     public PasetoKey(ReadOnlyMemory<byte> key, IPasetoProtocolVersion protocol)
     {
         Key = key;
-        Protocol = protocol ?? throw new ArgumentNullException(nameof(protocol));
+        Protocol = protocol;
     }
 
     /// <summary>

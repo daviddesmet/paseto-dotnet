@@ -16,5 +16,5 @@ public class PasetoSymmetricKey : PasetoKey
     public PasetoSymmetricKey(ReadOnlyMemory<byte> key, IPasetoProtocolVersion protocol) : base(key, protocol) { }
 
     /// <inheritdoc/>
-    public override bool IsValidFor(IPasetoProtocolVersion protocol, Purpose purpose) => Protocol.Version == protocol.Version && purpose == Purpose.Local;
+    public override bool IsValidFor(IPasetoProtocolVersion protocol, Purpose purpose) => Protocol?.Version == protocol.Version && purpose == Purpose.Local;
 }
