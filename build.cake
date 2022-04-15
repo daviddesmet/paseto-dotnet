@@ -49,6 +49,7 @@ Task("Test")
                 Blame = true,
                 Collectors = new string[] { "Code Coverage", "XPlat Code Coverage" },
                 Configuration = configuration,
+                Framework = "net6.0",
                 Loggers = new string[]
                 {
                     $"trx;LogFileName={project.GetFilenameWithoutExtension()}.trx",
