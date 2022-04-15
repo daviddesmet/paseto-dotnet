@@ -123,8 +123,9 @@ var key = Paserk.Decode(paserk);
 
 - [ ] Add support for remaining PASERK types and its [operations](https://github.com/paseto-standard/paserk/blob/master/operations).
 - [ ] Add support for version detection when decoding.
-- [ ] Add custom payload [validation rules](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/02-Validators.md).
-- [ ] Add more documentation on the usage.
+- [ ] Add support for custom payload [validation rules](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/02-Validators.md).
+- [ ] Add Fluent-API payload validation unit tests.
+- [ ] Remove dependency on JSON.NET.
 
 ## Test Coverage
 
@@ -132,9 +133,9 @@ var key = Paserk.Decode(paserk);
 
 ## Cryptography
 
-* Uses Ed25519 algorithm from CodesInChaos [Chaos.NaCl](https://github.com/CodesInChaos/Chaos.NaCl) cryptography library.
+* Uses Ed25519 (EdDSA over Curve25519) algorithm from CodesInChaos [Chaos.NaCl](https://github.com/CodesInChaos/Chaos.NaCl) cryptography library.
 * Uses Blake2b cryptographic hash function from [Konscious.Security.Cryptography](https://github.com/kmaragon/Konscious.Security.Cryptography) repository.
-* Uses ECDSA algorithm from [Bouncy Castle](https://github.com/novotnyllc/bc-csharp) cryptography library.
+* Uses AES-256-CTR, ECDSA over P-384 algorithms from [Bouncy Castle](https://github.com/novotnyllc/bc-csharp) cryptography library.
 * Uses XChaCha20-Poly1305 AEAD from [NaCl.Core](https://github.com/daviddesmet/NaCl.Core) repository.
 
 ## Learn More

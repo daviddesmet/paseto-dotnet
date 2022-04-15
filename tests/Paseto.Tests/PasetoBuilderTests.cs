@@ -502,15 +502,10 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should throw exception on Decode when Token is missing")]
-    [InlineData(ProtocolVersion.V1, null)]
-    [InlineData(ProtocolVersion.V1, "")]
-    [InlineData(ProtocolVersion.V2, null)]
-    [InlineData(ProtocolVersion.V2, "")]
-    [InlineData(ProtocolVersion.V3, null)]
-    [InlineData(ProtocolVersion.V3, "")]
-    [InlineData(ProtocolVersion.V4, null)]
-    [InlineData(ProtocolVersion.V4, "")]
-    public void ShouldThrowExceptionOnDecodeWhenTokenIsMissing(ProtocolVersion version, string token)
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData(" ")]
+    public void ShouldThrowExceptionOnDecodeWhenTokenIsMissing(string token)
     {
         Action act = () => new PasetoBuilder().Decode(token);
 
