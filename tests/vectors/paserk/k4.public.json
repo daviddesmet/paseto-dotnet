@@ -1,0 +1,20 @@
+{
+  "name": "PASERK k4.public Test Vectors",
+  "tests": [
+    {
+      "name": "k4.public-1",
+      "key": "0000000000000000000000000000000000000000000000000000000000000000",
+      "paserk": "k4.public.AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"
+    },
+    {
+      "name": "k4.public-2",
+      "key": "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f",
+      "paserk": "k4.public.cHFyc3R1dnd4eXp7fH1-f4CBgoOEhYaHiImKi4yNjo8"
+    },
+    {
+      "name": "k4.public-3",
+      "key": "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e90",
+      "paserk": "k4.public.cHFyc3R1dnd4eXp7fH1-f4CBgoOEhYaHiImKi4yNjpA"
+    }
+  ]
+}

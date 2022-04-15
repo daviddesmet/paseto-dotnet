@@ -1,11 +1,10 @@
-﻿namespace Paseto.Utils
+﻿namespace Paseto.Utils;
+
+/// <summary>
+/// Base64 Url Padding Policy.
+/// </summary>
+public enum PaddingPolicy
 {
-    /// <summary>
-    /// Base64 Url Padding Policy.
-    /// </summary>
-    public enum PaddingPolicy
-    {
-        Discard,
-        Preserve
-    }
+    Discard,
+    Preserve
 }

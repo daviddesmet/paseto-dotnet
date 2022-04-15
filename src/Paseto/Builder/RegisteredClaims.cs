@@ -1,32 +1,31 @@
-﻿namespace Paseto.Builder
+﻿namespace Paseto.Builder;
+
+using System.ComponentModel;
+
+/// <summary>
+/// Trait RegisteredClaims.
+/// Adopted from JWT for usability.
+/// </summary>
+public enum RegisteredClaims
 {
-    using System.ComponentModel;
+    [Description("iss")]
+    Issuer,
 
-    /// <summary>
-    /// Trait RegisteredClaims.
-    /// Adopted from JWT for usability.
-    /// </summary>
-    public enum RegisteredClaims
-    {
-        [Description("iss")]
-        Issuer,
+    [Description("sub")]
+    Subject,
 
-        [Description("sub")]
-        Subject,
+    [Description("aud")]
+    Audience,
 
-        [Description("aud")]
-        Audience,
+    [Description("exp")]
+    ExpirationTime,
 
-        [Description("exp")]
-        ExpirationTime,
+    [Description("nbf")]
+    NotBefore,
 
-        [Description("nbf")]
-        NotBefore,
+    [Description("iat")]
+    IssuedAt,
 
-        [Description("iat")]
-        IssuedAt,
-
-        [Description("jti")]
-        TokenIdentifier
-    }
+    [Description("jti")]
+    TokenIdentifier
 }

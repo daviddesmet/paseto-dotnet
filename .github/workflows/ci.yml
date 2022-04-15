@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the master branch
+  push:
+    branches:
+      - master
+    paths:
+     - 'src/**'
+     - build.cake
+     - CodeCoverage.runsettings
+     - dotnet-tools.json
+     - global.json
+     - Key.snk
+     - Paseto.sln
+  pull_request:
+    branches:
+      - master
+    paths:
+     - 'src/**'
+     - build.cake
+     - CodeCoverage.runsettings
+     - dotnet-tools.json
+     - global.json
+     - Key.snk
+     - Paseto.sln
+  release:
+    types:
+      - published
+
+env:
+  # Set the DOTNET_SKIP_FIRST_TIME_EXPERIENCE environment variable to stop wasting time caching packages
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  # Disable sending usage data to Microsoft
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # Set the build number in MinVer
+  MINVERBUILDMETADATA: build.${{github.run_number}}
+
+jobs:
+  build:
+    name: Build on ${{matrix.os}}
+    runs-on: ${{matrix.os}}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    
+    steps:
+    - name: 'Checkout'
+      uses: actions/checkout@v1
+    - name: 'Git Fetch Tags'
+      run: git fetch --tags
+    - name: 'Install .NET SDK'
+      uses: actions/setup-dotnet@v1
+    - name: '.NET Restore'
+      run: dotnet tool restore
+    - name: 'Build Project'
+      run: dotnet cake --target=Build
+    - name: 'Run Unit Tests'
+      run: dotnet cake --target=Test
+    - name: 'Pack NuGet'
+      run: dotnet cake --target=Pack
+    - name: 'Publish Artifacts'
+      uses: actions/upload-artifact@v1.0.0
+      with:
+        name: ${{matrix.os}}
+        path: './Artifacts'
+
+  push-github-packages:
+    name: 'Push GitHub Packages'
+    needs: build
+    if: github.ref == 'refs/heads/master' || github.event_name == 'release'
+    runs-on: windows-latest
+    steps:
+      - name: 'Download Artifact'
+        uses: actions/download-artifact@v1
+        with:
+          name: 'windows-latest'
+      - name: 'NuGet Push'
+        run: dotnet nuget push .\windows-latest\*.nupkg --source https://nuget.pkg.github.com/daviddesmet/index.json --skip-duplicate --api-key ${{secrets.GITHUB_TOKEN}}
+
+  push-nuget:
+    name: 'Push NuGet Packages'
+    needs: build
+    if: github.event_name == 'release'
+    runs-on: windows-latest
+    steps:
+      - name: 'Download Artifact'
+        uses: actions/download-artifact@v1
+        with:
+          name: 'windows-latest'
+      - name: 'NuGet Push'
+        run: |
+          Get-ChildItem .\windows-latest -Filter *.nupkg |
+          Where-Object { !$_.Name.Contains('preview') } |
+          ForEach-Object { dotnet nuget push $_ --source https://api.nuget.org/v3/index.json --skip-duplicate --api-key ${{secrets.NUGET_API_KEY}} }
+        shell: pwsh
