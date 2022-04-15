@@ -316,7 +316,7 @@ public class PasetoBuilderTests
                                               .Expiration(DateTime.UtcNow.AddHours(1))
                                               .Encode();
 
-        act.Should().Throw<ArgumentException>().WithMessage("Secret key is missing*");
+        act.Should().Throw<ArgumentException>();
     }
 
     // TODO: Public encode success tests (need specific keys for each version, take from json tests)
