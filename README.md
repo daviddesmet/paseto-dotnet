@@ -80,6 +80,23 @@ var result = new PasetoBuilder().Use(version, purpose)
                                 .Decode(token);
 ```
 
+Or validate the token's payload while decoding (the header and signature is always validated):
+
+```csharp
+var valParams = new PasetoTokenValidationParameters
+{
+    ValidateLifetime = true,
+    ValidateAudience = true,
+    ValidateIssuer = true,
+    ValidAudience = "https://paseto.io",
+    ValidIssuer = "https://github.com/daviddesmet/paseto-dotnet"
+};
+
+var result = new PasetoBuilder().Use(version, purpose)
+                                .WithKey(key, encryption)
+                                .Decode(token, valParams);
+```
+
 ## Usage for PASERK
 
 The library also provides the PASERK extension for encoding and decoding a key.
@@ -106,8 +123,7 @@ var key = Paserk.Decode(paserk);
 
 - [ ] Add support for remaining PASERK types and its [operations](https://github.com/paseto-standard/paserk/blob/master/operations).
 - [ ] Add support for version detection when decoding.
-- [ ] Add payload [validation rules](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/02-Validators.md).
-  - There's already an [initial implementation](https://github.com/daviddesmet/paseto-dotnet/commit/0f25cb5f7d937ebf2396d15572c16ac16690f68b) and [tests](https://github.com/idaviddesmet/paseto-dotnet/blob/9adb1a575afdc8722e1772109d0885413ff22cf8/src/Paseto.Tests/PasetoTests.cs#L554).
+- [ ] Add custom payload [validation rules](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/02-Validators.md).
 - [ ] Add more documentation on the usage.
 
 ## Test Coverage

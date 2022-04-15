@@ -1,10 +1,7 @@
 ﻿namespace Paseto.Validators;
 
 using System;
-
-using Builder;
-using Extensions;
-using Internal;
+using Paseto.Validators.Internal;
 
 /// <summary>
 /// The ExpirationTime Validator. This class cannot be inherited.
@@ -22,19 +19,19 @@ public sealed class ExpirationTimeValidator : BaseValidator
     /// Gets the name of the claim.
     /// </summary>
     /// <value>The name of the claim.</value>
-    public override string ClaimName => RegisteredClaims.ExpirationTime.GetRegisteredClaimName();
+    public override string ClaimName => PasetoRegisteredClaimNames.ExpirationTime;
 
     /// <summary>
     /// Validates the payload against the provided optional expected value. Throws an exception if not valid.
     /// </summary>
     /// <param name="expected">The optional expected value.</param>
-    /// <exception cref="TokenValidationException">
+    /// <exception cref="PasetoTokenValidationException">
     /// Token has expired.
     /// </exception>
     public override void Validate(IComparable expected = null)
     {
         if (!Payload.TryGetValue(ClaimName, out var value))
-            throw new TokenValidationException($"Claim '{ClaimName}' not found.");
+            throw new PasetoTokenValidationException($"Claim '{ClaimName}' not found");
 
         DateTime exp;
         try
@@ -43,14 +40,14 @@ public sealed class ExpirationTimeValidator : BaseValidator
         }
         catch (Exception)
         {
-            throw new TokenValidationException($"Claim '{ClaimName}' must be a DateTime.");
+            throw new PasetoTokenValidationException($"Claim '{ClaimName}' must be a DateTime");
         }
 
         if (expected is null)
             expected = DateTime.UtcNow;
 
         if (Comparer.GetComparisonResult(exp, expected) < 0) // expected >= exp
-            throw new TokenValidationException("Token has expired.");
+            throw new PasetoTokenValidationException("Token has expired");
     }
 
     /// <summary>

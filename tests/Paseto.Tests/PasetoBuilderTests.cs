@@ -69,8 +69,8 @@ public class PasetoBuilderTests
     [Theory(DisplayName = "Should succeed on GenerateAsymmetricKeyPair when Seed is provided")]
     [InlineData(ProtocolVersion.V1, 0, 0)]
     [InlineData(ProtocolVersion.V2, 64, 32)]
-    [InlineData(ProtocolVersion.V3, 64, 32)]
-    [InlineData(ProtocolVersion.V4, 48, 49)]
+    [InlineData(ProtocolVersion.V3, 48, 49)]
+    [InlineData(ProtocolVersion.V4, 64, 32)]
     public void ShouldSucceedOnGenerateAsymmetricKeyPairWhenSeedIsProvided(ProtocolVersion version, int secretKeyLength, int publicKeyLength)
     {
         var seed = new byte[32];

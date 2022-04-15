@@ -31,13 +31,13 @@ public sealed class EqualValidator : BaseValidator
     /// Validates the payload against the provided optional expected value. Throws an exception if not valid.
     /// </summary>
     /// <param name="expected">The optional expected value.</param>
-    /// <exception cref="TokenValidationException">
+    /// <exception cref="PasetoTokenValidationException">
     /// Token is not yet valid.
     /// </exception>
     public override void Validate(IComparable expected)
     {
         if (!Payload.TryGetValue(ClaimName, out var value))
-            throw new TokenValidationException($"Claim '{ClaimName}' not found.");
+            throw new PasetoTokenValidationException($"Claim '{ClaimName}' not found.");
 
         if (value is IComparable comparable)
         {
@@ -50,7 +50,7 @@ public sealed class EqualValidator : BaseValidator
                 return;
         }
 
-        throw new TokenValidationException($"Token Claim '{ClaimName}' is not valid.")
+        throw new PasetoTokenValidationException($"Token Claim '{ClaimName}' is not valid.")
         {
             Expected = expected,
             Received = value

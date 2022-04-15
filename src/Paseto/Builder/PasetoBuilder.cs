@@ -258,7 +258,7 @@ public sealed class PasetoBuilder
     {
         footer.SetSerializer(_serializer);
 
-        _footer = footer.SerializeToJson();
+        _footer = footer.ToJson();
         return this;
     }
 
@@ -315,7 +315,7 @@ public sealed class PasetoBuilder
         if (_payload is null || _payload.Count == 0)
             throw new PasetoBuilderException("Can't build a token. Check if you have call the 'AddClaim' method.");
 
-        var payload = _payload.SerializeToJson();
+        var payload = _payload.ToJson();
 
         return _purpose switch
         {
@@ -329,12 +329,11 @@ public sealed class PasetoBuilder
     /// Decodes a token using the supplied dependencies.
     /// </summary>
     /// <param name="token">The Paseto token.</param>
-    /// <returns>a <see cref="PasetoDecodeResult"/> that represents a PASETO token decode operation.</returns>
+    /// <param name="validationParameters">The token validation parameters.</param>
+    /// <returns>a <see cref="PasetoTokenValidationResult"/> that represents a PASETO token validation operation.</returns>
     /// <exception cref="PasetoBuilderException">Can't decode token. Check if you have call the 'Use' method.</exception>
     /// <exception cref="PasetoBuilderException">Can't decode token. Check if you have call the 'WithKey' method.</exception>
-    /// <exception cref="PasetoVerificationException">Invalid signature!</exception>
-    /// <exception cref="PasetoNotSupportedException"></exception>
-    public PasetoDecodeResult Decode(string token)
+    public PasetoTokenValidationResult Decode(string token, PasetoTokenValidationParameters validationParameters = null)
     {
         if (string.IsNullOrWhiteSpace(token))
             throw new ArgumentNullException(nameof(token));
@@ -345,28 +344,30 @@ public sealed class PasetoBuilder
         if (_pasetoKey is null || _pasetoKey.Key.IsEmpty)
             throw new PasetoBuilderException("Can't decode token. Check if you have call the 'WithKey' method.");
 
-        // TODO: Validate payload
+        validationParameters ??= new PasetoTokenValidationParameters();
 
         try
         {
             switch (_purpose)
             {
                 case Purpose.Local:
-                    var payload = new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey).Decrypt(_protocol, token);
-                    return PasetoDecodeResult.Success(new PasetoToken(token, payload));
+                    var localHandler = new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey);
+                    var payload = localHandler.Decrypt(_protocol, token);
+                    return localHandler.ValidateTokenPayload(new PasetoToken(token, payload), validationParameters);
                 case Purpose.Public:
-                    var result = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey).Verify(_protocol, token);
+                    var publicHandler = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey);
+                    var result = publicHandler.Verify(_protocol, token);
                     if (!result.IsValid)
-                        return PasetoDecodeResult.Failed(new PasetoVerificationException("The token signature is not valid"));
+                        return PasetoTokenValidationResult.Failed(new PasetoTokenValidationException("The token signature is not valid"));
 
-                    return PasetoDecodeResult.Success(new PasetoToken(token, result.Payload));
+                    return publicHandler.ValidateTokenPayload(new PasetoToken(token, result.Payload), validationParameters);
                 default:
-                    return PasetoDecodeResult.Failed(new PasetoNotSupportedException($"The {_purpose} purpose is not supported"));
+                    return PasetoTokenValidationResult.Failed(new PasetoNotSupportedException($"The {_purpose} purpose is not supported"));
             }
         }
         catch (Exception ex)
         {
-            return PasetoDecodeResult.Failed(ex);
+            return PasetoTokenValidationResult.Failed(ex);
         }
     }
 
@@ -389,13 +390,13 @@ public sealed class PasetoBuilder
     /// Decodes the payload using the supplied dependencies.
     /// </summary>
     /// <param name="token">The Paseto token.</param>
-    /// <param name="verify">If decoding should throw an exception if is invalid.</param>
+    /// <param name="validationParameters">The token validation parameters.</param>
     /// <returns>The JSON payload</returns>
     /// <exception cref="PasetoBuilderException">Can't decode token. Check if you have call the 'Use' method.</exception>
     /// <exception cref="PasetoBuilderException">Can't decode token. Check if you have call the 'WithKey' method.</exception>
-    /// <exception cref="PasetoVerificationException">Invalid signature!</exception>
+    /// <exception cref="PasetoTokenValidationException">The token signature is not valid or a claim is not valid</exception>
     /// <exception cref="PasetoNotSupportedException"></exception>
-    public string DecodePayload(string token, bool verify = false)
+    public string DecodePayload(string token, PasetoTokenValidationParameters validationParameters = null)
     {
         if (string.IsNullOrWhiteSpace(token))
             throw new ArgumentNullException(nameof(token));
@@ -406,16 +407,27 @@ public sealed class PasetoBuilder
         if (_pasetoKey is null || _pasetoKey.Key.IsEmpty)
             throw new PasetoBuilderException("Can't decode token. Check if you have call the 'WithKey' method.");
 
-        // TODO: Validate payload
+        validationParameters ??= new PasetoTokenValidationParameters();
 
         switch (_purpose)
         {
             case Purpose.Local:
-                return new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey).Decrypt(_protocol, token);
+                var localHandler = new PasetoLocalPurposeHandler((PasetoSymmetricKey)_pasetoKey);
+                var payload = localHandler.Decrypt(_protocol, token);
+                var localResult = localHandler.ValidateTokenPayload(new PasetoToken(token, payload), validationParameters);
+                if (!localResult.IsValid)
+                    throw localResult.Exception;
+
+                return payload;
             case Purpose.Public:
-                var result = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey).Verify(_protocol, token);
-                if (verify && !result.IsValid)
-                    throw new PasetoVerificationException("The token signature is not valid");
+                var publicHandler = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey);
+                var result = publicHandler.Verify(_protocol, token);
+                if (!result.IsValid)
+                    throw new PasetoTokenValidationException("The token signature is not valid");
+
+                var publicResult = publicHandler.ValidateTokenPayload(new PasetoToken(token, result.Payload), validationParameters);
+                if (!publicResult.IsValid)
+                    throw publicResult.Exception;
 
                 return result.Payload;
             default:

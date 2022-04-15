@@ -3,6 +3,7 @@
 using System;
 using Paseto.Cryptography.Key;
 using Paseto.Protocol;
+using Paseto.Validators;
 
 /// <summary>
 /// Abstract Paseto Purpose Handler.
@@ -30,5 +31,60 @@ public abstract class PasetoPurposeHandler
     {
         if (!PasetoKey.IsValidFor(protocol, Purpose))
             throw new PasetoInvalidException($"Key is not valid for {Purpose} purpose and {protocol.Version} version");
+    }
+
+    public virtual PasetoTokenValidationResult ValidateTokenPayload(PasetoToken token, PasetoTokenValidationParameters validationParameters)
+    {
+        if (token is null)
+            return PasetoTokenValidationResult.Failed(new ArgumentNullException(nameof(token)));
+
+        if (validationParameters is null)
+            return PasetoTokenValidationResult.Failed(new ArgumentNullException(nameof(validationParameters)));
+
+        try
+        {
+            ValidateLifetime(token, validationParameters);
+            ValidateAudience(token, validationParameters);
+            ValidateIssuer(token, validationParameters);
+        }
+        catch (Exception ex)
+        {
+            return PasetoTokenValidationResult.Failed(ex);
+        }
+
+        return PasetoTokenValidationResult.Success(token);
+    }
+
+    protected virtual void ValidateLifetime(PasetoToken token, PasetoTokenValidationParameters validationParameters)
+    {
+        if (!validationParameters.ValidateLifetime)
+            return;
+
+        if (token.Payload.HasValidTo())
+            new ExpirationTimeValidator(token.Payload).Validate();
+
+        if (token.Payload.HasValidFrom())
+            new NotBeforeValidator(token.Payload).Validate();
+
+        if (token.Payload.HasIssuedAt())
+            new IssuedAtValidator(token.Payload).Validate();
+    }
+
+    protected virtual void ValidateAudience(PasetoToken token, PasetoTokenValidationParameters validationParameters)
+    {
+        if (!validationParameters.ValidateAudience && !string.IsNullOrWhiteSpace(validationParameters.ValidAudience))
+            return;
+
+        if (token.Payload.HasAudience())
+            new EqualValidator(token.Payload, PasetoRegisteredClaimNames.Audience).Validate(validationParameters.ValidAudience);
+    }
+
+    protected virtual void ValidateIssuer(PasetoToken token, PasetoTokenValidationParameters validationParameters)
+    {
+        if (!validationParameters.ValidateIssuer && !string.IsNullOrWhiteSpace(validationParameters.ValidIssuer))
+            return;
+
+        if (token.Payload.HasIssuer())
+            new EqualValidator(token.Payload, PasetoRegisteredClaimNames.Audience).Validate(validationParameters.ValidIssuer);
     }
 }

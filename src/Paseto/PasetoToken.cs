@@ -21,7 +21,7 @@ public class PasetoToken
 
         Version = parts[0];
         Purpose = parts[1].FromDescription<Purpose>();
-        Payload = new PasetoPayload().DeserializeFromJson(parts[2]);
+        Payload = new PasetoPayload().FromJson(parts[2]);
 
         if (parts.Length == 4)
             Footer = GetString(FromBase64Url(parts[3]));
@@ -41,7 +41,7 @@ public class PasetoToken
 
         Version = parts[0];
         Purpose = parts[1].FromDescription<Purpose>();
-        Payload = new PasetoPayload().DeserializeFromJson(payload);
+        Payload = new PasetoPayload().FromJson(payload);
 
         if (parts.Length == 4)
             Footer = GetString(FromBase64Url(parts[3]));
