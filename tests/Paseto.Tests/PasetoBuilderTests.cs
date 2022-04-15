@@ -111,7 +111,7 @@ public class PasetoBuilderTests
         act.Should().Throw<PasetoBuilderException>().WithMessage($"Can't generate symmetric key. {incorrectPurpose} purpose is not compatible.");
     }
 
-    [Theory(DisplayName = "Should throw exception on GenerateAsymmetricKeyPair when incorrect seed is provided")]
+    [Theory(DisplayName = "Should throw exception on GenerateAsymmetricKeyPair when invalid seed is provided")]
     [InlineData(ProtocolVersion.V2, null)]
     [InlineData(ProtocolVersion.V2, new byte[0])]
     [InlineData(ProtocolVersion.V2, new byte[] { 0x00, 0x00 })]
@@ -124,7 +124,7 @@ public class PasetoBuilderTests
     [InlineData(ProtocolVersion.V4, new byte[0])]
     [InlineData(ProtocolVersion.V4, new byte[] { 0x00, 0x00 })]
     [InlineData(ProtocolVersion.V4, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 })]
-    public void ShouldThrowExceptionOnGenerateAsymmetricKeyPairWhenIncorrectSeedIsProvided(ProtocolVersion version, byte[] seed)
+    public void ShouldThrowExceptionOnGenerateAsymmetricKeyPairWhenInvalidSeedIsProvided(ProtocolVersion version, byte[] seed)
     {
         Action act = () => new PasetoBuilder().Use(version, Purpose.Public)
                                               .GenerateAsymmetricKeyPair(seed);
@@ -209,9 +209,117 @@ public class PasetoBuilderTests
         token.Split('.').Should().HaveCount(3);
     }
 
-    // TODO: null, empty, invalid keys for public and local encode
+    // TODO: Public Encode
+
+    [Fact(DisplayName = "Should throw exception on Encode when Use is not called")]
+    public void ShouldThrowExceptionOnEncodeWhenUseIsNotCalled()
+    {
+        Action act = () => new PasetoBuilder().Encode();
+
+        act.Should().Throw<PasetoBuilderException>().WithMessage("Can't build a token. Check if you have call the 'Use' method.");
+    }
+
+    [Theory(DisplayName = "Should throw exception on Encode when Use is passing an invalid or unsupported protocol version")]
+    [InlineData("v0", Purpose.Local)]
+    [InlineData("v0", Purpose.Public)]
+    [InlineData("vv", Purpose.Local)]
+    [InlineData("vv", Purpose.Public)]
+    [InlineData("x1", Purpose.Local)]
+    [InlineData("x1", Purpose.Public)]
+    [InlineData("p1", Purpose.Local)]
+    [InlineData("p1", Purpose.Public)]
+    public void ShouldThrowExceptionOnEncodeWhenUseIsPassingInvalidProtocol(string version, Purpose purpose)
+    {
+        Action act = () => new PasetoBuilder().Use(version, purpose)
+                                              .Encode();
+
+        act.Should().Throw<PasetoNotSupportedException>().WithMessage("The protocol version * is currently not supported.");
+    }
+
+    [Theory(DisplayName = "Should throw exception on Encode when WithKey is not called")]
+    [InlineData(ProtocolVersion.V1, Purpose.Local)]
+    [InlineData(ProtocolVersion.V1, Purpose.Public)]
+    [InlineData(ProtocolVersion.V2, Purpose.Local)]
+    [InlineData(ProtocolVersion.V2, Purpose.Public)]
+    [InlineData(ProtocolVersion.V3, Purpose.Local)]
+    [InlineData(ProtocolVersion.V3, Purpose.Public)]
+    [InlineData(ProtocolVersion.V4, Purpose.Local)]
+    [InlineData(ProtocolVersion.V4, Purpose.Public)]
+    public void ShouldThrowExceptionOnEncodeWhenWithKeyIsNotCalled(ProtocolVersion version, Purpose purpose)
+    {
+        Action act = () => new PasetoBuilder().Use(version, purpose)
+                                              .Encode();
+
+        act.Should().Throw<PasetoBuilderException>().WithMessage("Can't build a token. Check if you have call the 'WithKey' method.");
+    }
+
+    [Theory(DisplayName = "Should throw exception on Encode when Payload is not added")]
+    [InlineData(ProtocolVersion.V1, Purpose.Local)]
+    [InlineData(ProtocolVersion.V1, Purpose.Public)]
+    [InlineData(ProtocolVersion.V2, Purpose.Local)]
+    [InlineData(ProtocolVersion.V2, Purpose.Public)]
+    [InlineData(ProtocolVersion.V3, Purpose.Local)]
+    [InlineData(ProtocolVersion.V3, Purpose.Public)]
+    [InlineData(ProtocolVersion.V4, Purpose.Local)]
+    [InlineData(ProtocolVersion.V4, Purpose.Public)]
+    public void ShouldThrowExceptionOnEncodeWhenPayloadIsNotAdded(ProtocolVersion version, Purpose purpose)
+    {
+        Action act = () => new PasetoBuilder().Use(version, purpose)
+                                              .WithKey(Array.Empty<byte>(), purpose == Purpose.Local ? Encryption.SymmetricKey : Encryption.AsymmetricSecretKey)
+                                              .Encode();
+
+        act.Should().Throw<PasetoBuilderException>().WithMessage("Can't build a token. Check if you have call the 'AddClaim' method.");
+    }
+
+    [Theory(DisplayName = "Should throw exception on Local Encode when invalid key is provided")]
+    [InlineData(ProtocolVersion.V1, null)]
+    [InlineData(ProtocolVersion.V1, new byte[0])]
+    [InlineData(ProtocolVersion.V1, new byte[] { 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V2, null)]
+    [InlineData(ProtocolVersion.V2, new byte[0])]
+    [InlineData(ProtocolVersion.V2, new byte[] { 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V3, null)]
+    [InlineData(ProtocolVersion.V3, new byte[0])]
+    [InlineData(ProtocolVersion.V3, new byte[] { 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V4, null)]
+    [InlineData(ProtocolVersion.V4, new byte[0])]
+    [InlineData(ProtocolVersion.V4, new byte[] { 0x00, 0x00 })]
+    public void ShouldThrowExceptionOnLocalEncodeWhenInvalidKeyIsProvided(ProtocolVersion version, byte[] key)
+    {
+        Action act = () => new PasetoBuilder().Use(version, Purpose.Local)
+                                              .WithKey(key, Encryption.SymmetricKey)
+                                              .AddClaim("data", "this is a secret message")
+                                              .Expiration(DateTime.UtcNow.AddHours(1))
+                                              .Encode();
+
+        act.Should().Throw<ArgumentException>().WithMessage("The key length in bytes must be*");
+    }
+
+    [Theory(DisplayName = "Should throw exception on Public Encode when invalid key is provided")]
+    [InlineData(ProtocolVersion.V1, null)]
+    [InlineData(ProtocolVersion.V1, new byte[0])]
+    [InlineData(ProtocolVersion.V1, new byte[] { 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V2, null)]
+    [InlineData(ProtocolVersion.V2, new byte[0])]
+    [InlineData(ProtocolVersion.V2, new byte[] { 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V3, null)]
+    [InlineData(ProtocolVersion.V3, new byte[0])]
+    [InlineData(ProtocolVersion.V3, new byte[] { 0x00, 0x00 })]
+    [InlineData(ProtocolVersion.V4, null)]
+    [InlineData(ProtocolVersion.V4, new byte[0])]
+    [InlineData(ProtocolVersion.V4, new byte[] { 0x00, 0x00 })]
+    public void ShouldThrowExceptionOnPublicEncodeWhenInvalidKeyIsProvided(ProtocolVersion version, byte[] key)
+    {
+        Action act = () => new PasetoBuilder().Use(version, Purpose.Public)
+                                              .WithKey(key, Encryption.AsymmetricSecretKey)
+                                              .AddClaim("data", "this is a secret message")
+                                              .Expiration(DateTime.UtcNow.AddHours(1))
+                                              .Encode();
+
+        act.Should().Throw<ArgumentException>().WithMessage("Secret key is missing*");
+    }
+
     // TODO: Public encode success tests (need specific keys for each version, take from json tests)
-    // TODO: Null payload tests for encode for local and public
     // TODO: Decode tests (local and public)
     // TODO: Decode fails tests, include invalid header v1.remote.
     // TODO: Decode with payload validation (success and fails)

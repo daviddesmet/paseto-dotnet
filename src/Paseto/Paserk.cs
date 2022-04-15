@@ -1,13 +1,7 @@
-﻿using System.Globalization;
-
-namespace Paseto;
+﻿namespace Paseto;
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 using Paseto.Cryptography.Key;
 using Paseto.Extensions;
@@ -118,7 +112,7 @@ public static class Paserk
             throw new PaserkInvalidException("Serialized key has an unsupported version");
 
         var type = parts[1].FromDescription<PaserkType>();
-        var purpose = GetCompatibility(type);
+        //var purpose = GetCompatibility(type);
 
         var encodedKey = parts.Length > 3 ? parts[3] : parts[2];
         var key = FromBase64Url(encodedKey);

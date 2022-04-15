@@ -307,7 +307,7 @@ public sealed class PasetoBuilder
         if (_protocol is null)
             throw new PasetoBuilderException("Can't build a token. Check if you have call the 'Use' method.");
 
-        if (_pasetoKey is null || _pasetoKey.Key.IsEmpty)
+        if (_pasetoKey is null)
             throw new PasetoBuilderException("Can't build a token. Check if you have call the 'WithKey' method.");
 
         if (_payload is null || _payload.Count == 0)
