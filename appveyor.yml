@@ -1,18 +1,53 @@
-version: 1.0.0.{build}
-pull_requests:
-  do_not_increment_build_number: true
-image: Visual Studio 2019
-before_build:
-  - cmd: dotnet restore
-build:
-  verbosity: minimal
-only_commits:
-  files:
-    - src/
-deploy:
-  - provider: GitHub
-    auth_token:
-      secure: djcUXsjzGm1mZ4rPTUfn1Zf13ZPNK3ole3tE9cN79ts9SbFIYKU0g2kHM52i3mOh
-    on:
-      branch: master
-      appveyor_repo_tag: true
+# AppVeyor documentation https://www.appveyor.com/docs
+
+version: "{build}"
+
+image:
+  - macOS
+  - Ubuntu
+  - Visual Studio 2022
+
+environment:
+  # Disable the .NET logo in the console output.
+  DOTNET_NOLOGO: true
+  # Disable the .NET first time experience to skip caching NuGet packages and speed up the build.
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  # Disable sending .NET CLI telemetry to Microsoft.
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  # Set the build number in MinVer.
+  MINVERBUILDMETADATA: build.%APPVEYOR_BUILD_NUMBER%
+
+build_script:
+  # https://docs.microsoft.com/en-us/dotnet/core/tools/dotnet-install-script
+  - pwsh: |
+      if ($isWindows) {
+        Invoke-WebRequest "https://dot.net/v1/dotnet-install.ps1" -OutFile "./dotnet-install.ps1"
+        ./dotnet-install.ps1 -JSonFile global.json -InstallDir 'C:\Program Files\dotnet'
+      }
+      else {
+        Invoke-WebRequest "https://dot.net/v1/dotnet-install.sh" -OutFile "./dotnet-install.sh"
+        sudo chmod u+x dotnet-install.sh
+        if ($isMacOS) {
+          sudo ./dotnet-install.sh --jsonfile global.json --install-dir '/usr/local/share/dotnet'
+        } else {
+          sudo ./dotnet-install.sh --jsonfile global.json --install-dir '/usr/share/dotnet'
+        }
+      }
+  - pwsh: dotnet tool restore
+  - pwsh: dotnet cake --target=Build
+  - pwsh: dotnet cake --target=Test
+  - pwsh: dotnet cake --target=Pack
+
+test: off
+
+artifacts:
+  - name: NuGet Packages
+    path: ./Artefacts/**/*.nupkg
+  - name: NuGet Symbol Packages
+    path: ./Artefacts/**/*.snupkg
+  - name: xUnit XML Test Results
+    path: ./Artefacts/**/*.xml
+  - name: xUnit HTML Test Results
+    path: ./Artefacts/**/*.html
+  - name: Code Coverage
+    path: ./Artefacts/**/*.cobertura.xml
