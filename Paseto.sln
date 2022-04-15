@@ -16,6 +16,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.editorconfig = .editorconfig
 		.gitignore = .gitignore
 		README.md = README.md
+		build.cake = build.cake
+		global.json = global.json
+		CodeCoverage.runsettings = CodeCoverage.runsettings
+		dotnet-tools.json = dotnet-tools.json
+		appveyor.yml = appveyor.yml
 	EndProjectSection
 EndProject
 Global

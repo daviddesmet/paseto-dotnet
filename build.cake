@@ -41,11 +41,14 @@ Task("Test")
     .Description("Runs unit tests and outputs test results to the artifacts directory.")
     .DoesForEach(GetFiles("./tests/**/*.Tests.csproj"), project =>
     {
+        Information($"Preparing {project.GetFilename()} for test");
+
         DotNetCoreTest(
             project.ToString(),
             new DotNetCoreTestSettings()
             {
                 Configuration = configuration,
+                Framework = "net6.0",
                 Logger = $"trx;LogFileName={project.GetFilenameWithoutExtension()}.trx",
                 NoBuild = true,
                 NoRestore = true,
