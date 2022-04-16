@@ -74,7 +74,7 @@ var pasetoKey = new PasetoBuilder().Use(version, Purpose.Public)
 
 ```csharp
 var token = new PasetoBuilder().Use(version, purpose)
-                               .WithKey(key, encryption)
+                               .WithKey(key)
                                .AddClaim("data", "this is a secret message")
                                .Issuer("https://github.com/daviddesmet/paseto-dotnet")
                                .Subject(Guid.NewGuid().ToString())
@@ -91,7 +91,7 @@ var token = new PasetoBuilder().Use(version, purpose)
 
 ```csharp
 var result = new PasetoBuilder().Use(version, purpose)
-                                .WithKey(key, encryption)
+                                .WithKey(key)
                                 .Decode(token);
 ```
 
@@ -108,7 +108,7 @@ var valParams = new PasetoTokenValidationParameters
 };
 
 var result = new PasetoBuilder().Use(version, purpose)
-                                .WithKey(key, encryption)
+                                .WithKey(key)
                                 .Decode(token, valParams);
 ```
 
