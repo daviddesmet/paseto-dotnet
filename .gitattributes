@@ -1,6 +1,6 @@
 # GitHub Linguist Override
 *.json linguist-documentation
 # Fix source code detection
-sc_reduce.cs linguist-language=C#
-base2.cs linguist-language=C#
-Ed25519TestVectors.cs linguist-language=C#
+sc_reduce.cs -linguist-language=C#
+base2.cs -linguist-language=C#
+Ed25519TestVectors.cs -linguist-language=C#
