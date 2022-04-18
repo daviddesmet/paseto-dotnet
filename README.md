@@ -34,7 +34,7 @@ PASERK extension
 
 [![NuGet](https://buildstats.info/nuget/Paseto.Core)](https://www.nuget.org/packages/Paseto.Core/)
 
-Install the Paseto.Core NuGet package from the .NET Core CLI using:
+Install the Paseto.Core NuGet package from the .NET CLI using:
 ```
 dotnet add package Paseto.Core
 ```
