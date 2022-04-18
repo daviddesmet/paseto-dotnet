@@ -1,3 +1,4 @@
-src/Paseto.Cryptography/Internal/Ed25519Ref10/sc_reduce.cs linguist-language=CSharp
-src/Paseto.Cryptography/Internal/Ed25519Ref10/base2.cs linguist-language=CSharp
-src/Paseto.Tests/Crypto/Ed25519TestVectors.cs linguist-language=CSharp
+# GitHub Linguist Override
+src/Paseto.Cryptography/Internal/Ed25519Ref10/sc_reduce.cs linguist-language=C#
+src/Paseto.Cryptography/Internal/Ed25519Ref10/base2.cs linguist-language=C#
+src/Paseto.Tests/Crypto/Ed25519TestVectors.cs linguist-language=C#
