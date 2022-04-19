@@ -1,7 +1,7 @@
 # GitHub Linguist Override
 *.json linguist-documentation
 # Fix source code detection
-*.cs -linguist-language=C#
+*.cs linguist-language=C#
 src/Paseto.Cryptography/Internal/Ed25519Ref10/sc_reduce.cs -linguist-language=C#
 src/Paseto.Cryptography/Internal/Ed25519Ref10/base2.cs -linguist-language=C#
 src/Paseto.Tests/Crypto/Ed25519TestVectors.cs -linguist-language=C#
