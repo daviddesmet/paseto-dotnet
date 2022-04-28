@@ -85,6 +85,6 @@ public abstract class PasetoPurposeHandler
             return;
 
         if (token.Payload.HasIssuer())
-            new EqualValidator(token.Payload, PasetoRegisteredClaimNames.Audience).Validate(validationParameters.ValidIssuer);
+            new EqualValidator(token.Payload, PasetoRegisteredClaimNames.Issuer).Validate(validationParameters.ValidIssuer);
     }
 }
