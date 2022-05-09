@@ -1,4 +1,5 @@
-﻿using System.ComponentModel;
+﻿using System;
+using System.ComponentModel;
 using System.Linq;
 using FluentAssertions;
 using Paseto.Builder;
@@ -22,7 +23,7 @@ namespace Paseto.Tests
                 ValidIssuer = "valid-issuer",
             };
 
-            var (token, decodeKey) = GenerateToken(version, purpose, "valid-issuer");
+            var (token, decodeKey) = GenerateToken(version, purpose, PasetoRegisteredClaimNames.Issuer, "valid-issuer");
             var decoded = new PasetoBuilder()
                 .Use(version, purpose)
                 .WithKey(decodeKey)
@@ -44,7 +45,7 @@ namespace Paseto.Tests
                 ValidIssuer = "valid-issuer",
             };
 
-            var (token, decodeKey) = GenerateToken(version, purpose, "invalid-issuer");
+            var (token, decodeKey) = GenerateToken(version, purpose, PasetoRegisteredClaimNames.Issuer, "invalid-issuer");
             var decoded = new PasetoBuilder()
                 .Use(version, purpose)
                 .WithKey(decodeKey)
@@ -53,9 +54,64 @@ namespace Paseto.Tests
             decoded.IsValid.Should().BeFalse();
         }
 
-        private static (string token, PasetoKey decodeKey) GenerateToken(ProtocolVersion version, Purpose purpose, string issuer)
+        [Theory(DisplayName = "Should succeed on token with valid subject")]
+        [InlineData(ProtocolVersion.V3, Purpose.Local)]
+        [InlineData(ProtocolVersion.V3, Purpose.Public)]
+        [InlineData(ProtocolVersion.V4, Purpose.Local)]
+        [InlineData(ProtocolVersion.V4, Purpose.Public)]
+        public void TokenWithValidSubjectValidationSucceeds(ProtocolVersion version, Purpose purpose)
+        {
+            var validationParameters = new PasetoTokenValidationParameters()
+            {
+                ValidateSubject = true,
+                ValidSubject = "valid-subject",
+            };
+
+            var (token, decodeKey) = GenerateToken(version, purpose, PasetoRegisteredClaimNames.Subject, "valid-subject");
+            var decoded = new PasetoBuilder()
+                .Use(version, purpose)
+                .WithKey(decodeKey)
+                .Decode(token, validationParameters);
+
+            decoded.IsValid.Should().BeTrue();
+        }
+
+        [Theory(DisplayName = "Should fail on token with invalid subject")]
+        [InlineData(ProtocolVersion.V3, Purpose.Local)]
+        [InlineData(ProtocolVersion.V3, Purpose.Public)]
+        [InlineData(ProtocolVersion.V4, Purpose.Local)]
+        [InlineData(ProtocolVersion.V4, Purpose.Public)]
+        public void TokenWithInValidSubjectValidationFails(ProtocolVersion version, Purpose purpose)
+        {
+            var validationParameters = new PasetoTokenValidationParameters()
+            {
+                ValidateSubject = true,
+                ValidSubject = "valid-subject",
+            };
+
+            var (token, decodeKey) = GenerateToken(version, purpose, PasetoRegisteredClaimNames.Subject, "invalid-subject");
+            var decoded = new PasetoBuilder()
+                .Use(version, purpose)
+                .WithKey(decodeKey)
+                .Decode(token, validationParameters);
+
+            decoded.IsValid.Should().BeFalse();
+        }
+
+        private static (string token, PasetoKey decodeKey) GenerateToken(ProtocolVersion version, Purpose purpose, string claimName, string claimValue)
         {
             var builder = new PasetoBuilder().Use(version, purpose);
+            switch (claimName)
+            {
+                case PasetoRegisteredClaimNames.Issuer:
+                    builder.Issuer(claimValue);
+                    break;
+                case PasetoRegisteredClaimNames.Subject:
+                    builder.Subject(claimValue);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
             switch (purpose)
             {
                 case Purpose.Local:
@@ -63,7 +119,6 @@ namespace Paseto.Tests
                     var key = builder.GenerateSymmetricKey();
                     var token = builder
                         .WithKey(key)
-                        .Issuer(issuer)
                         .Encode();
                     return (token, key);
                 }
@@ -72,7 +127,6 @@ namespace Paseto.Tests
                     var keyPair = builder.GenerateAsymmetricKeyPair(Enumerable.Repeat((byte)0x00, 32).ToArray());
                     var token = builder
                         .WithKey(keyPair.SecretKey)
-                        .Issuer(issuer)
                         .Encode();
                     return (token, keyPair.PublicKey);
                 }
