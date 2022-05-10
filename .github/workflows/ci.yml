@@ -103,7 +103,7 @@ jobs:
       with:
         name: 'windows-latest'
     - name: 'NuGet Push'
-      run: dotnet nuget push .\windows-latest\*.nupkg --source https://nuget.pkg.github.com/daviddesmet/index.json --skip-duplicate --api-key ${{secrets.GITHUB_TOKEN}}
+      run: dotnet nuget push *.nupkg --source https://nuget.pkg.github.com/daviddesmet/index.json --skip-duplicate --api-key ${{secrets.GITHUB_TOKEN}}
 
   push-to-nuget:
     name: 'Push NuGet Packages'
@@ -120,7 +120,7 @@ jobs:
         name: 'windows-latest'
     - name: 'NuGet Push'
       run: |
-        Get-ChildItem .\windows-latest -Filter *.nupkg |
+        Get-ChildItem . -Filter *.nupkg |
         Where-Object { !$_.Name.Contains('preview') } |
         ForEach-Object { dotnet nuget push $_ --source https://api.nuget.org/v3/index.json --skip-duplicate --api-key ${{secrets.NUGET_API_KEY}} }
       shell: pwsh
