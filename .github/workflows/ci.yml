@@ -1,15 +1,5 @@
 name: CI
 
-env:
-  # Disable the .NET logo in the console output.
-  DOTNET_NOLOGO: true
-  # Disable the .NET first time experience to skip caching NuGet packages and speed up the build.
-  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
-  # Disable sending .NET CLI telemetry to Microsoft.
-  DOTNET_CLI_TELEMETRY_OPTOUT: true
-
-  BUILD_ARTIFACT_PATH: './Artifacts'
-
 on:
   # Trigger the workflow on push or pull request,
   # but only for the master branch
@@ -40,12 +30,16 @@ on:
       - published
 
 env:
+  # Disable the .NET logo in the console output.
+  DOTNET_NOLOGO: true
   # Set the DOTNET_SKIP_FIRST_TIME_EXPERIENCE environment variable to stop wasting time caching packages
   DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
   # Disable sending usage data to Microsoft
   DOTNET_CLI_TELEMETRY_OPTOUT: true
   # Set the build number in MinVer
   MINVERBUILDMETADATA: build.${{github.run_number}}
+  # Set artifacts directory
+  BUILD_ARTIFACT_PATH: './Artifacts'
 
 jobs:
   build:
