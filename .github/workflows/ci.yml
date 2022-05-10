@@ -7,6 +7,7 @@ on:
     branches:
       - master
     paths:
+     - '.github/**'
      - 'src/**'
      - build.cake
      - CodeCoverage.runsettings
