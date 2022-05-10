@@ -69,7 +69,10 @@ Task("CoverageReport")
     .Does(() =>
     {
         ReportGenerator(report: $"{artefactsDirectory}/**/coverage.cobertura.xml",
-                        targetDir: new DirectoryPath($"{artefactsDirectory}/TestResults/Coverage/Reports"));
+                        targetDir: new DirectoryPath($"{artefactsDirectory}/TestResults/Coverage/Reports"), new ReportGeneratorSettings()
+                        {
+                            ToolPath = "./tools/ReportGenerator.exe"
+                        });
     });
 
 Task("Pack")

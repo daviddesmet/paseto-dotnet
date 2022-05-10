@@ -5,7 +5,7 @@ on:
   # but only for the master branch
   push:
     branches:
-      - master
+    - master
     paths:
      - '.github/**'
      - 'src/**'
@@ -17,7 +17,7 @@ on:
      - Paseto.sln
   pull_request:
     branches:
-      - master
+    - master
     paths:
      - 'src/**'
      - build.cake
@@ -28,7 +28,7 @@ on:
      - Paseto.sln
   release:
     types:
-      - published
+    - published
 
 env:
   # Disable the .NET logo in the console output.
@@ -59,7 +59,6 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: |
-          5.0.x
           6.0.x
     - name: '.NET Restore'
       run: dotnet tool restore
@@ -67,6 +66,10 @@ jobs:
       run: dotnet cake --target=Build
     - name: 'Run Unit Tests'
       run: dotnet cake --target=Test
+    - name: 'Install ReportGenerator'
+      run: dotnet tool install dotnet-reportgenerator-globaltool --tool-path ./tools
+    - name: 'Run Report Coverage Generator'
+      run: dotnet cake --target=CoverageReport
     - name: 'Pack NuGet'
       run: dotnet cake --target=Pack
     - name: 'Publish Artifacts'
@@ -80,15 +83,13 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: 'Download Artifact'
-        uses: actions/download-artifact@v2
-      - name: 'Run Report Coverage Generator'
-        run: dotnet cake --target=CoverageReport
-      - name: 'Upload Coverage'
-        uses: codecov/codecov-action@v2
-        with:
-          file: coverage.cobertura.xml
-          fail_ci_if_error: false
+    - name: 'Download Artifact'
+      uses: actions/download-artifact@v2
+    - name: 'Upload Coverage'
+      uses: codecov/codecov-action@v2
+      with:
+        file: coverage.cobertura.xml
+        fail_ci_if_error: false
 
   push-to-github-packages:
     name: 'Push GitHub Packages'
@@ -101,12 +102,12 @@ jobs:
       packages: write
     runs-on: windows-latest
     steps:
-      - name: 'Download Artifact'
-        uses: actions/download-artifact@v2
-        with:
-          name: 'windows-latest'
-      - name: 'NuGet Push'
-        run: dotnet nuget push .\windows-latest\*.nupkg --source https://nuget.pkg.github.com/daviddesmet/index.json --skip-duplicate --api-key ${{secrets.GITHUB_TOKEN}}
+    - name: 'Download Artifact'
+      uses: actions/download-artifact@v2
+      with:
+        name: 'windows-latest'
+    - name: 'NuGet Push'
+      run: dotnet nuget push .\windows-latest\*.nupkg --source https://nuget.pkg.github.com/daviddesmet/index.json --skip-duplicate --api-key ${{secrets.GITHUB_TOKEN}}
 
   push-to-nuget:
     name: 'Push NuGet Packages'
@@ -117,13 +118,13 @@ jobs:
       url: https://www.nuget.org/packages/Paseto.Core
     runs-on: windows-latest
     steps:
-      - name: 'Download Artifact'
-        uses: actions/download-artifact@v2
-        with:
-          name: 'windows-latest'
-      - name: 'NuGet Push'
-        run: |
-          Get-ChildItem .\windows-latest -Filter *.nupkg |
-          Where-Object { !$_.Name.Contains('preview') } |
-          ForEach-Object { dotnet nuget push $_ --source https://api.nuget.org/v3/index.json --skip-duplicate --api-key ${{secrets.NUGET_API_KEY}} }
-        shell: pwsh
+    - name: 'Download Artifact'
+      uses: actions/download-artifact@v2
+      with:
+        name: 'windows-latest'
+    - name: 'NuGet Push'
+      run: |
+        Get-ChildItem .\windows-latest -Filter *.nupkg |
+        Where-Object { !$_.Name.Contains('preview') } |
+        ForEach-Object { dotnet nuget push $_ --source https://api.nuget.org/v3/index.json --skip-duplicate --api-key ${{secrets.NUGET_API_KEY}} }
+      shell: pwsh
