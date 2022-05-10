@@ -62,7 +62,7 @@ jobs:
           5.0.x
           6.0.x
     - name: '.NET Restore'
-      run: dotnet restore
+      run: dotnet tool restore
     - name: 'Build Project'
       run: dotnet cake --target=Build
     - name: 'Run Unit Tests'
