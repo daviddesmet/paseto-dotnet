@@ -66,10 +66,6 @@ jobs:
       run: dotnet cake --target=Build
     - name: 'Run Unit Tests'
       run: dotnet cake --target=Test
-    - name: 'Install ReportGenerator'
-      run: dotnet tool install dotnet-reportgenerator-globaltool --tool-path ./tools
-    - name: 'Run Report Coverage Generator'
-      run: dotnet cake --target=CoverageReport
     - name: 'Pack NuGet'
       run: dotnet cake --target=Pack
     - name: 'Publish Artifacts'
