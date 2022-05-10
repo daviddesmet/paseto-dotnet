@@ -307,3 +307,6 @@ ASALocalRun/
 
 # macOS related system files
 .DS_Store
+
+# .NET Tools
+tools/

@@ -1,3 +1,5 @@
+#tool nuget:?package=ReportGenerator&version=5.1.6
+
 var target = Argument("Target", "Default");
 var configuration =
     HasArgument("Configuration") ? Argument<string>("Configuration") :
@@ -47,7 +49,7 @@ Task("Test")
             new DotNetTestSettings()
             {
                 Blame = true,
-                Collectors = new string[] { "Code Coverage", "XPlat Code Coverage" },
+                Collectors = new string[] { "XPlat Code Coverage" },
                 Configuration = configuration,
                 Framework = "net6.0",
                 Loggers = new string[]
@@ -58,7 +60,16 @@ Task("Test")
                 NoBuild = true,
                 NoRestore = true,
                 ResultsDirectory = artefactsDirectory,
+                Settings = "CodeCoverage.runsettings"
             });
+    });
+
+Task("CoverageReport")
+    .IsDependentOn("Test")
+    .Does(() =>
+    {
+        ReportGenerator(report: $"{artefactsDirectory}/**/coverage.cobertura.xml",
+                        targetDir: new DirectoryPath($"{artefactsDirectory}/TestResults/Coverage/Reports"));
     });
 
 Task("Pack")
@@ -85,6 +96,7 @@ Task("Default")
     .Description("Cleans, restores NuGet packages, builds the solution, runs unit tests and then create the NuGet packages.")
     .IsDependentOn("Build")
     .IsDependentOn("Test")
+    .IsDependentOn("CoverageReport")
     .IsDependentOn("Pack");
 
 RunTarget(target);

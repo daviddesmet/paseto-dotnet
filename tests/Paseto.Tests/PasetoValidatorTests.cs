@@ -1,150 +1,149 @@
-﻿namespace Paseto.Tests
+﻿namespace Paseto.Tests;
+
+using System;
+
+using FluentAssertions;
+using Xunit;
+
+using Paseto.Builder;
+using Paseto.Extensions;
+
+public class PasetoValidatorTests
 {
-    using System;
+    private const string HelloPaseto = "Hello Paseto!";
+    private const string IssuedBy = "Paragon Initiative Enterprises";
 
-    using FluentAssertions;
-    using Xunit;
-
-    using Paseto.Builder;
-    using Paseto.Extensions;
-
-    public class PasetoValidatorTests
+    [Fact]
+    public void PayloadIssuedAtNextDayValidationFails()
     {
-        private const string HelloPaseto = "Hello Paseto!";
-        private const string IssuedBy = "Paragon Initiative Enterprises";
-
-        [Fact]
-        public void PayloadIssuedAtNextDayValidationFails()
+        var iat = new Validators.IssuedAtValidator(new PasetoPayload
         {
-            var iat = new Validators.IssuedAtValidator(new PasetoPayload
-            {
-                { RegisteredClaims.IssuedAt.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
-            });
+            { RegisteredClaims.IssuedAt.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
+        });
 
-            Action act = () => iat.Validate(DateTime.UtcNow);
-            act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token is not yet valid");
-        }
+        Action act = () => iat.Validate(DateTime.UtcNow);
+        act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token is not yet valid");
+    }
 
-        [Fact]
-        public void PayloadIssuedAtPreviousDayValidationSucceeds()
+    [Fact]
+    public void PayloadIssuedAtPreviousDayValidationSucceeds()
+    {
+        var iat = new Validators.IssuedAtValidator(new PasetoPayload
         {
-            var iat = new Validators.IssuedAtValidator(new PasetoPayload
-            {
-                { RegisteredClaims.IssuedAt.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
-            });
+            { RegisteredClaims.IssuedAt.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
+        });
 
-            Action act = () => iat.Validate(DateTime.UtcNow);
-            act.Should().NotThrow();
-        }
+        Action act = () => iat.Validate(DateTime.UtcNow);
+        act.Should().NotThrow();
+    }
 
-        [Fact]
-        public void PayloadIssuedAtSameDayValidationSucceeds()
+    [Fact]
+    public void PayloadIssuedAtSameDayValidationSucceeds()
+    {
+        var now = DateTime.UtcNow;
+
+        var iat = new Validators.IssuedAtValidator(new PasetoPayload
         {
-            var now = DateTime.UtcNow;
+            { RegisteredClaims.IssuedAt.GetRegisteredClaimName(), now }
+        });
 
-            var iat = new Validators.IssuedAtValidator(new PasetoPayload
-            {
-                { RegisteredClaims.IssuedAt.GetRegisteredClaimName(), now }
-            });
+        Action act = () => iat.Validate(now);
+        act.Should().NotThrow();
+    }
 
-            Action act = () => iat.Validate(now);
-            act.Should().NotThrow();
-        }
-
-        [Fact]
-        public void PayloadNotBeforeNextDayValidationFails()
+    [Fact]
+    public void PayloadNotBeforeNextDayValidationFails()
+    {
+        var nbf = new Validators.NotBeforeValidator(new PasetoPayload
         {
-            var nbf = new Validators.NotBeforeValidator(new PasetoPayload
-            {
-                { RegisteredClaims.NotBefore.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
-            });
+            { RegisteredClaims.NotBefore.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
+        });
 
-            Action act = () => nbf.Validate(DateTime.UtcNow);
-            act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token is not yet valid");
-        }
+        Action act = () => nbf.Validate(DateTime.UtcNow);
+        act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token is not yet valid");
+    }
 
-        [Fact]
-        public void PayloadNotBeforeDayValidationSucceeds()
+    [Fact]
+    public void PayloadNotBeforeDayValidationSucceeds()
+    {
+        var nbf = new Validators.NotBeforeValidator(new PasetoPayload
         {
-            var nbf = new Validators.NotBeforeValidator(new PasetoPayload
-            {
-                { RegisteredClaims.NotBefore.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
-            });
+            { RegisteredClaims.NotBefore.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
+        });
 
-            Action act = () => nbf.Validate(DateTime.UtcNow);
-            act.Should().NotThrow();
-        }
+        Action act = () => nbf.Validate(DateTime.UtcNow);
+        act.Should().NotThrow();
+    }
 
-        [Fact]
-        public void PayloadExpirationTimeYesterdayValidationFails()
+    [Fact]
+    public void PayloadExpirationTimeYesterdayValidationFails()
+    {
+        var exp = new Validators.ExpirationTimeValidator(new PasetoPayload
         {
-            var exp = new Validators.ExpirationTimeValidator(new PasetoPayload
-            {
-                { RegisteredClaims.ExpirationTime.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
-            });
+            { RegisteredClaims.ExpirationTime.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
+        });
 
-            Action act = () => exp.Validate(DateTime.UtcNow);
-            act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token has expired");
-        }
+        Action act = () => exp.Validate(DateTime.UtcNow);
+        act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token has expired");
+    }
 
-        [Fact]
-        public void PayloadExpirationNextDayTimeValidationSucceeds()
+    [Fact]
+    public void PayloadExpirationNextDayTimeValidationSucceeds()
+    {
+        var exp = new Validators.ExpirationTimeValidator(new PasetoPayload
         {
-            var exp = new Validators.ExpirationTimeValidator(new PasetoPayload
-            {
-                { RegisteredClaims.ExpirationTime.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
-            });
+            { RegisteredClaims.ExpirationTime.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
+        });
 
-            Action act = () => exp.Validate(DateTime.UtcNow);
-            act.Should().NotThrow();
-        }
+        Action act = () => exp.Validate(DateTime.UtcNow);
+        act.Should().NotThrow();
+    }
 
-        [Fact]
-        public void PayloadEqualValidationNonEqualFails()
+    [Fact]
+    public void PayloadEqualValidationNonEqualFails()
+    {
+        var val = new Validators.EqualValidator(new PasetoPayload
         {
-            var val = new Validators.EqualValidator(new PasetoPayload
-            {
-                { RegisteredClaims.Issuer.GetRegisteredClaimName(), IssuedBy }
-            }, RegisteredClaims.Issuer.GetRegisteredClaimName());
+            { RegisteredClaims.Issuer.GetRegisteredClaimName(), IssuedBy }
+        }, RegisteredClaims.Issuer.GetRegisteredClaimName());
 
-            Action act = () => val.Validate(IssuedBy + ".");
-            act.Should().Throw<PasetoTokenValidationException>();
-        }
+        Action act = () => val.Validate(IssuedBy + ".");
+        act.Should().Throw<PasetoTokenValidationException>();
+    }
 
-        [Fact]
-        public void PayloadEqualValidationTest()
+    [Fact]
+    public void PayloadEqualValidationTest()
+    {
+        var val = new Validators.EqualValidator(new PasetoPayload
         {
-            var val = new Validators.EqualValidator(new PasetoPayload
-            {
-                { RegisteredClaims.Issuer.GetRegisteredClaimName(), IssuedBy }
-            }, RegisteredClaims.Issuer.GetRegisteredClaimName());
+            { RegisteredClaims.Issuer.GetRegisteredClaimName(), IssuedBy }
+        }, RegisteredClaims.Issuer.GetRegisteredClaimName());
 
-            Action act = () => val.Validate(IssuedBy);
-            act.Should().NotThrow();
-        }
+        Action act = () => val.Validate(IssuedBy);
+        act.Should().NotThrow();
+    }
 
-        [Fact]
-        public void PayloadCustomValidationNonEqualFails()
+    [Fact]
+    public void PayloadCustomValidationNonEqualFails()
+    {
+        var val = new Validators.EqualValidator(new PasetoPayload
         {
-            var val = new Validators.EqualValidator(new PasetoPayload
-            {
-                { "example", HelloPaseto }
-            }, "example");
+            { "example", HelloPaseto }
+        }, "example");
 
-            Action act = () => val.Validate(HelloPaseto + "!");
-            act.Should().Throw<PasetoTokenValidationException>();
-        }
+        Action act = () => val.Validate(HelloPaseto + "!");
+        act.Should().Throw<PasetoTokenValidationException>();
+    }
 
-        [Fact]
-        public void PayloadCustomValidationTest()
+    [Fact]
+    public void PayloadCustomValidationTest()
+    {
+        var val = new Validators.EqualValidator(new PasetoPayload
         {
-            var val = new Validators.EqualValidator(new PasetoPayload
-            {
-                { "example", HelloPaseto }
-            }, "example");
+            { "example", HelloPaseto }
+        }, "example");
 
-            Action act = () => val.Validate(HelloPaseto);
-            act.Should().NotThrow();
-        }
+        Action act = () => val.Validate(HelloPaseto);
+        act.Should().NotThrow();
     }
 }

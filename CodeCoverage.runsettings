@@ -4,7 +4,7 @@
     <DataCollectors>
       <DataCollector friendlyName="XPlat Code Coverage">
         <Configuration>
-          <Format>opencover,cobertura</Format>
+          <Format>cobertura</Format>
           <Include>.*(common prefix of all csproj files in the solution).*</Include><!-- [Assembly-Filter]Type-Filter -->
           <ExcludeByAttribute>ExcludeFromCodeCoverageAttribute,Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
         </Configuration>
