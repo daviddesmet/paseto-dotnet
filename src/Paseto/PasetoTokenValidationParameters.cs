@@ -23,6 +23,11 @@ public class PasetoTokenValidationParameters
     public bool ValidateIssuer { get; set; }
 
     /// <summary>
+    /// Gets or sets a value for comparing the subject of the payload.
+    /// </summary>
+    public bool ValidateSubject { get; set; }
+
+    /// <summary>
     /// Gets or sets the valid audience for comparing against the payload-provided aud.
     /// </summary>
     public string ValidAudience { get; set; }
@@ -31,4 +36,9 @@ public class PasetoTokenValidationParameters
     /// Gets or sets the valid issuer for comparing against the payload-provided iss.
     /// </summary>
     public string ValidIssuer { get; set; }
+
+    /// <summary>
+    /// Gets or sets the valid subject for comparing against the payload-provided sub.
+    /// </summary>
+    public string ValidSubject { get; set; }
 }

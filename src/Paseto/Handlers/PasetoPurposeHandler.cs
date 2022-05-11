@@ -46,6 +46,7 @@ public abstract class PasetoPurposeHandler
             ValidateLifetime(token, validationParameters);
             ValidateAudience(token, validationParameters);
             ValidateIssuer(token, validationParameters);
+            ValidateSubject(token, validationParameters);
         }
         catch (Exception ex)
         {
@@ -86,5 +87,14 @@ public abstract class PasetoPurposeHandler
 
         if (token.Payload.HasIssuer())
             new EqualValidator(token.Payload, PasetoRegisteredClaimNames.Issuer).Validate(validationParameters.ValidIssuer);
+    }
+
+    protected virtual void ValidateSubject(PasetoToken token, PasetoTokenValidationParameters validationParameters)
+    {
+        if (!validationParameters.ValidateSubject && !string.IsNullOrWhiteSpace(validationParameters.ValidSubject))
+            return;
+
+        if (token.Payload.HasSubject())
+            new EqualValidator(token.Payload, PasetoRegisteredClaimNames.Subject).Validate(validationParameters.ValidSubject);
     }
 }
