@@ -66,6 +66,16 @@ jobs:
       run: dotnet cake --target=Build
     - name: 'Run Unit Tests'
       run: dotnet cake --target=Test
+    - name: 'Run Test Report'
+      uses: zyborg/dotnet-tests-report@v1
+      with:
+        project_path: tests/Paseto.Tests
+        report_name: paseto_dotnet_tests
+        report_title: Paseto.NET Tests
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        gist_name: paseto_dotnet_tests.md
+        gist_badge_label: 'Paseto Tests: %Counters_passed%/%Counters_total%'
+        gist_token: ${{ secrets.GIST_TOKEN }}
     - name: 'Pack NuGet'
       run: dotnet cake --target=Pack
     - name: 'Publish Artifacts'
