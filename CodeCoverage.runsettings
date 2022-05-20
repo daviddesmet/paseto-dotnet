@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RunSettings>
+  <!-- Configurations that affect the Test Framework -->
+  <RunConfiguration>
+    <TargetFrameworkVersion>net6.0</TargetFrameworkVersion>
+  </RunConfiguration>
+  <!-- Configurations for data collectors -->
   <DataCollectionRunSettings>
     <DataCollectors>
       <DataCollector friendlyName="XPlat Code Coverage">
         <Configuration>
-          <Format>cobertura</Format>
+          <Format>cobertura,opencover</Format>
           <Include>.*(common prefix of all csproj files in the solution).*</Include><!-- [Assembly-Filter]Type-Filter -->
           <ExcludeByAttribute>ExcludeFromCodeCoverageAttribute,Obsolete,GeneratedCodeAttribute,CompilerGeneratedAttribute</ExcludeByAttribute>
         </Configuration>
