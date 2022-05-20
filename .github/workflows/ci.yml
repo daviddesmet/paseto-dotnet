@@ -66,6 +66,9 @@ jobs:
       run: dotnet cake --target=Build
     - name: 'Run Unit Tests'
       run: dotnet cake --target=Test
+      if: ${{ false }} # always skip since coverage is somehow always empty in GitHub Actions
+    - name: 'Run Unit Tests'
+      run: dotnet test --no-build --no-restore /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:CoverletOutput=${{env.BUILD_ARTIFACT_PATH}}/coverage.opencover.xml
     - name: 'Run Test Report'
       uses: zyborg/dotnet-tests-report@v1
       with:
@@ -76,6 +79,7 @@ jobs:
         gist_name: paseto_dotnet_tests.md
         gist_badge_label: 'Paseto Tests: %Counters_passed%/%Counters_total%'
         gist_token: ${{ secrets.GIST_TOKEN }}
+      if: ${{ false }} # always skip due to 65K limit
     - name: 'Pack NuGet'
       run: dotnet cake --target=Pack
     - name: 'Publish Artifacts'
