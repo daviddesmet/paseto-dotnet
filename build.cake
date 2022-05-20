@@ -48,6 +48,7 @@ Task("Test")
             project.ToString(),
             new DotNetTestSettings()
             {
+                ArgumentCustomization = args=>args.Append($"--diag:{artefactsDirectory}/log.txt"),
                 Blame = true,
                 Collectors = new string[] { "XPlat Code Coverage" },
                 Configuration = configuration,
