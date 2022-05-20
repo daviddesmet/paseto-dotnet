@@ -66,9 +66,9 @@ jobs:
       run: dotnet cake --target=Build
     - name: 'Run Unit Tests'
       run: dotnet cake --target=Test
-      if: ${{ false }} # always skip since coverage is somehow always empty in GitHub Actions
     - name: 'Run Unit Tests'
-      run: dotnet test --no-restore --logger trx -r ${{env.BUILD_ARTIFACT_PATH}} --settings "CodeCoverage.runsettings"
+      run: dotnet test -f net6.0 --no-restore --logger trx -r ${{env.BUILD_ARTIFACT_PATH}} --settings "CodeCoverage.runsettings"
+      if: ${{ false }} # always skip since coverage is somehow always empty in GitHub Actions
     - name: 'Run Test Report'
       uses: zyborg/dotnet-tests-report@v1
       with:
