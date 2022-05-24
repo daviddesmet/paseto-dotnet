@@ -98,7 +98,7 @@ jobs:
     - name: 'Upload Coverage'
       uses: codecov/codecov-action@v2
       with:
-        file: coverage.cobertura.xml
+        file: coverage.opencover.xml
         fail_ci_if_error: false
 
   push-to-github-packages:
