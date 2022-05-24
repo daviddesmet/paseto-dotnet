@@ -102,7 +102,7 @@ jobs:
     - name: 'Install ReportGenerator'
       run: dotnet tool install -g dotnet-reportgenerator-globaltool
     - name: 'Generate Coverage Report'
-      run: reportgenerator -reports:*/TestResults/**/coverage.cobertura.xml -targetdir:${{env.BUILD_ARTIFACT_PATH}}/TestResults/Coverage/Reports -reporttypes:HtmlInline;HTMLChart;Cobertura
+      run: reportgenerator -reports:./TestResults/**/coverage.cobertura.xml -targetdir:${{env.BUILD_ARTIFACT_PATH}}/TestResults/Coverage/Reports -reporttypes:HtmlInline;HTMLChart;Cobertura
     - name: 'Upload Coverage'
       uses: codecov/codecov-action@v2
       with:
