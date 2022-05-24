@@ -73,7 +73,7 @@ public abstract class PasetoPurposeHandler
 
     protected virtual void ValidateAudience(PasetoToken token, PasetoTokenValidationParameters validationParameters)
     {
-        if (!validationParameters.ValidateAudience && !string.IsNullOrWhiteSpace(validationParameters.ValidAudience))
+        if (!validationParameters.ValidateAudience)
             return;
 
         if (token.Payload.HasAudience())
@@ -82,7 +82,7 @@ public abstract class PasetoPurposeHandler
 
     protected virtual void ValidateIssuer(PasetoToken token, PasetoTokenValidationParameters validationParameters)
     {
-        if (!validationParameters.ValidateIssuer && !string.IsNullOrWhiteSpace(validationParameters.ValidIssuer))
+        if (!validationParameters.ValidateIssuer)
             return;
 
         if (token.Payload.HasIssuer())
@@ -91,7 +91,7 @@ public abstract class PasetoPurposeHandler
 
     protected virtual void ValidateSubject(PasetoToken token, PasetoTokenValidationParameters validationParameters)
     {
-        if (!validationParameters.ValidateSubject && !string.IsNullOrWhiteSpace(validationParameters.ValidSubject))
+        if (!validationParameters.ValidateSubject)
             return;
 
         if (token.Payload.HasSubject())
