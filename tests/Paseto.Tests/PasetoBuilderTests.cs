@@ -483,7 +483,6 @@ public class PasetoBuilderTests
     }
 
     // TODO: Public Decode fails tests, include invalid header v1.remote.
-    // TODO: Decode with payload validation (success and fails)
 
     [Theory(DisplayName = "Should fail on Local Decode when Token's Footer is not valid")]
     [InlineData(ProtocolVersion.V1, "v1.local.4VyfcVcFAOAbB8yEM1j1Ob7Iez5VZJy5kHNsQxmlrAwKUbOtq9cv39T2fC0MDWafX0nQJ4grFZzTdroMvU772RW-X1oTtoFBjsl_3YYHWnwgqzs0aFc3ejjORmKP4KUM339W3szA28OabR192eRqiyspQ6xPM35NMR-04-FhRJZEWiF0W5oWjPVtGPjeVjm2DI4YtJg.eyJraWQiOiJVYmtLOFk2aXY0R1poRnA2VHgzSVdMV0xmTlhTRXZKY2RUM3pkUjY1WVp4byJ9", "{\"kid\":\"UbkK8Y6iv4GZhFp6Tx3IWLWLfNXSEvJcdT3zdR65YZxo\"}")]

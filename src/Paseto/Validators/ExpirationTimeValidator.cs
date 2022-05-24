@@ -6,7 +6,7 @@ using Paseto.Validators.Internal;
 /// <summary>
 /// The ExpirationTime Validator. This class cannot be inherited.
 /// </summary>
-/// <seealso cref="Paseto.Validation.BaseValidator" />
+/// <seealso cref="Paseto.Validators.BaseValidator" />
 public sealed class ExpirationTimeValidator : BaseValidator
 {
     /// <summary>
