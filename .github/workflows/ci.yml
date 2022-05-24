@@ -95,15 +95,27 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     steps:
+    - name: 'Checkout'
+      uses: actions/checkout@v2
     - name: 'Download Artifact'
       uses: actions/download-artifact@v3
       with:
         name: 'ubuntu-latest'
+        path: ${{env.BUILD_ARTIFACT_PATH}}
+    - name: '.NET Restore'
+      run: dotnet tool restore
+    - name: 'Run Coverage Report'
+      run: dotnet cake --target=CoverageReport
     - name: 'Upload Coverage'
       uses: codecov/codecov-action@v2
       with:
-        file: coverage.cobertura.xml
+        file: Cobertura.xml
         fail_ci_if_error: false
+    - name: 'Publish Coverage Report'
+      uses: actions/upload-artifact@v3
+      with:
+        name: 'coverage-report'
+        path: ${{env.BUILD_ARTIFACT_PATH}}
 
   push-to-github-packages:
     name: 'Push GitHub Packages'
