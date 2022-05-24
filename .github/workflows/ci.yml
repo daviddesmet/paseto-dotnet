@@ -83,7 +83,7 @@ jobs:
     - name: 'Pack NuGet'
       run: dotnet cake --target=Pack
     - name: 'Publish Artifacts'
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: ${{matrix.os}}
         path: ${{env.BUILD_ARTIFACT_PATH}}
@@ -94,7 +94,9 @@ jobs:
     needs: build
     steps:
     - name: 'Download Artifact'
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
+      with:
+        name: 'ubuntu-latest'
     - name: 'Upload Coverage'
       uses: codecov/codecov-action@v2
       with:
@@ -113,7 +115,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: 'Download Artifact'
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: 'windows-latest'
     - name: 'NuGet Push'
@@ -129,7 +131,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: 'Download Artifact'
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: 'windows-latest'
     - name: 'NuGet Push'
