@@ -5,13 +5,13 @@ var configuration =
     HasArgument("Configuration") ? Argument<string>("Configuration") :
     EnvironmentVariable("Configuration", "Release");
 
-var artefactsDirectory = Directory("./Artifacts");
+var artifactsDirectory = Directory("./Artifacts");
 
 Task("Clean")
     .Description("Cleans the artifacts, bin and obj directories.")
     .Does(() =>
     {
-        CleanDirectory(artefactsDirectory);
+        CleanDirectory(artifactsDirectory);
         DeleteDirectories(GetDirectories("**/bin"), new DeleteDirectorySettings() { Force = true, Recursive = true });
         DeleteDirectories(GetDirectories("**/obj"), new DeleteDirectorySettings() { Force = true, Recursive = true });
     });
@@ -48,7 +48,7 @@ Task("Test")
             project.ToString(),
             new DotNetTestSettings()
             {
-                //ArgumentCustomization = args=>args.Append($"--diag:{artefactsDirectory}/log.txt"),
+                //ArgumentCustomization = args => args.Append($"--diag:{artifactsDirectory}/log.txt"),
                 Blame = true,
                 Collectors = new string[] { "XPlat Code Coverage" },
                 Configuration = configuration,
@@ -60,7 +60,7 @@ Task("Test")
                 },
                 NoBuild = true,
                 NoRestore = true,
-                ResultsDirectory = artefactsDirectory,
+                ResultsDirectory = $"{artifactsDirectory}/TestResults",
                 Settings = "CodeCoverage.runsettings"
             });
     });
@@ -69,8 +69,12 @@ Task("CoverageReport")
     .IsDependentOn("Test")
     .Does(() =>
     {
-        ReportGenerator(report: $"{artefactsDirectory}/**/coverage.cobertura.xml",
-                        targetDir: new DirectoryPath($"{artefactsDirectory}/TestResults/Coverage/Reports"));
+        ReportGenerator(report: $"{artifactsDirectory}/TestResults/**/coverage.cobertura.xml",
+                        targetDir: new DirectoryPath($"{artifactsDirectory}/TestResults/Coverage/Reports"),
+                        settings: new ReportGeneratorSettings
+                        {
+                            ArgumentCustomization = args => args.Append("-reporttypes:HtmlInline;HTMLChart;Cobertura")
+                        });
     });
 
 Task("Pack")
@@ -89,7 +93,7 @@ Task("Pack")
                 },
                 NoBuild = true,
                 NoRestore = true,
-                OutputDirectory = artefactsDirectory,
+                OutputDirectory = artifactsDirectory,
             });
     });
 
