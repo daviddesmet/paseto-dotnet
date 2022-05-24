@@ -1,0 +1,4 @@
+# https://docs.codecov.com/docs/fixing-paths
+
+fixes:
+   - "/Users/runner/work/paseto-dotnet/::"
