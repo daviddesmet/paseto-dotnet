@@ -144,6 +144,8 @@ var key = Paserk.Decode(paserk);
 
 ## Test Coverage
 
+[![codecov](https://codecov.io/gh/daviddesmet/paseto-dotnet/branch/master/graph/badge.svg?token=O9QHck0xb9)](https://codecov.io/gh/daviddesmet/paseto-dotnet)
+
 - Includes the mandatory [test vectors](https://github.com/paseto-standard/test-vectors) for PASETO and PASERK.
 
 ## Cryptography
