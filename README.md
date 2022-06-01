@@ -139,7 +139,7 @@ var key = Paserk.Decode(paserk);
 - [ ] Add support for remaining PASERK types and its [operations](https://github.com/paseto-standard/paserk/blob/master/operations).
 - [ ] Add support for version detection when decoding.
 - [ ] Add support for custom payload [validation rules](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/02-Validators.md).
-- [ ] Add Fluent-API payload validation unit tests.
+- [ ] Improve documentation.
 - [ ] Remove dependency on JSON.NET.
 
 ## Test Coverage
