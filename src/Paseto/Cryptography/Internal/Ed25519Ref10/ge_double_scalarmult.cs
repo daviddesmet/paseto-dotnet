@@ -1,8 +1,10 @@
-﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
+﻿using System;
+
+namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
 internal static partial class GroupOperations
 {
-    private static void slide(sbyte[] r, byte[] a)
+    private static void slide(Span<sbyte> r, Span<byte> a)
     {
         int i;
         int b;
@@ -51,12 +53,12 @@ and b = b[0]+256*b[1]+...+256^31 b[31].
 B is the Ed25519 base point (x,4/5) with x positive.
 */
 
-    internal static void ge_double_scalarmult_vartime(out GroupElementP2 r, byte[] a, ref GroupElementP3 A, byte[] b)
+    internal static void ge_double_scalarmult_vartime(out GroupElementP2 r, byte[] a, ref GroupElementP3 A, Span<byte> b)
     {
         GroupElementPreComp[] Bi = LookupTables.Base2;
         // TODO: Perhaps remove these allocations?
-        var aslide = new sbyte[256];
-        var bslide = new sbyte[256];
+        Span<sbyte> aslide = stackalloc sbyte[256];
+        Span<sbyte> bslide = stackalloc sbyte[256];
         var Ai = new GroupElementCached[8]; /* A,3A,5A,7A,9A,11A,13A,15A */
         int i;
 

@@ -1,8 +1,10 @@
-﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
+﻿using System;
+
+namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
 internal static partial class ScalarOperations
 {
-    private static long load_3(byte[] input, int offset)
+    private static long load_3(Span<byte> input, int offset)
     {
         long result;
         result = (long)input[offset + 0];
@@ -11,7 +13,7 @@ internal static partial class ScalarOperations
         return result;
     }
 
-    private static long load_4(byte[] input, int offset)
+    private static long load_4(Span<byte> input, int offset)
     {
         long result;
         result = (long)input[offset + 0];

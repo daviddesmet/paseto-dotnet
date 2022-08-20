@@ -1,4 +1,6 @@
-﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
+﻿using System;
+
+namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
 internal static partial class FieldOperations
 {
@@ -26,7 +28,7 @@ internal static partial class FieldOperations
       Have q+2^(-255)x = 2^(-255)(h + 19 2^(-25) h9 + 2^(-1))
       so floor(2^(-255)(h + 19 2^(-25) h9 + 2^(-1))) = q.
     */
-    internal static void fe_tobytes(byte[] s, int offset, ref FieldElement h)
+    internal static void fe_tobytes(Span<byte> s, int offset, ref FieldElement h)
     {
         fe_reduce(out FieldElement hr, ref h);
 

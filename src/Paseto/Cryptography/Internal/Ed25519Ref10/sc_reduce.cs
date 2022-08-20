@@ -1,4 +1,6 @@
-﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
+﻿using System;
+
+namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
 internal static partial class ScalarOperations
 {
@@ -11,7 +13,7 @@ internal static partial class ScalarOperations
       where l = 2^252 + 27742317777372353535851937790883648493.
       Overwrites s in place.
     */
-    internal static void sc_reduce(byte[] s)
+    internal static void sc_reduce(Span<byte> s)
     {
         long s0 = 2097151 & load_3(s, 0);
         long s1 = 2097151 & (load_4(s, 2) >> 5);

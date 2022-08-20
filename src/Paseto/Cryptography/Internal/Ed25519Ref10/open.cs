@@ -2,6 +2,7 @@
 
 using System;
 using NaCl.Core.Internal;
+using Paseto.Extensions;
 
 internal static partial class Ed25519Operations
 {
@@ -46,10 +47,10 @@ internal static partial class Ed25519Operations
         return 0;
     }*/
 
-    internal static bool crypto_sign_verify(byte[] sig, int sigoffset, byte[] m, int moffset, int mlen, byte[] pk, int pkoffset)
+    internal static bool crypto_sign_verify(Span<byte> sig, int sigoffset, byte[] m, int moffset, int mlen, byte[] pk, int pkoffset)
     {
         byte[] h;
-        var checkr = new byte[32];
+        Span<byte> checkr = stackalloc byte[32];
         GroupElementP3 A;
         GroupElementP2 R;
 
@@ -65,13 +66,15 @@ internal static partial class Ed25519Operations
 
         ScalarOperations.sc_reduce(h);
 
-        var sm32 = new byte[32]; // TODO: remove allocation
-        Array.Copy(sig, sigoffset + 32, sm32, 0, 32);
+        Span<byte> sm32 = stackalloc byte[32];
+        CryptoBytesExtensions.SpanCopy(sig, sigoffset + 32, sm32, 0, 32);
+
         GroupOperations.ge_double_scalarmult_vartime(out R, h, ref A, sm32);
         GroupOperations.ge_tobytes(checkr, 0, ref R);
-        var result = CryptoBytes.ConstantTimeEquals(checkr, 0, sig, sigoffset, 32);
+        var sliceLength = 32;
+        var result = CryptoBytes.ConstantTimeEquals(checkr.Slice(0, sliceLength),sig.Slice(sigoffset, sliceLength));
         CryptoBytes.Wipe(h);
-        CryptoBytes.Wipe(checkr);
+        CryptoBytesExtensions.Wipe(checkr);
         return result;
     }
 }
