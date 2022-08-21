@@ -1,4 +1,6 @@
-﻿namespace Paseto.Cryptography.Internal
+﻿using System;
+
+namespace Paseto.Cryptography.Internal
 {
     // Loops? Arrays? Never heard of that stuff
     // Library avoids unnecessary heap allocations and unsafe code
@@ -13,7 +15,7 @@
         /// <param name="buf">The input buffer.</param>
         /// <param name="offset">The input offset.</param>
         /// <returns>System.UInt32.</returns>
-        public static uint LoadLittleEndian32(byte[] buf, int offset)
+        public static uint LoadLittleEndian32(Span<byte> buf, int offset)
         {
             return
                 (uint)(buf[offset + 0])
