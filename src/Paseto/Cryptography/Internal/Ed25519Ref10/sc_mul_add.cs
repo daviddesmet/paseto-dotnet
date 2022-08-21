@@ -34,7 +34,7 @@ internal static partial class ScalarOperations
       where l = 2^252 + 27742317777372353535851937790883648493.
     */
 
-    internal static void sc_muladd(byte[] s, byte[] a, byte[] b, byte[] c)
+    internal static void sc_muladd(Span<byte> s, byte[] a, byte[] b, byte[] c)
     {
         long a0 = 2097151 & load_3(a, 0);
         long a1 = 2097151 & (load_4(a, 2) >> 5);

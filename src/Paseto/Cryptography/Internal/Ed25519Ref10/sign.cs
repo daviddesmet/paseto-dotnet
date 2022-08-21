@@ -2,6 +2,7 @@
 
 using System;
 using NaCl.Core.Internal;
+using Paseto.Extensions;
 
 internal static partial class Ed25519Operations
 {
@@ -67,11 +68,11 @@ internal static partial class Ed25519Operations
             hram = hasher.Finish();
 
             ScalarOperations.sc_reduce(hram);
-            var s = new byte[32]; // TODO: remove allocation
-            Array.Copy(sig, sigoffset + 32, s, 0, 32);
+            Span<byte> s = stackalloc byte[32];
+            CryptoBytesExtensions.SpanCopy(sig, sigoffset + 32, s, 0, 32);
             ScalarOperations.sc_muladd(s, hram, az, r);
-            Array.Copy(s, 0, sig, sigoffset + 32, 32);
-            CryptoBytes.Wipe(s);
+            CryptoBytesExtensions.SpanCopy(s, 0, sig, sigoffset + 32, 32);
+            CryptoBytesExtensions.Wipe(s);
         }
     }
 }
