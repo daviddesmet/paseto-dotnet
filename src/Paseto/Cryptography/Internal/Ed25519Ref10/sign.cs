@@ -69,9 +69,9 @@ internal static partial class Ed25519Operations
 
             ScalarOperations.sc_reduce(hram);
             Span<byte> s = stackalloc byte[32];
-            CryptoBytesExtensions.SpanCopy(sig, sigoffset + 32, s, 0, 32);
+            SpanExtensions.Copy(sig, sigoffset + 32, s, 0, 32);
             ScalarOperations.sc_muladd(s, hram, az, r);
-            CryptoBytesExtensions.SpanCopy(s, 0, sig, sigoffset + 32, 32);
+            SpanExtensions.Copy(s, 0, sig, sigoffset + 32, 32);
             CryptoBytesExtensions.Wipe(s);
         }
     }

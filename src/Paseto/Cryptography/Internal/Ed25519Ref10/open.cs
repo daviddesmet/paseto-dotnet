@@ -67,12 +67,12 @@ internal static partial class Ed25519Operations
         ScalarOperations.sc_reduce(h);
 
         Span<byte> sm32 = stackalloc byte[32];
-        CryptoBytesExtensions.SpanCopy(sig, sigoffset + 32, sm32, 0, 32);
+        SpanExtensions.Copy(sig, sigoffset + 32, sm32, 0, 32);
 
         GroupOperations.ge_double_scalarmult_vartime(out R, h, ref A, sm32);
         GroupOperations.ge_tobytes(checkr, 0, ref R);
         var sliceLength = 32;
-        var result = CryptoBytes.ConstantTimeEquals(checkr.Slice(0, sliceLength),sig.Slice(sigoffset, sliceLength));
+        var result = CryptoBytes.ConstantTimeEquals(checkr.Slice(0, sliceLength), sig.Slice(sigoffset, sliceLength));
         CryptoBytes.Wipe(h);
         CryptoBytesExtensions.Wipe(checkr);
         return result;

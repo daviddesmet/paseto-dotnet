@@ -57,7 +57,7 @@ public class Sha512
         if (bytesInBuffer != 0)
         {
             var toCopy = Math.Min(BlockSize - bytesInBuffer, count);
-            CryptoBytesExtensions.SpanCopy(data, offset, _buffer, bytesInBuffer, toCopy);
+            SpanExtensions.Copy(data, offset, _buffer, bytesInBuffer, toCopy);
             offset += toCopy;
             count -= toCopy;
             bytesInBuffer += toCopy;
@@ -81,7 +81,14 @@ public class Sha512
 
         // Copy remainder into buffer
         if (count > 0)
-            CryptoBytesExtensions.SpanCopy(data, offset, _buffer, bytesInBuffer, count);
+
+            /* Unmerged change from project 'Paseto (net6.0)'
+            Before:
+                        CryptoBytesExtensions.SpanCopy(data, offset, _buffer, bytesInBuffer, count);
+            After:
+                        Extensions.SpanExtensions.SpanCopy(data, offset, _buffer, bytesInBuffer, count);
+            */
+            SpanExtensions.Copy(data, offset, _buffer, bytesInBuffer, count);
     }
 
     public void Finish(ArraySegment<byte> output)
