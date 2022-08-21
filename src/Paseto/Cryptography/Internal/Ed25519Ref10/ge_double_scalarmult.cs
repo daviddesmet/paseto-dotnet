@@ -56,7 +56,6 @@ B is the Ed25519 base point (x,4/5) with x positive.
     internal static void ge_double_scalarmult_vartime(out GroupElementP2 r, byte[] a, ref GroupElementP3 A, Span<byte> b)
     {
         GroupElementPreComp[] Bi = LookupTables.Base2;
-        // TODO: Perhaps remove these allocations?
         Span<sbyte> aslide = stackalloc sbyte[256];
         Span<sbyte> bslide = stackalloc sbyte[256];
         var Ai = new GroupElementCached[8]; /* A,3A,5A,7A,9A,11A,13A,15A */
