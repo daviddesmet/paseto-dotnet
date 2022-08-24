@@ -2,6 +2,7 @@
 
 using System;
 using Paseto.Cryptography.Internal;
+using Paseto.Extensions;
 
 public class Sha512
 {
@@ -31,7 +32,7 @@ public class Sha512
         Update(data.Array, data.Offset, data.Count);
     }
 
-    public void Update(byte[] data, int offset, int count)
+    public void Update(Span<byte> data, int offset, int count)
     {
         if (data == null)
             throw new ArgumentNullException(nameof(data));
@@ -56,7 +57,7 @@ public class Sha512
         if (bytesInBuffer != 0)
         {
             var toCopy = Math.Min(BlockSize - bytesInBuffer, count);
-            Buffer.BlockCopy(data, offset, _buffer, bytesInBuffer, toCopy);
+            SpanExtensions.Copy(data, offset, _buffer, bytesInBuffer, toCopy);
             offset += toCopy;
             count -= toCopy;
             bytesInBuffer += toCopy;
@@ -72,7 +73,7 @@ public class Sha512
         // Hash complete blocks without copying
         while (count >= BlockSize)
         {
-            ByteIntegerConverter.Array16LoadBigEndian64(out block, data, offset);
+            ByteIntegerConverterExtensions.Array16LoadBigEndian64(out block, data, offset);
             Sha512Internal.Core(out _state, ref _state, ref block);
             offset += BlockSize;
             count -= BlockSize;
@@ -80,7 +81,14 @@ public class Sha512
 
         // Copy remainder into buffer
         if (count > 0)
-            Buffer.BlockCopy(data, offset, _buffer, bytesInBuffer, count);
+
+            /* Unmerged change from project 'Paseto (net6.0)'
+            Before:
+                        CryptoBytesExtensions.SpanCopy(data, offset, _buffer, bytesInBuffer, count);
+            After:
+                        Extensions.SpanExtensions.SpanCopy(data, offset, _buffer, bytesInBuffer, count);
+            */
+            SpanExtensions.Copy(data, offset, _buffer, bytesInBuffer, count);
     }
 
     public void Finish(ArraySegment<byte> output)

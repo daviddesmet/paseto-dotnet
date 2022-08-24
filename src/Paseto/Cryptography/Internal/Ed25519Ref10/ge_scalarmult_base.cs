@@ -1,5 +1,6 @@
 ﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
+using System;
 internal static partial class GroupOperations
 {
     private static byte equal(byte b, byte c)
@@ -61,8 +62,7 @@ internal static partial class GroupOperations
 
     internal static void ge_scalarmult_base(out GroupElementP3 h, byte[] a, int offset)
     {
-        // TODO: Perhaps remove this allocation
-        var e = new sbyte[64];
+        Span<sbyte> e = stackalloc sbyte[64];
         sbyte carry;
         GroupElementP1P1 r;
         GroupElementP2 s;

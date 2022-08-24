@@ -1,6 +1,7 @@
 ﻿namespace Paseto.Cryptography.Internal
 {
     using System;
+    using Paseto.Extensions;
 
     /// <summary>
     /// Poly1305 message authentication code, designed by D. J. Bernstein.
@@ -103,7 +104,7 @@
             if (mLength == 0)
                 goto poly1305_donna_finish;
 
-            var mp = new byte[BlockSize]; // TODO: Remove allocation
+            Span<byte> mp = stackalloc byte[BlockSize];
 
             for (j = 0; j < mLength; j++)
                 mp[j] = m[mStart + j];
@@ -116,7 +117,7 @@
             t1 = ByteIntegerConverter.LoadLittleEndian32(mp, 4);
             t2 = ByteIntegerConverter.LoadLittleEndian32(mp, 8);
             t3 = ByteIntegerConverter.LoadLittleEndian32(mp, 12);
-            NaCl.Core.Internal.CryptoBytes.Wipe(mp);
+            CryptoBytesExtensions.Wipe(mp);
 
             h0 += t0 & 0x3ffffff;
             h1 += (uint)(((((ulong)t1 << 32) | t0) >> 26) & 0x3ffffff);

@@ -1,6 +1,7 @@
 ﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
-using NaCl.Core.Internal;
+using System;
+using Paseto.Extensions;
 
 internal static class MontgomeryOperations
 {
@@ -13,8 +14,8 @@ internal static class MontgomeryOperations
 
     internal static void scalarmult(out FieldElement q, byte[] n, int noffset, ref FieldElement p)
     {
-        var e = new byte[32]; // TODO: remove allocation
-        uint i;
+        Span<byte> e = stackalloc byte[32];
+        int i;
         FieldElement x1;
         FieldElement x2;
         FieldElement z2;
@@ -183,7 +184,6 @@ internal static class MontgomeryOperations
             FieldOperations.fe_mul(out z2, ref tmp1, ref tmp0);
 
             /* qhasm: return */
-
         }
         FieldOperations.fe_cswap(ref x2, ref x3, swap);
         FieldOperations.fe_cswap(ref z2, ref z3, swap);
@@ -191,6 +191,6 @@ internal static class MontgomeryOperations
         FieldOperations.fe_invert(out z2, ref z2);
         FieldOperations.fe_mul(out x2, ref x2, ref z2);
         q = x2;
-        CryptoBytes.Wipe(e);
+        CryptoBytesExtensions.Wipe(e);
     }
 }
