@@ -71,7 +71,7 @@ internal static partial class Ed25519Operations
 
         GroupOperations.ge_double_scalarmult_vartime(out R, h, ref A, sm32);
         GroupOperations.ge_tobytes(checkr, 0, ref R);
-        var sliceLength = 32;
+        const int sliceLength = 32;
         var result = CryptoBytes.ConstantTimeEquals(checkr.Slice(0, sliceLength), sig.Slice(sigoffset, sliceLength));
         CryptoBytes.Wipe(h);
         CryptoBytesExtensions.Wipe(checkr);

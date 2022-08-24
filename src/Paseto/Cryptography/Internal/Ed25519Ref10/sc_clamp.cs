@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
-namespace Paseto.Cryptography.Internal.Ed25519Ref10;
+using System;
 
 internal static partial class ScalarOperations
 {
@@ -10,6 +10,7 @@ internal static partial class ScalarOperations
         s[offset + 31] &= 127;
         s[offset + 31] |= 64;
     }
+
     internal static void sc_clamp(byte[] s, int offset)
     {
         s[offset + 0] &= 248;

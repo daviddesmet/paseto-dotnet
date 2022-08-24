@@ -1,6 +1,6 @@
-﻿using System;
+﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
-namespace Paseto.Cryptography.Internal.Ed25519Ref10;
+using System;
 
 internal static partial class ScalarOperations
 {

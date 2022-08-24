@@ -1,8 +1,6 @@
 ﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
 using System;
-using System.Runtime.CompilerServices;
-using NaCl.Core.Internal;
 using Paseto.Extensions;
 
 internal static class MontgomeryOperations
@@ -186,7 +184,6 @@ internal static class MontgomeryOperations
             FieldOperations.fe_mul(out z2, ref tmp1, ref tmp0);
 
             /* qhasm: return */
-
         }
         FieldOperations.fe_cswap(ref x2, ref x3, swap);
         FieldOperations.fe_cswap(ref z2, ref z3, swap);
