@@ -24,17 +24,9 @@ public class Sha512
         _totalBytes = 0;
     }
 
-    public void Update(ArraySegment<byte> data)
-    {
-        if (data.Array == null)
-            throw new ArgumentNullException("data.Array");
-
-        Update(data.Array, data.Offset, data.Count);
-    }
-
     public void Update(Span<byte> data, int offset, int count)
     {
-        if (data == null)
+        if (data == default)
             throw new ArgumentNullException(nameof(data));
 
         if (offset < 0)
