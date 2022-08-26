@@ -81,13 +81,6 @@ public class Sha512
 
         // Copy remainder into buffer
         if (count > 0)
-
-            /* Unmerged change from project 'Paseto (net6.0)'
-            Before:
-                        CryptoBytesExtensions.SpanCopy(data, offset, _buffer, bytesInBuffer, count);
-            After:
-                        Extensions.SpanExtensions.SpanCopy(data, offset, _buffer, bytesInBuffer, count);
-            */
             SpanExtensions.Copy(data, offset, _buffer, bytesInBuffer, count);
     }
 
