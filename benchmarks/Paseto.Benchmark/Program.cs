@@ -28,8 +28,8 @@ public class Benchmarks
         _symmetricKey = new PasetoBuilder().Use(Version, Purpose.Local).GenerateSymmetricKey();
         _asymmetricKeyPair = new PasetoBuilder().Use(Version, Purpose.Public).GenerateAsymmetricKeyPair(_seed);
 
-        _localToken = LocalEncode();
-        _publicToken = PublicEncode();
+        _localToken = Encrypt();
+        _publicToken = Sign();
     }
 
     [ParamsAllValues]
@@ -46,12 +46,12 @@ public class Benchmarks
                                                                       .AddClaim("Test2", "Value2");
 
     [Benchmark]
-    public string LocalEncode() => CreateBuilder().Use(Version, Purpose.Local)
+    public string Encrypt() => CreateBuilder().Use(Version, Purpose.Local)
                               .WithKey(_symmetricKey)
                               .Encode();
 
     [Benchmark]
-    public PasetoTokenValidationResult LocalDecode()
+    public PasetoTokenValidationResult Decrypt()
     {
         var result = CreateBuilder().Use(Version, Purpose.Local)
                                     .WithKey(_symmetricKey)
@@ -62,12 +62,12 @@ public class Benchmarks
     }
 
     [Benchmark]
-    public string PublicEncode() => CreateBuilder().Use(Version, Purpose.Public)
+    public string Sign() => CreateBuilder().Use(Version, Purpose.Public)
                                                    .WithKey(_asymmetricKeyPair.SecretKey)
                                                    .Encode();
 
     [Benchmark]
-    public PasetoTokenValidationResult PublicDecode()
+    public PasetoTokenValidationResult Verify()
     {
         var result = CreateBuilder().Use(Version, Purpose.Public)
                                     .WithKey(_asymmetricKeyPair.PublicKey)
