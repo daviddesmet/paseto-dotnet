@@ -140,9 +140,9 @@ public class Sha512Tests
     }
 
     [Fact]
-    public void Sha512UpdateSegmentsNull()
+    public void Sha512UpdateNull()
     {
         var sha512 = new Sha512();
-        Assert.Throws<ArgumentNullException>(() => sha512.Update(default));
+        Assert.Throws<ArgumentNullException>(() => sha512.Update(default,0,0));
     }
 }
