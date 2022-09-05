@@ -84,7 +84,7 @@ internal static class EncodingHelper
         var up = ~~(n / 0xffffffff);
         var dn = (n % 0xffffffff) - up;
 
-        var buf = new byte[8].AsSpan();
+        Span<byte> buf = stackalloc byte[8];
         BinaryPrimitives.WriteUInt32LittleEndian(buf[4..], (uint)up);
         BinaryPrimitives.WriteUInt32LittleEndian(buf, (uint)dn);
 
