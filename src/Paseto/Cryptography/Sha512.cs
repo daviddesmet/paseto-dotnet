@@ -24,7 +24,7 @@ public class Sha512
         _totalBytes = 0;
     }
 
-    public void Update(Span<byte> data, int offset, int count)
+    public void Update(ReadOnlySpan<byte> data, int offset, int count)
     {
         if (data == default)
             throw new ArgumentNullException(nameof(data));
@@ -37,6 +37,17 @@ public class Sha512
 
         if (data.Length - offset < count)
             throw new ArgumentException("Requires offset + count <= data.Length");
+
+        Update(data.Slice(offset, count));
+    }
+
+    public void Update(ReadOnlySpan<byte> data)
+    {
+        if (data == default)
+            throw new ArgumentNullException(nameof(data));
+
+        var count = data.Length;
+        var offset = 0;
 
         Array16<ulong> block;
         var bytesInBuffer = (int)_totalBytes & (BlockSize - 1);

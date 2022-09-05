@@ -43,30 +43,30 @@ public static class Ed25519
         return Ed25519Operations.crypto_sign_verify(signature, 0, message, 0, message.Length, publicKey, 0);
     }
 
-    public static void Sign(ArraySegment<byte> signature, ArraySegment<byte> message, ArraySegment<byte> expandedPrivateKey)
+    public static void Sign(Span<byte> signature, ReadOnlySpan<byte> message, ReadOnlySpan<byte> expandedPrivateKey)
     {
-        if (signature.Array == null)
+        if (signature == default)
             throw new ArgumentNullException("signature.Array");
 
-        if (signature.Count != SignatureSizeInBytes)
-            throw new ArgumentException("signature.Count");
+        if (signature.Length != SignatureSizeInBytes)
+            throw new ArgumentException("signature.Length");
 
-        if (expandedPrivateKey.Array == null)
+        if (expandedPrivateKey == default)
             throw new ArgumentNullException("expandedPrivateKey.Array");
 
-        if (expandedPrivateKey.Count != ExpandedPrivateKeySizeInBytes)
-            throw new ArgumentException("expandedPrivateKey.Count");
+        if (expandedPrivateKey.Length != ExpandedPrivateKeySizeInBytes)
+            throw new ArgumentException("expandedPrivateKey.Length");
 
-        if (message.Array == null)
+        if (message == default)
             throw new ArgumentNullException("message.Array");
 
-        Ed25519Operations.crypto_sign2(signature.Array, signature.Offset, message.Array, message.Offset, message.Count, expandedPrivateKey.Array, expandedPrivateKey.Offset);
+        Ed25519Operations.crypto_sign2(signature, message, expandedPrivateKey);
     }
 
-    public static byte[] Sign(byte[] message, byte[] expandedPrivateKey)
+    public static byte[] Sign(Span<byte> message, ReadOnlySpan<byte> expandedPrivateKey)
     {
         var signature = new byte[SignatureSizeInBytes];
-        Sign(new ArraySegment<byte>(signature), new ArraySegment<byte>(message), new ArraySegment<byte>(expandedPrivateKey));
+        Sign(signature, message, expandedPrivateKey);
         return signature;
     }
 

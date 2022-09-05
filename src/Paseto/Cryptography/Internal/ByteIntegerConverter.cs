@@ -65,7 +65,7 @@ internal static class ByteIntegerConverter
             | (((ulong)(buf[offset + 0])) << 56);
     }
 
-    public static void StoreBigEndian64(byte[] buf, int offset, ulong value)
+    public static void StoreBigEndian64(Span<byte> buf, int offset, ulong value)
     {
         buf[offset + 7] = unchecked((byte)value);
         buf[offset + 6] = unchecked((byte)(value >> 8));
