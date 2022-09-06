@@ -10,12 +10,12 @@ using System;
 /// </summary>
 public class Base64UrlEncoder : IBase64UrlEncoder
 {
-    private static readonly char OnePadChar = '=';
-    private static readonly string TwoPadChar = "==";
-    private static readonly char Char62 = '+';
-    private static readonly char Char63 = '/';
-    private static readonly char UrlChar62 = '-';
-    private static readonly char UrlChar63 = '_';
+    private const char OnePadChar = '=';
+    private const string TwoPadChar = "==";
+    private const char Char62 = '+';
+    private const char Char63 = '/';
+    private const char UrlChar62 = '-';
+    private const char UrlChar63 = '_';
 
     private static readonly char[] OnePads = { OnePadChar };
 
