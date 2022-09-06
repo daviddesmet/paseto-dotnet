@@ -5,6 +5,8 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Paseto.Extensions;
+using System.Buffers.Text;
 
 /// <summary>
 /// The Encoding Helper.
@@ -24,11 +26,23 @@ internal static class EncodingHelper
     /// <returns>System.Byte[].</returns>
     internal static byte[] PreAuthEncode(params byte[][] pieces)
     {
-        var accumulator = LE64(pieces.Length);
+        var length = (pieces.Length + 1) * 8;
+        for (var i = 0; i < pieces.Length; i++)
+        {
+            length += pieces[i].Length;
+        }
+
+        var accumulator = new byte[length];
+        SpanExtensions.Copy(LE64(pieces.Length), 0, accumulator, 0, 8);
+
+        var ind = 8;
         foreach (var piece in pieces)
         {
             var len = LE64(piece.Length);
-            accumulator = accumulator.Concat(len).Concat(piece).ToArray();
+            SpanExtensions.Copy(len, 0, accumulator, ind, 8);
+            SpanExtensions.Copy(piece, 0, accumulator, ind+8, piece.Length);
+
+            ind += 8 + piece.Length;
         }
         return accumulator;
     }
