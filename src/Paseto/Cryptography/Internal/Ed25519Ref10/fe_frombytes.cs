@@ -1,8 +1,10 @@
 ﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
+using System;
+
 internal static partial class FieldOperations
 {
-    private static long load_3(byte[] data, int offset)
+    private static long load_3(ReadOnlySpan<byte> data, int offset)
     {
         uint result;
         result = (uint)data[offset + 0];
@@ -11,7 +13,7 @@ internal static partial class FieldOperations
         return (long)(ulong)result;
     }
 
-    private static long load_4(byte[] data, int offset)
+    private static long load_4(ReadOnlySpan<byte> data, int offset)
     {
         uint result;
         result = (uint)data[offset + 0];
@@ -22,7 +24,7 @@ internal static partial class FieldOperations
     }
 
     //	Ignores top bit of h.
-    internal static void fe_frombytes(out FieldElement h, byte[] data, int offset)
+    internal static void fe_frombytes(out FieldElement h, ReadOnlySpan<byte> data, int offset)
     {
         long h0 = load_4(data, offset);
         long h1 = load_3(data, offset + 4) << 6;

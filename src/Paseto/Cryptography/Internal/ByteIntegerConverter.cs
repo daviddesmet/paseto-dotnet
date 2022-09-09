@@ -65,16 +65,16 @@ internal static class ByteIntegerConverter
             | (((ulong)(buf[offset + 0])) << 56);
     }
 
-    public static void StoreBigEndian64(Span<byte> buf, int offset, ulong value)
+    public static void StoreBigEndian64(Span<byte> buf, ulong value)
     {
-        buf[offset + 7] = unchecked((byte)value);
-        buf[offset + 6] = unchecked((byte)(value >> 8));
-        buf[offset + 5] = unchecked((byte)(value >> 16));
-        buf[offset + 4] = unchecked((byte)(value >> 24));
-        buf[offset + 3] = unchecked((byte)(value >> 32));
-        buf[offset + 2] = unchecked((byte)(value >> 40));
-        buf[offset + 1] = unchecked((byte)(value >> 48));
-        buf[offset + 0] = unchecked((byte)(value >> 56));
+        buf[7] = unchecked((byte)value);
+        buf[6] = unchecked((byte)(value >> 8));
+        buf[5] = unchecked((byte)(value >> 16));
+        buf[4] = unchecked((byte)(value >> 24));
+        buf[3] = unchecked((byte)(value >> 32));
+        buf[2] = unchecked((byte)(value >> 40));
+        buf[1] = unchecked((byte)(value >> 48));
+        buf[0] = unchecked((byte)(value >> 56));
     }
 
     /*public static void XorLittleEndian32(byte[] buf, int offset, uint value)
