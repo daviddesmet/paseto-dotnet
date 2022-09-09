@@ -87,13 +87,13 @@ public class Sha512
             SpanExtensions.Copy(data, offset, _buffer, bytesInBuffer, count);
     }
 
-    public void Finish(ArraySegment<byte> output)
+    public void Finish(Span<byte> output)
     {
-        if (output.Array == null)
-            throw new ArgumentNullException("output.Array");
+        if (output == default)
+            throw new ArgumentNullException(nameof(output));
 
-        if (output.Count != 64)
-            throw new ArgumentException("output.Count must be 64");
+        if (output.Length != 64)
+            throw new ArgumentException("output.Length must be 64");
 
         Update(_padding, 0, _padding.Length);
         ByteIntegerConverter.Array16LoadBigEndian64(out Array16<ulong> block, _buffer, 0);
@@ -107,33 +107,30 @@ public class Sha512
         block.x15 = (_totalBytes - 1) * 8;
         Sha512Internal.Core(out _state, ref _state, ref block);
 
-        ByteIntegerConverter.StoreBigEndian64(output.Array, output.Offset + 0, _state.x0);
-        ByteIntegerConverter.StoreBigEndian64(output.Array, output.Offset + 8, _state.x1);
-        ByteIntegerConverter.StoreBigEndian64(output.Array, output.Offset + 16, _state.x2);
-        ByteIntegerConverter.StoreBigEndian64(output.Array, output.Offset + 24, _state.x3);
-        ByteIntegerConverter.StoreBigEndian64(output.Array, output.Offset + 32, _state.x4);
-        ByteIntegerConverter.StoreBigEndian64(output.Array, output.Offset + 40, _state.x5);
-        ByteIntegerConverter.StoreBigEndian64(output.Array, output.Offset + 48, _state.x6);
-        ByteIntegerConverter.StoreBigEndian64(output.Array, output.Offset + 56, _state.x7);
+        ByteIntegerConverter.StoreBigEndian64(output, _state.x0);
+        ByteIntegerConverter.StoreBigEndian64(output[8..], _state.x1);
+        ByteIntegerConverter.StoreBigEndian64(output[16..], _state.x2);
+        ByteIntegerConverter.StoreBigEndian64(output[24..], _state.x3);
+        ByteIntegerConverter.StoreBigEndian64(output[32..], _state.x4);
+        ByteIntegerConverter.StoreBigEndian64(output[40..], _state.x5);
+        ByteIntegerConverter.StoreBigEndian64(output[48..], _state.x6);
+        ByteIntegerConverter.StoreBigEndian64(output[56..], _state.x7);
         _state = default(Array8<ulong>);
     }
 
     public byte[] Finish()
     {
         var result = new byte[64];
-        Finish(new ArraySegment<byte>(result));
+        Finish(result);
         return result;
     }
 
-    public static byte[] Hash(byte[] data)
-    {
-        return Hash(data, 0, data.Length);
-    }
-
-    public static byte[] Hash(byte[] data, int offset, int count)
+    public static byte[] Hash(ReadOnlySpan<byte> data)
     {
         var hasher = new Sha512();
-        hasher.Update(data, offset, count);
+        hasher.Update(data);
         return hasher.Finish();
     }
+
+    public static byte[] Hash(ReadOnlySpan<byte> data, int offset, int count) => Hash(data.Slice(offset, count));
 }

@@ -12,26 +12,15 @@ public static class Ed25519
     public static readonly int PrivateKeySeedSizeInBytes = 32;
     public static readonly int SharedKeySizeInBytes = 32;
 
-    public static bool Verify(ArraySegment<byte> signature, ArraySegment<byte> message, ArraySegment<byte> publicKey)
+    public static bool Verify(ReadOnlySpan<byte> signature, ReadOnlySpan<byte> message, ReadOnlySpan<byte> publicKey)
     {
-        if (signature.Count != SignatureSizeInBytes)
-            throw new ArgumentException(string.Format("Signature size must be {0}", SignatureSizeInBytes), "signature.Count");
-
-        if (publicKey.Count != PublicKeySizeInBytes)
-            throw new ArgumentException(string.Format("Public key size must be {0}", PublicKeySizeInBytes), "publicKey.Count");
-
-        return Ed25519Operations.crypto_sign_verify(signature.Array, signature.Offset, message.Array, message.Offset, message.Count, publicKey.Array, publicKey.Offset);
-    }
-
-    public static bool Verify(byte[] signature, byte[] message, byte[] publicKey)
-    {
-        if (signature == null)
+        if (signature == default)
             throw new ArgumentNullException(nameof(signature));
 
-        if (message == null)
+        if (message == default)
             throw new ArgumentNullException(nameof(message));
 
-        if (publicKey == null)
+        if (publicKey == default)
             throw new ArgumentNullException(nameof(publicKey));
 
         if (signature.Length != SignatureSizeInBytes)
