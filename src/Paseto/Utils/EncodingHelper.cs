@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Paseto.Extensions;
-using System.Buffers.Text;
 
 /// <summary>
 /// The Encoding Helper.
