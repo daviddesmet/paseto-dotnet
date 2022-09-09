@@ -317,7 +317,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
         var pack = PreAuthEncode(new[] { header, payload, footer });
 
-        var signature = Ed25519.Sign(pack, pasetoKey.Key.ToArray());
+        var signature = Ed25519.Sign(pack, pasetoKey.Key.Span);
 
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(GetBytes(footer))}";
@@ -399,7 +399,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var pack = PreAuthEncode(new[] { GetBytes(header), payload, f });
 
-        var valid = Ed25519.Verify(signature, pack, pasetoKey.Key.ToArray());
+        var valid = Ed25519.Verify(signature, pack, pasetoKey.Key.Span);
 
         return valid ? PasetoVerifyResult.Success(GetString(payload)) : PasetoVerifyResult.Failed;
     }
