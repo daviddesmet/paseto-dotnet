@@ -5,6 +5,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Paseto.Extensions;
 
 /// <summary>
 /// The Encoding Helper.
@@ -24,11 +25,23 @@ internal static class EncodingHelper
     /// <returns>System.Byte[].</returns>
     internal static byte[] PreAuthEncode(params byte[][] pieces)
     {
-        var accumulator = LE64(pieces.Length);
+        var length = (pieces.Length + 1) * 8;
+        for (var i = 0; i < pieces.Length; i++)
+        {
+            length += pieces[i].Length;
+        }
+
+        var accumulator = new byte[length];
+        SpanExtensions.Copy(LE64(pieces.Length), 0, accumulator, 0, 8);
+
+        var ind = 8;
         foreach (var piece in pieces)
         {
             var len = LE64(piece.Length);
-            accumulator = accumulator.Concat(len).Concat(piece).ToArray();
+            SpanExtensions.Copy(len, 0, accumulator, ind, 8);
+            SpanExtensions.Copy(piece, 0, accumulator, ind+8, piece.Length);
+
+            ind += 8 + piece.Length;
         }
         return accumulator;
     }
@@ -84,7 +97,7 @@ internal static class EncodingHelper
         var up = ~~(n / 0xffffffff);
         var dn = (n % 0xffffffff) - up;
 
-        var buf = new byte[8].AsSpan();
+        Span<byte> buf = stackalloc byte[8];
         BinaryPrimitives.WriteUInt32LittleEndian(buf[4..], (uint)up);
         BinaryPrimitives.WriteUInt32LittleEndian(buf, (uint)dn);
 

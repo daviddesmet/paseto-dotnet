@@ -12,26 +12,15 @@ public static class Ed25519
     public static readonly int PrivateKeySeedSizeInBytes = 32;
     public static readonly int SharedKeySizeInBytes = 32;
 
-    public static bool Verify(ArraySegment<byte> signature, ArraySegment<byte> message, ArraySegment<byte> publicKey)
+    public static bool Verify(ReadOnlySpan<byte> signature, ReadOnlySpan<byte> message, ReadOnlySpan<byte> publicKey)
     {
-        if (signature.Count != SignatureSizeInBytes)
-            throw new ArgumentException(string.Format("Signature size must be {0}", SignatureSizeInBytes), "signature.Count");
-
-        if (publicKey.Count != PublicKeySizeInBytes)
-            throw new ArgumentException(string.Format("Public key size must be {0}", PublicKeySizeInBytes), "publicKey.Count");
-
-        return Ed25519Operations.crypto_sign_verify(signature.Array, signature.Offset, message.Array, message.Offset, message.Count, publicKey.Array, publicKey.Offset);
-    }
-
-    public static bool Verify(byte[] signature, byte[] message, byte[] publicKey)
-    {
-        if (signature == null)
+        if (signature == default)
             throw new ArgumentNullException(nameof(signature));
 
-        if (message == null)
+        if (message == default)
             throw new ArgumentNullException(nameof(message));
 
-        if (publicKey == null)
+        if (publicKey == default)
             throw new ArgumentNullException(nameof(publicKey));
 
         if (signature.Length != SignatureSizeInBytes)
@@ -43,30 +32,30 @@ public static class Ed25519
         return Ed25519Operations.crypto_sign_verify(signature, 0, message, 0, message.Length, publicKey, 0);
     }
 
-    public static void Sign(ArraySegment<byte> signature, ArraySegment<byte> message, ArraySegment<byte> expandedPrivateKey)
+    public static void Sign(Span<byte> signature, ReadOnlySpan<byte> message, ReadOnlySpan<byte> expandedPrivateKey)
     {
-        if (signature.Array == null)
+        if (signature == default)
             throw new ArgumentNullException("signature.Array");
 
-        if (signature.Count != SignatureSizeInBytes)
-            throw new ArgumentException("signature.Count");
+        if (signature.Length != SignatureSizeInBytes)
+            throw new ArgumentException("signature.Length");
 
-        if (expandedPrivateKey.Array == null)
+        if (expandedPrivateKey == default)
             throw new ArgumentNullException("expandedPrivateKey.Array");
 
-        if (expandedPrivateKey.Count != ExpandedPrivateKeySizeInBytes)
-            throw new ArgumentException("expandedPrivateKey.Count");
+        if (expandedPrivateKey.Length != ExpandedPrivateKeySizeInBytes)
+            throw new ArgumentException("expandedPrivateKey.Length");
 
-        if (message.Array == null)
+        if (message == default)
             throw new ArgumentNullException("message.Array");
 
-        Ed25519Operations.crypto_sign2(signature.Array, signature.Offset, message.Array, message.Offset, message.Count, expandedPrivateKey.Array, expandedPrivateKey.Offset);
+        Ed25519Operations.crypto_sign2(signature, message, expandedPrivateKey);
     }
 
-    public static byte[] Sign(byte[] message, byte[] expandedPrivateKey)
+    public static byte[] Sign(Span<byte> message, ReadOnlySpan<byte> expandedPrivateKey)
     {
         var signature = new byte[SignatureSizeInBytes];
-        Sign(new ArraySegment<byte>(signature), new ArraySegment<byte>(message), new ArraySegment<byte>(expandedPrivateKey));
+        Sign(signature, message, expandedPrivateKey);
         return signature;
     }
 

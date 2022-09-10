@@ -5,7 +5,7 @@ using Paseto.Cryptography.Internal;
 
 public static class ByteIntegerConverterExtensions
 {
-    public static void Array16LoadBigEndian64(out Array16<ulong> output, Span<byte> input, int inputOffset)
+    public static void Array16LoadBigEndian64(out Array16<ulong> output, ReadOnlySpan<byte> input, int inputOffset)
     {
         output.x0 = LoadBigEndian64(input, inputOffset + 0);
         output.x1 = LoadBigEndian64(input, inputOffset + 8);
@@ -25,7 +25,7 @@ public static class ByteIntegerConverterExtensions
         output.x15 = LoadBigEndian64(input, inputOffset + 120);
     }
 
-    public static ulong LoadBigEndian64(Span<byte> buf, int offset) => (ulong)(buf[offset + 7])
+    public static ulong LoadBigEndian64(ReadOnlySpan<byte> buf, int offset) => (ulong)(buf[offset + 7])
             | (((ulong)(buf[offset + 6])) << 8)
             | (((ulong)(buf[offset + 5])) << 16)
             | (((ulong)(buf[offset + 4])) << 24)

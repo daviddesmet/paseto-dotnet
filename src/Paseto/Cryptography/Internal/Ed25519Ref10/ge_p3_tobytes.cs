@@ -1,8 +1,10 @@
-﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
+﻿using System;
+
+namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
 internal static partial class GroupOperations
 {
-    internal static void ge_p3_tobytes(byte[] s, int offset, ref GroupElementP3 h)
+    internal static void ge_p3_tobytes(Span<byte> s, int offset, ref GroupElementP3 h)
     {
         FieldOperations.fe_invert(out FieldElement recip, ref h.Z);
         FieldOperations.fe_mul(out FieldElement x, ref h.X, ref recip);

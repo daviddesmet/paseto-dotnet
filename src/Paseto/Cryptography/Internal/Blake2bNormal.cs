@@ -1,4 +1,6 @@
-﻿namespace Paseto.Cryptography;
+﻿using System;
+
+namespace Paseto.Cryptography;
 
 internal class Blake2bNormal : Blake2bBase
 {
@@ -8,8 +10,8 @@ internal class Blake2bNormal : Blake2bBase
 
     public override void Compress(bool isFinal)
     {
-        var v = new ulong[16];
-        var m = new ulong[16];
+        Span<ulong> v = stackalloc ulong[16];
+        Span<ulong> m = stackalloc ulong[16];
 
         for (var i = 0; i < 8; ++i)
             v[i] = Hash[i];

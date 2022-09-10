@@ -4,7 +4,7 @@ using System;
 
 internal static partial class ScalarOperations
 {
-    private static long load_3(Span<byte> input, int offset)
+    private static long load_3(ReadOnlySpan<byte> input, int offset)
     {
         long result;
         result = (long)input[offset + 0];
@@ -13,7 +13,7 @@ internal static partial class ScalarOperations
         return result;
     }
 
-    private static long load_4(Span<byte> input, int offset)
+    private static long load_4(ReadOnlySpan<byte> input, int offset)
     {
         long result;
         result = (long)input[offset + 0];
@@ -34,7 +34,7 @@ internal static partial class ScalarOperations
       where l = 2^252 + 27742317777372353535851937790883648493.
     */
 
-    internal static void sc_muladd(Span<byte> s, byte[] a, byte[] b, byte[] c)
+    internal static void sc_muladd(Span<byte> s, ReadOnlySpan<byte> a, ReadOnlySpan<byte> b, ReadOnlySpan<byte> c)
     {
         long a0 = 2097151 & load_3(a, 0);
         long a1 = 2097151 & (load_4(a, 2) >> 5);

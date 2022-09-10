@@ -60,7 +60,7 @@ internal static partial class GroupOperations
       a[31] <= 127
     */
 
-    internal static void ge_scalarmult_base(out GroupElementP3 h, byte[] a, int offset)
+    internal static void ge_scalarmult_base(out GroupElementP3 h, ReadOnlySpan<byte> a, int offset)
     {
         Span<sbyte> e = stackalloc sbyte[64];
         sbyte carry;

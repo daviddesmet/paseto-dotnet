@@ -47,7 +47,7 @@ internal static partial class Ed25519Operations
         return 0;
     }*/
 
-    internal static bool crypto_sign_verify(Span<byte> sig, int sigoffset, byte[] m, int moffset, int mlen, byte[] pk, int pkoffset)
+    internal static bool crypto_sign_verify(ReadOnlySpan<byte> sig, int sigoffset, ReadOnlySpan<byte> m, int moffset, int mlen, ReadOnlySpan<byte> pk, int pkoffset)
     {
         byte[] h;
         Span<byte> checkr = stackalloc byte[32];

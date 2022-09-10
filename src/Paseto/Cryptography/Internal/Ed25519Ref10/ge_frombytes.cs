@@ -1,8 +1,10 @@
 ﻿namespace Paseto.Cryptography.Internal.Ed25519Ref10;
 
+using System;
+
 internal static partial class GroupOperations
 {
-    internal static int ge_frombytes_negate_vartime(out GroupElementP3 h, byte[] data, int offset)
+    internal static int ge_frombytes_negate_vartime(out GroupElementP3 h, ReadOnlySpan<byte> data, int offset)
     {
         FieldOperations.fe_frombytes(out h.Y, data, offset);
         FieldOperations.fe_1(out h.Z);

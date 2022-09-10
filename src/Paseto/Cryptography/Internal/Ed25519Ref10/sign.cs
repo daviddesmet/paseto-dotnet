@@ -40,21 +40,28 @@ internal static partial class Ed25519Operations
         Array.Copy(sm32, 0, sm, 32, 32);
     }*/
 
-    internal static void crypto_sign2(byte[] sig, int sigoffset, byte[] m, int moffset, int mlen, byte[] sk, int skoffset)
+    internal static void crypto_sign2(Span<byte> sig, ReadOnlySpan<byte> m, ReadOnlySpan<byte> sk)
     {
-        byte[] az;
-        byte[] r;
-        byte[] hram;
+        var sigoffset = 0;
+        var moffset = 0;
+        var mlen = m.Length;
+        var skoffset = 0;
+
+        Span<byte> az = stackalloc byte[64];
+        Span<byte> r = stackalloc byte[64];
+        Span<byte> hram = stackalloc byte[64];
+
         var hasher = new Sha512();
         {
             hasher.Update(sk, skoffset, 32);
-            az = hasher.Finish();
+            hasher.Finish(az);
+
             ScalarOperations.sc_clamp(az, 0);
 
             hasher.Init();
             hasher.Update(az, 32, 32);
             hasher.Update(m, moffset, mlen);
-            r = hasher.Finish();
+            hasher.Finish(r);
 
             ScalarOperations.sc_reduce(r);
             GroupOperations.ge_scalarmult_base(out GroupElementP3 R, r, 0);
@@ -64,7 +71,7 @@ internal static partial class Ed25519Operations
             hasher.Update(sig, sigoffset, 32);
             hasher.Update(sk, skoffset + 32, 32);
             hasher.Update(m, moffset, mlen);
-            hram = hasher.Finish();
+            hasher.Finish(hram);
 
             ScalarOperations.sc_reduce(hram);
             Span<byte> s = stackalloc byte[32];

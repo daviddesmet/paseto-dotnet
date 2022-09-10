@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace Paseto.Cryptography;
 
@@ -13,8 +14,8 @@ internal class Blake2bSlow : Blake2bBase
         Debug.Assert(DataBuffer.Length == 128);
         Debug.Assert(Hash.Length == 8);
 
-        var v = new ulong[16];
-        var m = new ulong[16];
+        Span<ulong> v = stackalloc ulong[16];
+        Span<ulong> m = stackalloc ulong[16];
 
         for (var i = 0; i < 8; ++i)
             v[i] = Hash[i];
@@ -52,7 +53,7 @@ internal class Blake2bSlow : Blake2bBase
 
     private static ulong RotateSlow(ulong x, int y) => (((x) >> (y)) ^ ((x) << (64 - (y))));
 
-    private static void SlowG(ulong[] v, int a, int b, int c, int d, ulong x, ulong y)
+    private static void SlowG(Span<ulong> v, int a, int b, int c, int d, ulong x, ulong y)
     {
         v[a] = v[a] + v[b] + x;
         v[d] = RotateSlow(v[d] ^ v[a], 32);
@@ -64,7 +65,7 @@ internal class Blake2bSlow : Blake2bBase
         v[b] = RotateSlow(v[b] ^ v[c], 63);
     }
 
-    private static void DoRoundSlow(ulong[] v, ulong[] m, int i)
+    private static void DoRoundSlow(Span<ulong> v, ReadOnlySpan<ulong> m, int i)
     {
         SlowG(v, 0, 4, 8, 12, m[Blake2Constants.Sigma[i][0]], m[Blake2Constants.Sigma[i][1]]);
         SlowG(v, 1, 5, 9, 13, m[Blake2Constants.Sigma[i][2]], m[Blake2Constants.Sigma[i][3]]);
