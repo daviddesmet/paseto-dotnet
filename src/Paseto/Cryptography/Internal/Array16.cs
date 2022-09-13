@@ -2,7 +2,7 @@
 
 // Array16<uint> ChaCha20 and Salsa20 state
 // Array16<ulong> SHA-512 block
-public struct Array16<T>
+public record struct Array16<T>
 {
     public T x0;
     public T x1;
