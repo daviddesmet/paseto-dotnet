@@ -49,7 +49,7 @@ public class PaserkTests
         }
     }
 
-    public static IEnumerable<PaserkTestItem> PaserkTestItems()
+    public static IEnumerable<object[]> PaserkTestItems()
     {
         foreach (var val in Data())
         {
@@ -61,38 +61,23 @@ public class PaserkTests
             var vector = JsonConvert.DeserializeObject<PaserkTestCollection>(json);
             foreach (var test in vector.Tests)
             {
-                yield return test;
+                yield return new object[] { test, version, type };
             }
         }
-        
     }
 
     [Theory]
-    [MemberData(nameof(Data))]
-    public void TypesTestVectors(ProtocolVersion version, PaserkType type)
+    [MemberData(nameof(PaserkTestItems))]
+    public void TypesTestVectors(PaserkTestItem test, ProtocolVersion version, PaserkType type)
     {
-        var json = GetPaserkTestVector((int)version, type.ToDescription());
-
-        var vector = JsonConvert.DeserializeObject<PaserkTestCollection>(json);
-
-        foreach (var test in vector.Tests)
+        if (test.ExpectFail)
         {
-            var purpose = Paserk.GetCompatibility(type);
-
-            if (test.ExpectFail)
-            {
-                var act = () => Paserk.Decode(test.Paserk);
-                act.Should().Throw<Exception>();
-                continue;
-            }
-
-            TestDecodeEncode(version, type, test, purpose);
+            var act = () => Paserk.Decode(test.Paserk);
+            act.Should().Throw<Exception>();
+            return;
         }
-    }
 
-    private void TestDecodeEncode(ProtocolVersion version, PaserkType type, PaserkTestItem test, Purpose purpose)
-    {
-
+        var purpose = Paserk.GetCompatibility(type);
         var pasetoKey = ParseKey(version, type, test.Key);
 
         var paserk = Paserk.Encode(pasetoKey, purpose, type);
@@ -144,13 +129,10 @@ public class PaserkTests
                 return new PasetoSymmetricKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
 
             case PaserkType.LocalWrap:
-                break;
 
             case PaserkType.LocalPassword:
-                break;
 
             case PaserkType.Seal:
-                break;
 
             case PaserkType.Sid:
                 break;

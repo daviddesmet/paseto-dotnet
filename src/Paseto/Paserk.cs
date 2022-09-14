@@ -29,7 +29,7 @@ public static class Paserk
         if (!Comp(type, pasetoKey))
             throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
 
-        var header = $"{PARSEK_HEADER_K}{pasetoKey.Protocol.VersionNumber}.{GetCompatibility(type).ToDescription()}.";
+        var header = $"{PARSEK_HEADER_K}{pasetoKey.Protocol.VersionNumber}.{type.ToDescription()}.";
 
         return type switch
         {
