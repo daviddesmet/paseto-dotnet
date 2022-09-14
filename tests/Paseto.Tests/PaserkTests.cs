@@ -3,22 +3,17 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
-using System.Security.Cryptography;
-
 using FluentAssertions;
 using NaCl.Core.Internal;
 using Newtonsoft.Json;
+using Paseto.Cryptography.Key;
+using Paseto.Extensions;
+using Paseto.Tests.Vectors;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Categories;
-
-using Paseto.Cryptography;
-using Paseto.Cryptography.Key;
-using Paseto.Extensions;
-using Paseto.Protocol;
-using Paseto.Tests.Vectors;
-using System.Linq;
 
 [Category("CI")]
 public class PaserkTests
@@ -27,7 +22,7 @@ public class PaserkTests
 
     public PaserkTests(ITestOutputHelper output) => _output = output;
 
-    private static readonly ProtocolVersion[] ValidProtocols = new []
+    private static readonly ProtocolVersion[] ValidProtocols = new[]
     {
         ProtocolVersion.V1,
         ProtocolVersion.V2,
@@ -54,6 +49,24 @@ public class PaserkTests
         }
     }
 
+    public static IEnumerable<PaserkTestItem> PaserkTestItems()
+    {
+        foreach (var val in Data())
+        {
+            var version = (ProtocolVersion) val[0] ;
+            var type = (PaserkType) val[1];
+
+            var json = GetPaserkTestVector((int)version, type.ToDescription());
+
+            var vector = JsonConvert.DeserializeObject<PaserkTestCollection>(json);
+            foreach (var test in vector.Tests)
+            {
+                yield return test;
+            }
+        }
+        
+    }
+
     [Theory]
     [MemberData(nameof(Data))]
     public void TypesTestVectors(ProtocolVersion version, PaserkType type)
@@ -66,42 +79,30 @@ public class PaserkTests
         {
             var purpose = Paserk.GetCompatibility(type);
 
-            try
+            if (test.ExpectFail)
             {
-                var pasetoKey = ParseKey(version, type, test.Key);
-
-                var paserk = Paserk.Encode(pasetoKey, purpose, type);
-                paserk.Should().Be(test.Paserk);
-            }
-            catch (PaserkNotSupportedException)
-            {
-                // This could be expected
-                _output.WriteLine($"ENCODE FAIL {test.Name}: since the type is not supported: {type}");
-            }
-            catch (Exception ex)
-            {
-                _output.WriteLine($"ENCODE FAIL {test.Name}: {ex.Message}");
+                var act = () => Paserk.Decode(test.Paserk);
+                act.Should().Throw<Exception>();
+                continue;
             }
 
-            try
-            {
-                var decodedPasetoKey = Paserk.Decode(test.Paserk);
-                decodedPasetoKey.Should().NotBeNull();
-                decodedPasetoKey.Key.IsEmpty.Should().BeFalse();
-                decodedPasetoKey.Key.Span.ToArray().Should().BeEquivalentTo(CryptoBytes.FromHexString(test.Key));
-            }
-            catch (PaserkNotSupportedException)
-            {
-                // This could be expected
-                _output.WriteLine($"DECODE FAIL {test.Name}: since the type is not supported: {type}");
-            }
-            catch (Exception ex)
-            {
-                _output.WriteLine($"DECODE FAIL {test.Name}: {ex.Message}");
-            }
+            TestDecodeEncode(version, type, test, purpose);
         }
     }
 
+    private void TestDecodeEncode(ProtocolVersion version, PaserkType type, PaserkTestItem test, Purpose purpose)
+    {
+
+        var pasetoKey = ParseKey(version, type, test.Key);
+
+        var paserk = Paserk.Encode(pasetoKey, purpose, type);
+        paserk.Should().Be(test.Paserk);
+
+        var decodedPasetoKey = Paserk.Decode(test.Paserk);
+        decodedPasetoKey.Should().NotBeNull();
+        decodedPasetoKey.Key.IsEmpty.Should().BeFalse();
+        decodedPasetoKey.Key.Span.ToArray().Should().BeEquivalentTo(CryptoBytes.FromHexString(test.Key));
+    }
 
     [Theory]
     [MemberData(nameof(Data))]
@@ -138,26 +139,37 @@ public class PaserkTests
         {
             case PaserkType.Lid:
                 break;
+
             case PaserkType.Local:
                 return new PasetoSymmetricKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
+
             case PaserkType.LocalWrap:
                 break;
+
             case PaserkType.LocalPassword:
                 break;
+
             case PaserkType.Seal:
                 break;
+
             case PaserkType.Sid:
                 break;
+
             case PaserkType.Secret:
                 return new PasetoAsymmetricSecretKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
+
             case PaserkType.SecretWrap:
                 break;
+
             case PaserkType.SecretPassword:
                 break;
+
             case PaserkType.Pid:
                 break;
+
             case PaserkType.Public:
                 return new PasetoAsymmetricPublicKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(type), type, "Type not supported");
         }
