@@ -18,6 +18,7 @@ using Paseto.Cryptography.Key;
 using Paseto.Extensions;
 using Paseto.Protocol;
 using Paseto.Tests.Vectors;
+using System.Linq;
 
 [Category("CI")]
 public class PaserkTests
@@ -26,25 +27,32 @@ public class PaserkTests
 
     public PaserkTests(ITestOutputHelper output) => _output = output;
 
-    // TODO: Construct dynamically when supporting all types
-    public static IEnumerable<object[]> Data => new[]
+    private static readonly ProtocolVersion[] ValidProtocols = new []
     {
-        new object[] { ProtocolVersion.V1, PaserkType.Local },
-        new object[] { ProtocolVersion.V1, PaserkType.Public },
-        new object[] { ProtocolVersion.V1, PaserkType.Secret },
-
-        new object[] { ProtocolVersion.V2, PaserkType.Local },
-        new object[] { ProtocolVersion.V2, PaserkType.Public },
-        new object[] { ProtocolVersion.V2, PaserkType.Secret },
-
-        new object[] { ProtocolVersion.V3, PaserkType.Local },
-        new object[] { ProtocolVersion.V3, PaserkType.Public },
-        new object[] { ProtocolVersion.V3, PaserkType.Secret },
-
-        new object[] { ProtocolVersion.V4, PaserkType.Local },
-        new object[] { ProtocolVersion.V4, PaserkType.Public },
-        new object[] { ProtocolVersion.V4, PaserkType.Secret }
+        ProtocolVersion.V1,
+        ProtocolVersion.V2,
+        ProtocolVersion.V3,
+        ProtocolVersion.V4,
     };
+
+    private static readonly PaserkType[] SupportedPaserkTypes = new[]
+    {
+        PaserkType.Local,
+        PaserkType.Public,
+        PaserkType.Secret,
+    };
+
+    // TODO: Construct dynamically when supporting all types
+    public static IEnumerable<object[]> Data()
+    {
+        foreach (var version in ValidProtocols)
+        {
+            foreach (var type in SupportedPaserkTypes)
+            {
+                yield return new object[] { version, type };
+            }
+        }
+    }
 
     [Theory]
     [MemberData(nameof(Data))]
@@ -91,6 +99,36 @@ public class PaserkTests
             {
                 _output.WriteLine($"DECODE FAIL {test.Name}: {ex.Message}");
             }
+        }
+    }
+
+
+    [Theory]
+    [MemberData(nameof(Data))]
+    public void TypesTestVectorsShouldFail(ProtocolVersion version, PaserkType type)
+    {
+        var json = GetPaserkTestVector((int)version, type.ToDescription());
+
+        var vector = JsonConvert.DeserializeObject<PaserkTestCollection>(json);
+
+        var test = vector.Tests.First();
+        var purpose = Paserk.GetCompatibility(type);
+
+        PasetoKey pasetoKey;
+        try
+        {
+            pasetoKey = ParseKey(version, type, test.Key);
+        }
+        catch (Exception ex)
+        {
+            _output.WriteLine($"KEY PARSE FAIL {test.Name}: {ex.Message}");
+            return;
+        }
+
+        foreach (var incompatibleType in SupportedPaserkTypes.Where(t => t != type))
+        {
+            var act = () => Paserk.Encode(pasetoKey, purpose, incompatibleType);
+            act.Should().Throw<Exception>();
         }
     }
 
