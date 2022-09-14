@@ -16,4 +16,6 @@ public class PaserkTestItem
 
     [JsonProperty("expect-fail")]
     public bool ExpectFail { get; set; }
+
+    public string Comment { get; set; }
 }
