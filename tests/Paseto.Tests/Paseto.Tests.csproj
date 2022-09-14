@@ -23,6 +23,102 @@
   </PropertyGroup>
 
   <ItemGroup Label="Test Assets">
+    <Content Include="..\vectors\paserk\k1.lid.json" Link="Vectors\Paserk\k1.lid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k1.local-pw.json" Link="Vectors\Paserk\k1.local-pw.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k1.local-wrap.pie.json" Link="Vectors\Paserk\k1.local-wrap.pie.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k1.pid.json" Link="Vectors\Paserk\k1.pid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k1.seal.json" Link="Vectors\Paserk\k1.seal.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k1.secret-pw.json" Link="Vectors\Paserk\k1.secret-pw.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k1.secret-wrap.pie.json" Link="Vectors\Paserk\k1.secret-wrap.pie.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k1.sid.json" Link="Vectors\Paserk\k1.sid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k2.lid.json" Link="Vectors\Paserk\k2.lid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k2.local-pw.json" Link="Vectors\Paserk\k2.local-pw.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k2.local-wrap.pie.json" Link="Vectors\Paserk\k2.local-wrap.pie.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k2.pid.json" Link="Vectors\Paserk\k2.pid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k2.seal.json" Link="Vectors\Paserk\k2.seal.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k2.secret-pw.json" Link="Vectors\Paserk\k2.secret-pw.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k2.secret-wrap.pie.json" Link="Vectors\Paserk\k2.secret-wrap.pie.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k2.sid.json" Link="Vectors\Paserk\k2.sid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k3.lid.json" Link="Vectors\Paserk\k3.lid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k3.local-pw.json" Link="Vectors\Paserk\k3.local-pw.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k3.local-wrap.pie.json" Link="Vectors\Paserk\k3.local-wrap.pie.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k3.pid.json" Link="Vectors\Paserk\k3.pid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k3.seal.json" Link="Vectors\Paserk\k3.seal.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k3.secret-pw.json" Link="Vectors\Paserk\k3.secret-pw.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k3.secret-wrap.pie.json" Link="Vectors\Paserk\k3.secret-wrap.pie.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k3.sid.json" Link="Vectors\Paserk\k3.sid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k4.lid.json" Link="Vectors\Paserk\k4.lid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k4.local-pw.json" Link="Vectors\Paserk\k4.local-pw.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k4.local-wrap.pie.json" Link="Vectors\Paserk\k4.local-wrap.pie.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k4.pid.json" Link="Vectors\Paserk\k4.pid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k4.seal.json" Link="Vectors\Paserk\k4.seal.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k4.secret-pw.json" Link="Vectors\Paserk\k4.secret-pw.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k4.secret-wrap.pie.json" Link="Vectors\Paserk\k4.secret-wrap.pie.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\vectors\paserk\k4.sid.json" Link="Vectors\Paserk\k4.sid.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\vectors\v1.json" Link="Vectors\v1.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
