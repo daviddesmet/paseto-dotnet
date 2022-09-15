@@ -80,7 +80,7 @@ public class PaserkTests
         var purpose = Paserk.GetCompatibility(type);
         var pasetoKey = ParseKey(version, type, test.Key);
 
-        var paserk = Paserk.Encode(pasetoKey, purpose, type);
+        var paserk = Paserk.Encode(pasetoKey, type);
         paserk.Should().Be(test.Paserk);
 
         var decodedPasetoKey = Paserk.Decode(test.Paserk);
@@ -113,7 +113,7 @@ public class PaserkTests
 
         foreach (var incompatibleType in SupportedPaserkTypes.Where(t => t != type))
         {
-            var act = () => Paserk.Encode(pasetoKey, purpose, incompatibleType);
+            var act = () => Paserk.Encode(pasetoKey, incompatibleType);
             act.Should().Throw<Exception>();
         }
     }

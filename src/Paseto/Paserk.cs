@@ -21,7 +21,7 @@ public static class Paserk
     private const string PARSEK_HEADER_K = "k";
     private static readonly Regex HeaderRegex = new(@"^k[1-9]\.\w", RegexOptions.Compiled);
 
-    public static string Encode(PasetoKey pasetoKey, Purpose purpose, PaserkType type)
+    public static string Encode(PasetoKey pasetoKey, PaserkType type)
     {
         if (GetCompatibility(type) != purpose)
             throw new PaserkNotSupportedException($"The PASERK type is not compatible with the {purpose} purpose.");
