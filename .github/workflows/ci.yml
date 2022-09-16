@@ -124,7 +124,7 @@ jobs:
     - name: 'Checkout'
       uses: actions/checkout@v1
     - name: 'Run Benchmarks'
-      run: cd benchmarks/Paseto.Benchmark && dotnet run -f --exporters json --filter '*'
+      run: cd benchmarks/Paseto.Benchmark && dotnet run --exporters json --filter '*'
     - name: 'Store Benchmark Result'
       uses: rhysd/github-action-benchmark@v1
       with:
