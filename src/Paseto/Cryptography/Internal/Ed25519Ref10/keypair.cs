@@ -8,7 +8,6 @@ internal static partial class Ed25519Operations
     internal static void crypto_sign_keypair(Span<byte> pk, int pkoffset, Span<byte> sk, int skoffset, ReadOnlySpan<byte> seed, int seedoffset)
     {
         GroupElementP3 A;
-        int i;
         Span<byte> h = stackalloc byte[64];
 
         SpanExtensions.Copy(seed, seedoffset, sk, skoffset, 32);
