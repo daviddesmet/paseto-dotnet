@@ -117,13 +117,13 @@ jobs:
         path: ${{env.BUILD_ARTIFACT_PATH}}
 
   benchmark:
-    name: 'Benchmarks'
+    name: 'Execute Benchmarks'
     runs-on: ubuntu-latest
-    needs: build
+    needs: coverage
     steps:
     - name: 'Run Benchmarks'
       run: cd benchmarks/Paseto.Benchmark && dotnet run -f --exporters json --filter '*'
-    - name: 'Store benchmark result'
+    - name: 'Store Benchmark Result'
       uses: rhysd/github-action-benchmark@v1
       with:
         name: Benchmark.Net Benchmark
