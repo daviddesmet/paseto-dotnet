@@ -132,6 +132,7 @@ jobs:
         tool: 'benchmarkdotnet'
         output-file-path: benchmarks/Paseto.Benchmark/BenchmarkDotNet.Artifacts/results/Benchmarks-report-full-compressed.json
         auto-push: false
+      if: ${{ false }} # always skip for now
     - name: 'Push Benchmark Result'
       run: git push 'https://daviddesmet:${{ secrets.GITHUB_TOKEN }}@github.com/daviddesmet/paseto-dotnet.git' gh-pages:gh-pages
       if: ${{ false }} # always skip for now
