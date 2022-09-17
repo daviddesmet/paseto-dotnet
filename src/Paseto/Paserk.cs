@@ -2,11 +2,9 @@
 
 using System;
 using System.Text.RegularExpressions;
-
 using Paseto.Cryptography.Key;
 using Paseto.Extensions;
 using Paseto.Protocol;
-using Paseto.Utils;
 using static Paseto.Utils.EncodingHelper;
 
 /// <summary>
@@ -31,28 +29,10 @@ public static class Paserk
 
         return type switch
         {
-            PaserkType.Local => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
-            PaserkType.Public => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
-            PaserkType.Secret => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
+            PaserkType.Local or PaserkType.Public or PaserkType.Secret => PaserkHelpers.SimpleEncode(header, type, pasetoKey),
             _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.")
         };
     }
-
-    //public static string Id(string paserk, ProtocolVersion version, PaserkType type)
-    //{
-    //    if (type is not (PaserkType.Lid or PaserkType.Sid or PaserkType.Pid))
-    //    {
-    //        throw new PaserkNotSupportedException($"Paserk ID generation is not compatible with paserk type {type}");
-    //    }
-
-    //    var header = $"{PARSEK_HEADER_K}{pasetoKey.Protocol.VersionNumber}.{GetCompatibility(type).ToDescription()}.";
-    //    return version switch
-    //    {
-    //        ProtocolVersion.V1 or ProtocolVersion.V3 => throw new NotImplementedException(),
-    //        ProtocolVersion.V2 or ProtocolVersion.V4 => throw new NotImplementedException(),
-    //        _ => throw new PaserkNotSupportedException("This protocol version is not currently supported."),
-    //    };
-    //}
 
     public static string Encode(PasetoSymmetricKey pasetoKey, PaserkType type)
     {
@@ -88,12 +68,16 @@ public static class Paserk
         {
             case PaserkType.Sid:
                 break;
+
             case PaserkType.Secret:
                 return $"{header}{ToBase64Url(pasetoKey.Key.Span)}";
+
             case PaserkType.SecretWrap:
                 break;
+
             case PaserkType.SecretPassword:
                 break;
+
             default:
                 throw new PaserkNotSupportedException($"The PASETO key is not compatible with the PASERK type {type}.");
         }
@@ -109,8 +93,10 @@ public static class Paserk
         {
             case PaserkType.Pid:
                 break;
+
             case PaserkType.Public:
                 return $"{header}{ToBase64Url(pasetoKey.Key.Span)}";
+
             default:
                 throw new PaserkNotSupportedException($"The PASETO key is not compatible with the PASERK type {type}.");
         }
@@ -137,13 +123,12 @@ public static class Paserk
             throw new PaserkInvalidException("Serialized key has an unsupported version");
 
         var type = parts[1].FromDescription<PaserkType>();
-        //var purpose = GetCompatibility(type);
 
         var encodedKey = parts.Length > 3 ? parts[3] : parts[2];
 
         return type switch
         {
-            PaserkType.Local or PaserkType.Secret or PaserkType.Public  => SimpleDecode(type,(ProtocolVersion)version,encodedKey),
+            PaserkType.Local or PaserkType.Secret or PaserkType.Public => PaserkHelpers.SimpleDecode(type, (ProtocolVersion)version, encodedKey),
 
             PaserkType.Lid => throw new NotImplementedException(),
             PaserkType.Sid => throw new NotImplementedException(),
@@ -153,22 +138,7 @@ public static class Paserk
             PaserkType.Seal => throw new NotImplementedException(),
             PaserkType.SecretWrap => throw new NotImplementedException(),
             PaserkType.SecretPassword => throw new NotImplementedException(),
-        _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported."),
-        };
-    }
-
-    private static PasetoKey SimpleDecode(PaserkType type, ProtocolVersion version, string encodedKey)
-    {
-        var key = FromBase64Url(encodedKey);
-
-        return type switch
-        {
-            PaserkType.Local when key.Length == 32 => new PasetoSymmetricKey(key, CreateProtocolVersion(version)),
-            PaserkType.Local => throw new ArgumentException($"The key length in bytes must be 32."),
-
-            PaserkType.SecretWrap => new PasetoAsymmetricSecretKey(key, CreateProtocolVersion(version)),
-            PaserkType.Public => new PasetoAsymmetricPublicKey(key, CreateProtocolVersion(version)),
-            _ => throw new PaserkInvalidException($"Error type {type} is not compatible with ${nameof(SimpleDecode)}"),
+            _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported."),
         };
     }
 
