@@ -23,22 +23,14 @@ internal static class PaserkHelpers
         var length = pasetoKey.Key.Length;
         return (type, pasetoKey.Protocol.Version, length) switch
         {
-            (PaserkType.Local, _, SYM_KEY_SIZE_IN_BYTES) => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
-            (PaserkType.Local, _, _) => throw new ArgumentException($"The key length in bytes must be {SYM_KEY_SIZE_IN_BYTES}."),
+            (PaserkType.Local, _, not SYM_KEY_SIZE_IN_BYTES) => throw new ArgumentException($"The key length in bytes must be {SYM_KEY_SIZE_IN_BYTES}."),
 
-            (PaserkType.Public, "v2" or "v4", V2V4_ASYM_PUBLIC_KEY_SIZE) when length == V2V4_ASYM_PUBLIC_KEY_SIZE => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
-            (PaserkType.Public, "v2" or "v4", _) => throw new ArgumentException($"The key length in bytes must be {V2V4_ASYM_PUBLIC_KEY_SIZE}."),
-            (PaserkType.Public, _, _) => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
+            (PaserkType.Public, "v2" or "v4", not V2V4_ASYM_PUBLIC_KEY_SIZE) => throw new ArgumentException($"The key length in bytes must be {V2V4_ASYM_PUBLIC_KEY_SIZE}."),
+            (PaserkType.Secret, "v2" or "v4", not V2V4_ASYM_PRIVATE_KEY_SIZE) => throw new ArgumentException($"The key length in bytes must be {V2V4_ASYM_PRIVATE_KEY_SIZE}."),
 
-            (PaserkType.Secret, "v2" or "v4", V2V4_ASYM_PRIVATE_KEY_SIZE) => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
-            (PaserkType.Secret, "v2" or "v4", _) => throw new ArgumentException($"The key length in bytes must be {V2V4_ASYM_PRIVATE_KEY_SIZE}."),
+            (PaserkType.Secret, "v3", < V3_ASYM_MIN_PRIVATE_KEY_SIZE) => throw new ArgumentException($"The key length in bytes must be at least {V3_ASYM_MIN_PRIVATE_KEY_SIZE}."),
 
-            (PaserkType.Secret, "v3", >= V3_ASYM_MIN_PRIVATE_KEY_SIZE) => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
-            (PaserkType.Secret, "v3", _) => throw new ArgumentException($"The key length in bytes must be at least {V3_ASYM_MIN_PRIVATE_KEY_SIZE}."),
-
-            (PaserkType.Secret, _, _) => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
-
-            _ => throw new Exception($"Unsupported operation {type}"),
+            _ => $"{header}{ToBase64Url(pasetoKey.Key.Span)}",
         };
     }
 
@@ -47,16 +39,27 @@ internal static class PaserkHelpers
         var key = FromBase64Url(encodedKey);
         var protocolVersion = Paserk.CreateProtocolVersion(version);
 
-        return (type, key.Length) switch
+        return (type,version, key.Length) switch
         {
-            (PaserkType.Local, SYM_KEY_SIZE_IN_BYTES) => new PasetoSymmetricKey(key, protocolVersion),
-            (PaserkType.Local,_) => throw new ArgumentException($"The key length in bytes must be {SYM_KEY_SIZE_IN_BYTES}."),
+            (PaserkType.Local, _, not SYM_KEY_SIZE_IN_BYTES) => throw new ArgumentException($"The key length in bytes must be {SYM_KEY_SIZE_IN_BYTES}."),
 
-            (PaserkType.Secret, V2V4_ASYM_PRIVATE_KEY_SIZE)Length == V2V4_ASYM_PRIVATE_KEY_SIZE => new PasetoAsymmetricSecretKey(DecodePrivateKey(encodedKey), protocolVersion),
-            PaserkType.Secret when key.Length == V2V4_ASYM_PRIVATE_KEY_SIZE => throw new ArgumentException($"The key length in bytes must be {V2V4_ASYM_PRIVATE_KEY_SIZE}."),
+            (PaserkType.Public, ProtocolVersion.V2 or ProtocolVersion.V4, not V2V4_ASYM_PUBLIC_KEY_SIZE) => throw new ArgumentException($"The key length in bytes must be {V2V4_ASYM_PUBLIC_KEY_SIZE}."),
+            (PaserkType.Secret, ProtocolVersion.V2 or ProtocolVersion.V4, not V2V4_ASYM_PRIVATE_KEY_SIZE) => throw new ArgumentException($"The key length in bytes must be {V2V4_ASYM_PRIVATE_KEY_SIZE}."),
 
-            PaserkType.Secret => new PasetoAsymmetricSecretKey(DecodePrivateKey(encodedKey), protocolVersion),
-            PaserkType.Public => new PasetoAsymmetricPublicKey(DecodePublicKey(encodedKey), protocolVersion),
+            (PaserkType.Secret, ProtocolVersion.V3, < V3_ASYM_MIN_PRIVATE_KEY_SIZE) => throw new ArgumentException($"The key length in bytes must be at least {V3_ASYM_MIN_PRIVATE_KEY_SIZE}."),
+
+            (PaserkType.Local,_,_) => new PasetoSymmetricKey(key, protocolVersion),
+            (PaserkType.Public,_,_) => new PasetoAsymmetricPublicKey(key, protocolVersion),
+            (PaserkType.Secret,_,_) => new PasetoAsymmetricSecretKey(key, protocolVersion),
+
+            //(PaserkType.Local, SYM_KEY_SIZE_IN_BYTES) => new PasetoSymmetricKey(key, protocolVersion),
+            //(PaserkType.Local,_) => throw new ArgumentException($"The key length in bytes must be {SYM_KEY_SIZE_IN_BYTES}."),
+
+            //(PaserkType.Secret, V2V4_ASYM_PRIVATE_KEY_SIZE)== V2V4_ASYM_PRIVATE_KEY_SIZE => new PasetoAsymmetricSecretKey(DecodePrivateKey(encodedKey), protocolVersion),
+            //PaserkType.Secret when key.Length == V2V4_ASYM_PRIVATE_KEY_SIZE => throw new ArgumentException($"The key length in bytes must be {V2V4_ASYM_PRIVATE_KEY_SIZE}."),
+
+            //PaserkType.Secret => new PasetoAsymmetricSecretKey(DecodePrivateKey(encodedKey), protocolVersion),
+            //PaserkType.Public => new PasetoAsymmetricPublicKey(DecodePublicKey(encodedKey), protocolVersion),
             _ => throw new PaserkInvalidException($"Error type {type} is not compatible with ${nameof(SimpleDecode)}"),
         };
     }
