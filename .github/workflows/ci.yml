@@ -116,6 +116,27 @@ jobs:
         name: 'coverage-report'
         path: ${{env.BUILD_ARTIFACT_PATH}}
 
+  benchmark:
+    name: 'Execute Benchmarks'
+    runs-on: ubuntu-latest
+    needs: coverage
+    steps:
+    - name: 'Checkout'
+      uses: actions/checkout@v1
+    - name: 'Run Benchmarks'
+      run: cd benchmarks/Paseto.Benchmark && dotnet run -f net6.0 -c Release --exporters json --filter '*'
+    - name: 'Store Benchmark Result'
+      uses: rhysd/github-action-benchmark@v1
+      with:
+        name: Benchmark.Net Benchmark
+        tool: 'benchmarkdotnet'
+        output-file-path: benchmarks/Paseto.Benchmark/BenchmarkDotNet.Artifacts/results/Benchmarks-report-full-compressed.json
+        auto-push: false
+      if: ${{ false }} # always skip for now
+    - name: 'Push Benchmark Result'
+      run: git push 'https://daviddesmet:${{ secrets.GITHUB_TOKEN }}@github.com/daviddesmet/paseto-dotnet.git' gh-pages:gh-pages
+      if: ${{ false }} # always skip for now
+
   push-to-github-packages:
     name: 'Push GitHub Packages'
     needs: build

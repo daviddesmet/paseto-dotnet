@@ -43,8 +43,7 @@ public class Blake2bMac : HMAC
     /// <param name="hashSize">The hash size in bits</param>
     public Blake2bMac(byte[] keyData, int hashSize) : this(hashSize)
     {
-        if (keyData is null)
-            keyData = Array.Empty<byte>();
+        keyData ??= Array.Empty<byte>();
 
         if (keyData.Length > KEY_SIZE_MAX)
             throw new ArgumentException($"Key needs to be between 0 and {KEY_SIZE_MAX} bytes", nameof(keyData));
