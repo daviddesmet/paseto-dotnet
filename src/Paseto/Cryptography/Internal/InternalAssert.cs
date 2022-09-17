@@ -1,13 +1,12 @@
-﻿namespace Paseto.Cryptography.Internal
-{
-    using System;
+﻿namespace Paseto.Cryptography.Internal;
 
-    internal static class InternalAssert
+using System;
+
+internal static class InternalAssert
+{
+    public static void Assert(bool condition, string message)
     {
-        public static void Assert(bool condition, string message)
-        {
-            if (!condition)
-                throw new InvalidOperationException($"An assertion in Paseto.Cryptography failed {message}!");
-        }
+        if (!condition)
+            throw new InvalidOperationException($"An assertion in Paseto.Cryptography failed {message}!");
     }
 }

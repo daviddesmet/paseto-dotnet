@@ -43,8 +43,7 @@ public sealed class ExpirationTimeValidator : BaseValidator
             throw new PasetoTokenValidationException($"Claim '{ClaimName}' must be a DateTime");
         }
 
-        if (expected is null)
-            expected = DateTime.UtcNow;
+        expected ??= DateTime.UtcNow;
 
         if (Comparer.GetComparisonResult(exp, expected) < 0) // expected >= exp
             throw new PasetoTokenValidationException("Token has expired");
