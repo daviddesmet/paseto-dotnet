@@ -124,13 +124,13 @@ jobs:
     - name: 'Checkout'
       uses: actions/checkout@v1
     - name: 'Run Benchmarks'
-      run: cd benchmarks/Paseto.Benchmark && dotnet run -f net6.0 --exporters json --filter '*'
+      run: cd benchmarks/Paseto.Benchmark && dotnet run -f net6.0 -c Release --exporters json --filter '*'
     - name: 'Store Benchmark Result'
       uses: rhysd/github-action-benchmark@v1
       with:
         name: Benchmark.Net Benchmark
         tool: 'benchmarkdotnet'
-        output-file-path: benchmarks/Paseto.Benchmark/Paseto.Benchmark.Artifacts/results/Paseto.Benchmark.Benchmarks-report-full-compressed.json
+        output-file-path: benchmarks/Paseto.Benchmark/BenchmarkDotNet.Artifacts/results/Benchmarks-report-full-compressed.json
         github-token: ${{ secrets.GITHUB_TOKEN }}
         auto-push: true
         # Show alert with commit comment on detecting possible performance regression
