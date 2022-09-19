@@ -88,8 +88,12 @@ public class PaserkTests
             }
             else
             {
+                // TODO Wrap ParseKey if expected to fail
+                act = () =>
+                {
                 var key = ParseKey(version, type, test.Key);
-                act = () => Paserk.Encode(key, type);
+                    Paserk.Encode(key, type);
+                };
             }
 
             act.Should().Throw<Exception>();
