@@ -29,6 +29,7 @@ public static class Paserk
             PaserkType.Lid or PaserkType.Sid or PaserkType.Pid =>
             PaserkHelpers.IdEncode(header, Encode(pasetoKey, Map(type)), type, pasetoKey),
 
+            PaserkType.LocalPassword => PaserkHelpers.PBKDEncode(header, "correct horse battery staple", 1000,type,pasetoKey),
             _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.")
         };
     }

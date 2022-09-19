@@ -1,7 +1,13 @@
 ﻿using System;
+using System.Drawing;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
+using Org.BouncyCastle.Crypto.Generators;
+using Org.BouncyCastle.Crypto.Parameters;
+using Org.BouncyCastle.Security;
 using Paseto;
 using Paseto.Cryptography;
 using Paseto.Cryptography.Key;
@@ -59,6 +65,67 @@ internal static class PaserkHelpers
         }
 
         throw new NotImplementedException();
+    }
+
+    internal static string PBKDEncode(string header, string password, int iterations, PaserkType type, PasetoKey pasetoKey)
+    {
+        var version = StringToVersion(pasetoKey.Protocol.Version);
+
+        if (!Paserk.IsKeyTypeCompatible(type, pasetoKey))
+            throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
+
+        var ptk = System.Text.Encoding.UTF8.GetString(pasetoKey.Key.ToArray());
+
+        if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
+        {
+            var salt = new byte[32];
+            RandomNumberGenerator.Fill(salt);
+
+            var passwordBytes = Encoding.UTF8.GetBytes(password);
+
+            //var pdb = new Pkcs5S2ParametersGenerator(new Sha384Digest());
+            //pdb.Init(PbeParametersGenerator.Pkcs5PasswordToBytes(password.ToCharArray()), salt, iterations);
+            //var key = (KeyParameter)pdb.GenerateDerivedMacParameters(32);
+            //var k = key.GetKey();
+
+#if NET5_0
+    throw new NotImplementedException();
+#endif
+#if NET6_0_OR_GREATER
+
+            var k = Rfc2898DeriveBytes.Pbkdf2(passwordBytes, salt, iterations, HashAlgorithmName.SHA384, 384);
+            //k = k[..32];
+
+            using var sha = SHA384.Create();
+            var sfd = new byte[] { 255 };
+            var asd = new byte[] { 254 };
+
+            var ek = sha.ComputeHash(sfd.Concat(k).ToArray())[..32];
+            var ak = sha.ComputeHash(asd.Concat(k).ToArray());
+
+            var nonce = new byte[16];
+            RandomNumberGenerator.Fill(nonce);
+
+            var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
+            cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce));
+            var edk = cipher.DoFinal(GetBytes(ptk));
+
+            using var hmac = new HMACSHA384(ak);
+            var i = BitConverter.GetBytes(iterations);
+            var h = Encoding.UTF8.GetBytes(header);
+            var msg = h.Concat(salt)
+                       .Concat(i)
+                       .Concat(nonce)
+                       .Concat(edk)
+                       .ToArray();
+            var t = hmac.ComputeHash(msg);
+
+            var output = salt.Concat(i).Concat(nonce).Concat(edk).Concat(t).ToArray();
+            return $"{header}{ToBase64Url(output)}";
+#endif
+        }
+        throw new NotImplementedException();
+
     }
 
     internal static PasetoKey SimpleDecode(PaserkType type, ProtocolVersion version, string encodedKey)
