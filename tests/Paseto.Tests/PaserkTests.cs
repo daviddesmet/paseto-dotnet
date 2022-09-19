@@ -49,13 +49,12 @@ public class PaserkTests
         }
     }
 
-    public static IEnumerable<object[]> PaserkTestItems()
+    public static IEnumerable<object[]> TestItemGenerator(ProtocolVersion[] versions, PaserkType[] types)
     {
-        foreach (var val in Data())
+        foreach (var version in versions)
         {
-            var version = (ProtocolVersion)val[0];
-            var type = (PaserkType)val[1];
-
+            foreach (var type in types)
+            {
             var json = GetPaserkTestVector((int)version, type.ToDescription());
 
             var vector = JsonConvert.DeserializeObject<PaserkTestCollection>(json);
@@ -65,9 +64,12 @@ public class PaserkTests
             }
         }
     }
+    }
+
+    public static IEnumerable<object[]> TypesGenerator => TestItemGenerator(ValidProtocols, SupportedPaserkTypes);
 
     [Theory]
-    [MemberData(nameof(PaserkTestItems))]
+    [MemberData(nameof(TypesGenerator))]
     public void TypesTestVectors(PaserkTestItem test, ProtocolVersion version, PaserkType type)
     {
         // Paserk implementation is not version specific so we skip this test.
