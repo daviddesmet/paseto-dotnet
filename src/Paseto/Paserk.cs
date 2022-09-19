@@ -137,7 +137,7 @@ public static class Paserk
         {
             PaserkType.Local or PaserkType.Secret or PaserkType.Public => PaserkHelpers.SimpleDecode(type, (ProtocolVersion)version, encodedKey),
 
-            PaserkType.Lid or PaserkType.Sid or PaserkType.Pid => throw new NotImplementedException(),
+            PaserkType.Lid or PaserkType.Sid or PaserkType.Pid => throw new PaserkNotSupportedException($"Decode is not supported for type {type}. Id should be used to determine which key should be used."),
             PaserkType.LocalWrap => throw new NotImplementedException(),
             PaserkType.LocalPassword => throw new NotImplementedException(),
             PaserkType.Seal => throw new NotImplementedException(),
