@@ -37,6 +37,13 @@ public class PaserkTests
         PaserkType.Secret,
     };
 
+    private static readonly PaserkType[] PaserkIdTypes = new[]
+    {
+        PaserkType.Lid,
+        PaserkType.Pid,
+        PaserkType.Sid,
+    };
+
     // TODO: Construct dynamically when supporting all types
     public static IEnumerable<object[]> Data()
     {
@@ -55,15 +62,15 @@ public class PaserkTests
         {
             foreach (var type in types)
             {
-            var json = GetPaserkTestVector((int)version, type.ToDescription());
+                var json = GetPaserkTestVector((int)version, type.ToDescription());
 
-            var vector = JsonConvert.DeserializeObject<PaserkTestCollection>(json);
-            foreach (var test in vector.Tests)
-            {
-                yield return new object[] { test, version, type };
+                var vector = JsonConvert.DeserializeObject<PaserkTestCollection>(json);
+                foreach (var test in vector.Tests)
+                {
+                    yield return new object[] { test, version, type };
+                }
             }
         }
-    }
     }
 
     public static IEnumerable<object[]> TypesGenerator => TestItemGenerator(ValidProtocols, SupportedPaserkTypes);
@@ -91,7 +98,7 @@ public class PaserkTests
                 // TODO Wrap ParseKey if expected to fail
                 act = () =>
                 {
-                var key = ParseKey(version, type, test.Key);
+                    var key = ParseKey(version, type, test.Key);
                     Paserk.Encode(key, type);
                 };
             }
@@ -112,9 +119,40 @@ public class PaserkTests
         decodedPasetoKey.Key.Span.ToArray().Should().BeEquivalentTo(TestHelper.ReadKey(test.Key));
     }
 
+    public static IEnumerable<object[]> IdGenerator => TestItemGenerator(ValidProtocols, PaserkIdTypes);
+
+    [Theory]
+    [MemberData(nameof(IdGenerator))]
+    public void TestIdVectors(PaserkTestItem test, ProtocolVersion version, PaserkType type)
+    {
+        // Paserk implementation is not version specific so we skip this test.
+        if (test is { ExpectFail: true, Comment: "Implementations MUST NOT accept a PASERK of the wrong version." })
+        {
+            return;
+        }
+
+        if (test.ExpectFail)
+        {
+            var act = () =>
+            {
+                var key = ParseKey(version, type, test.Key);
+                Paserk.Encode(key, type);
+            };
+
+            act.Should().Throw<Exception>();
+            return;
+        }
+
+        var purpose = Paserk.GetCompatibility(type);
+        var pasetoKey = ParseKey(version, type, test.Key);
+
+        var paserk = Paserk.Encode(pasetoKey, type);
+        paserk.Should().Be(test.Paserk);
+    }
+
     [Theory]
     [MemberData(nameof(Data))]
-    public void TypesTestVectorsShouldFail(ProtocolVersion version, PaserkType type)
+    public void PaserkTypeShouldNotEncodeIncompatibleKey(ProtocolVersion version, PaserkType type)
     {
         var json = GetPaserkTestVector((int)version, type.ToDescription());
 
@@ -145,10 +183,7 @@ public class PaserkTests
     {
         switch (type)
         {
-            case PaserkType.Lid:
-                break;
-
-            case PaserkType.Local:
+            case PaserkType.Local or PaserkType.Lid:
                 return new PasetoSymmetricKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
 
             case PaserkType.LocalWrap:
@@ -157,10 +192,7 @@ public class PaserkTests
 
             case PaserkType.Seal:
 
-            case PaserkType.Sid:
-                break;
-
-            case PaserkType.Secret:
+            case PaserkType.Secret or PaserkType.Sid:
                 return new PasetoAsymmetricSecretKey(TestHelper.ReadKey(key), Paserk.CreateProtocolVersion(version));
 
             case PaserkType.SecretWrap:
@@ -169,10 +201,7 @@ public class PaserkTests
             case PaserkType.SecretPassword:
                 break;
 
-            case PaserkType.Pid:
-                break;
-
-            case PaserkType.Public:
+            case PaserkType.Public or PaserkType.Pid:
                 return new PasetoAsymmetricPublicKey(TestHelper.ReadKey(key), Paserk.CreateProtocolVersion(version));
 
             default:
