@@ -114,7 +114,7 @@ public static class Paserk
         throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.");
     }
 
-    public static PasetoKey Decode(string serializedKey)
+    public static PasetoKey Decode(string serializedKey, string password = null)
     {
         if (string.IsNullOrWhiteSpace(serializedKey))
             throw new ArgumentNullException(nameof(serializedKey));
@@ -141,8 +141,8 @@ public static class Paserk
             PaserkType.Local or PaserkType.Secret or PaserkType.Public => PaserkHelpers.SimpleDecode(type, (ProtocolVersion)version, encodedKey),
 
             PaserkType.Lid or PaserkType.Sid or PaserkType.Pid => throw new PaserkNotSupportedException($"Decode is not supported for type {type}. Id should be used to determine which key should be used."),
-            PaserkType.LocalWrap => throw new NotImplementedException(),
-            PaserkType.LocalPassword => throw new NotImplementedException(),
+            PaserkType.LocalWrap => PaserkHelpers.SimpleDecode(type,(ProtocolVersion)version,serializedKey),
+            PaserkType.LocalPassword => PaserkHelpers.PBKDDecode(type, (ProtocolVersion)version,serializedKey,password),
             PaserkType.Seal => throw new NotImplementedException(),
             PaserkType.SecretWrap => throw new NotImplementedException(),
             PaserkType.SecretPassword => throw new NotImplementedException(),
