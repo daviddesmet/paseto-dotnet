@@ -17,7 +17,7 @@ public static class Paserk
     private const string PARSEK_HEADER_K = "k";
     private static readonly Regex HeaderRegex = new(@"^k[1-9]\.\w", RegexOptions.Compiled);
 
-    public static string Encode(PasetoKey pasetoKey, PaserkType type)
+    public static string Encode(PasetoKey pasetoKey, PaserkType type, string password = null, int iterations = 10_000)
     {
         if (!IsKeyTypeCompatible(type, pasetoKey))
             throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
@@ -30,7 +30,7 @@ public static class Paserk
             PaserkType.Lid or PaserkType.Sid or PaserkType.Pid =>
             PaserkHelpers.IdEncode(header, Encode(pasetoKey, Map(type)), type, pasetoKey),
 
-            PaserkType.LocalPassword => PaserkHelpers.PBKDEncode(header, "correct horse battery staple", 1000,type,pasetoKey),
+            PaserkType.LocalPassword => PaserkHelpers.PBKDEncode(header, password, iterations, type, pasetoKey),
             _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.")
         };
     }
