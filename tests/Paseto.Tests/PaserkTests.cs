@@ -150,12 +150,11 @@ public class PaserkTests
         paserk.Should().Be(test.Paserk);
     }
 
-    public static IEnumerable<object[]> PwGenerator => TestItemGenerator(new ProtocolVersion[] {ProtocolVersion.V1}, new PaserkType[] {PaserkType.LocalPassword});
-
+    public static IEnumerable<object[]> PwGenerator => TestItemGenerator(new ProtocolVersion[] { ProtocolVersion.V1, ProtocolVersion.V3 }, new PaserkType[] { PaserkType.LocalPassword });
 
     [Theory]
     [MemberData(nameof(PwGenerator))]
-    public void TestVectors(PaserkTestItem test, ProtocolVersion version, PaserkType type)
+    public void TestPwVectors(PaserkTestItem test, ProtocolVersion version, PaserkType type)
     {
         // Paserk implementation is not version specific so we skip this test.
         if (test is { ExpectFail: true, Comment: "Implementations MUST NOT accept a PASERK of the wrong version." })
@@ -167,8 +166,8 @@ public class PaserkTests
         {
             var act = () =>
             {
-                var key = ParseKey(version, type, test.Unwrapped);
-                Paserk.Encode(key, type);
+                var key = ParseKey(version, type, test.Key);
+                Paserk.Decode(test.Paserk, test.Password);
             };
 
             act.Should().Throw<Exception>();
@@ -178,8 +177,17 @@ public class PaserkTests
         var purpose = Paserk.GetCompatibility(type);
         var pasetoKey = ParseKey(version, type, test.Unwrapped);
 
-        var paserk = Paserk.Encode(pasetoKey, type);
-        paserk.Should().Be(test.Paserk);
+        var expectedUnwrapped = TestHelper.ReadKey(test.Unwrapped);
+
+        // Decode paserk to verify decoding works
+        var decoded = Paserk.Decode(test.Paserk, test.Password);
+        decoded.Key.Span.ToArray().Should().BeEquivalentTo(expectedUnwrapped);
+
+        // Encode then decode to verify that encoding works
+        var wrapped = Paserk.Encode(pasetoKey, type, test.Password, test.Options["iterations"]);
+        var unwrapped = Paserk.Decode(wrapped, test.Password);
+
+        unwrapped.Key.Span.ToArray().Should().BeEquivalentTo(expectedUnwrapped);
     }
 
     [Theory]
