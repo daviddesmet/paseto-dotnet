@@ -145,6 +145,86 @@ internal static class PaserkHelpers
         };
     }
 
+    internal static PasetoKey PBKDDecode(PaserkType type, ProtocolVersion version, string paserk, string password)
+    {
+        var split = paserk.Split('.');
+        var header = $"{split[0]}.{split[1]}.";
+        var headerBytes = Encoding.UTF8.GetBytes(header);
+
+        // I think the test vector is broken.
+        var passwordBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(Encoding.UTF8.GetBytes(password)).ToLower());
+        var strPass = Convert.ToHexString(passwordBytes);
+
+        //var passwordBytes = Encoding.UTF8.GetBytes(password);
+        var bytes = FromBase64Url(paserk.Split('.')[2]);
+
+        if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
+        {
+            //99e5933c9a2191e2ec68abe582280392c33ddf9b920943b78ef8c410700adbc4
+            var salt = bytes[..32];
+            var strSalt = Convert.ToHexString(salt);
+
+            var iBigEnd = bytes[32..36].ToArray();
+            var rev = iBigEnd.Reverse().ToArray();
+            var iterations = BitConverter.ToInt32(rev);
+
+            var nonce = bytes[36..52];
+            var strNonce = Convert.ToHexString(nonce);
+
+            var edk = bytes[52..84];
+            var strEdk = Convert.ToHexString(edk);
+
+            var hsine = bytes[..^48];
+            var t = bytes[^48..];
+
+            // Derive the pre-key k from the password and salt. k = PBKDF2-SHA384(pw, s, i)
+            // var k = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA384, 384);
+            var k = Pbkdf2.Sha384(passwordBytes, salt, iterations)[..32];
+
+            var str = Convert.ToHexString(k);
+
+            using var sha = SHA384.Create();
+            var FF = new byte[] { 255 };
+            var FE = new byte[] { 254 };
+
+            // Derive the authentication key(Ak) from SHA-384(0xFE || k).
+            var ak = sha.ComputeHash(FE.Concat(k).ToArray());
+            var strAk = Convert.ToHexString(ak);
+
+            // Recalculate the authentication tag t2 over h, s, i, n, and edk.
+            // t2 = HMAC-SHA-384(msg = h || s || int2bytes(i) || n || edk, key = Ak)
+            using var hmac = new HMACSHA384(ak);
+            var msg = headerBytes.Concat(hsine.ToArray()).ToArray();
+
+            var msgStr = Convert.ToHexString(msg).ToLower();
+
+            var t2 = hmac.ComputeHash(msg);
+            var t2Str = Convert.ToHexString(t2);
+
+            // Compare t with t2 using a constant-time string comparison function.
+            // If it fails, abort.
+            if (!CryptoBytes.ConstantTimeEquals(t, t2))
+                throw new Exception("Paserk has invalid authentication tag.");
+
+            // Derive the encryption key (Ek) from SHA-384(0xFF || k).
+            var ek = sha.ComputeHash(FF.Concat(k).ToArray())[..32];
+
+            // Decrypt the encrypted key (edk) with Ek and n to obtain the plaintext key ptk.
+            // ptk = AES-256-CTR(msg=edk, key=Ek, nonce=n)
+            var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
+            cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce));
+            var ptk = cipher.DoFinal(edk);
+
+            // Extract wrapped paserk
+            return SimpleDecode(PaserkType.Local, version, ToBase64Url(ptk));
+        }
+        throw new NotImplementedException();
+
+
+
+    }
+
+
     // TODO: Check Public V3 has valid point compression.
     // TODO: Verify ASN1 encoding for V1
     //  +--------+---------+----+----+----+
