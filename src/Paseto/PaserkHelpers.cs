@@ -94,49 +94,47 @@ internal static class PaserkHelpers
 
         if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
         {
-            var salt = new byte[32];
-            //RandomNumberGenerator.Fill(salt);
-            var hexSalt = Convert.ToHexString(salt);
-
             var passwordBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(Encoding.UTF8.GetBytes(password)).ToLower());
-            var strPass = Convert.ToHexString(passwordBytes);
 
+            // Generate a random 256-bit (32 byte) salt (s).
+            var salt = new byte[32];
+            RandomNumberGenerator.Fill(salt);
+
+            // Derive the pre-key k from the password and salt. k = PBKDF2-SHA384(pw, s, i)
             var k = Pbkdf2.Sha384(passwordBytes, salt, iterations)[..32];
-            var kStr = Convert.ToHexString(k);
 
             using var sha = SHA384.Create();
             var FF = new byte[] { 255 };
             var FE = new byte[] { 254 };
 
+            // Derive the encryption key (Ek) from SHA-384(0xFF || k).
             var ek = sha.ComputeHash(FF.Concat(k).ToArray())[..32];
+
+            // Derive the authentication key (Ak) from SHA-384(0xFE || k).
             var ak = sha.ComputeHash(FE.Concat(k).ToArray());
 
-            var ekStr = Convert.ToHexString(ek);
-            var akStr = Convert.ToHexString(ak);
-
-
+            // Generate a random 128-bit nonce (n).
             var nonce = new byte[16];
-            //RandomNumberGenerator.Fill(nonce);
+            RandomNumberGenerator.Fill(nonce);
 
+            // Encrypt the plaintext key ptk with Ek and n to obtain the encrypted data key edk.
+            // edk = AES-256-CTR(msg=ptk, key=Ek, nonce=n)
             var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
             cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce));
             var edk = cipher.DoFinal(ptk);
 
-            var edkStr = Convert.ToHexString(edk);
-            //var strPtk = Convert.ToHexString(GetBytes(ptk));
-            //var strPtk = Convert.ToHexString(GetBytes(ptk.Split(".")[2]));
-
+            // Calculate the authentication tag t over h, s, i, n, and edk
+            // t = HMAC-SHA-384(msg = h || s || int2bytes(i) || n || edk, key = Ak)
             using var hmac = new HMACSHA384(ak);
-            var i = GetBigEndianInt(iterations);
+            var bigI = GetBigEndianInt(iterations);
             var h = Encoding.UTF8.GetBytes(header);
             var msg = h.Concat(salt)
-                       .Concat(i)
+                       .Concat(bigI)
                        .Concat(nonce)
                        .Concat(edk)
                        .ToArray();
             var t = hmac.ComputeHash(msg);
 
-            var bigI = GetBigEndianInt(iterations);
             var output = salt.Concat(bigI).Concat(nonce).Concat(edk).Concat(t).ToArray();
             return $"{header}{ToBase64Url(output)}";
         }
@@ -185,26 +183,22 @@ internal static class PaserkHelpers
 
         // I think the test vector is broken.
         var passwordBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(Encoding.UTF8.GetBytes(password)).ToLower());
-        var strPass = Convert.ToHexString(passwordBytes);
 
         //var passwordBytes = Encoding.UTF8.GetBytes(password);
         var bytes = FromBase64Url(paserk.Split('.')[2]);
 
         if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
         {
-            //99e5933c9a2191e2ec68abe582280392c33ddf9b920943b78ef8c410700adbc4
+            // Unpack values
             var salt = bytes[..32];
-            var strSalt = Convert.ToHexString(salt);
 
             var iBigEnd = bytes[32..36].ToArray();
             var rev = iBigEnd.Reverse().ToArray();
             var iterations = BitConverter.ToInt32(rev);
 
             var nonce = bytes[36..52];
-            var strNonce = Convert.ToHexString(nonce);
 
             var edk = bytes[52..84];
-            var strEdk = Convert.ToHexString(edk);
 
             var hsine = bytes[..^48];
             var t = bytes[^48..];
@@ -213,25 +207,18 @@ internal static class PaserkHelpers
             // var k = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA384, 384);
             var k = Pbkdf2.Sha384(passwordBytes, salt, iterations)[..32];
 
-            var str = Convert.ToHexString(k);
-
             using var sha = SHA384.Create();
             var FF = new byte[] { 255 };
             var FE = new byte[] { 254 };
 
             // Derive the authentication key(Ak) from SHA-384(0xFE || k).
             var ak = sha.ComputeHash(FE.Concat(k).ToArray());
-            var strAk = Convert.ToHexString(ak);
 
             // Recalculate the authentication tag t2 over h, s, i, n, and edk.
             // t2 = HMAC-SHA-384(msg = h || s || int2bytes(i) || n || edk, key = Ak)
             using var hmac = new HMACSHA384(ak);
-            var msg = headerBytes.Concat(hsine.ToArray()).ToArray();
-
-            var msgStr = Convert.ToHexString(msg).ToLower();
-
+            var msg = headerBytes.Concat(hsine).ToArray();
             var t2 = hmac.ComputeHash(msg);
-            var t2Str = Convert.ToHexString(t2);
 
             // Compare t with t2 using a constant-time string comparison function.
             // If it fails, abort.
