@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Drawing;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
 using System.Security.Cryptography;
 using System.Text;
+using NaCl.Core.Internal;
 using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Generators;
@@ -74,44 +77,44 @@ internal static class PaserkHelpers
         if (!Paserk.IsKeyTypeCompatible(type, pasetoKey))
             throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
 
-        var ptk = System.Text.Encoding.UTF8.GetString(pasetoKey.Key.ToArray());
+        var ptk = pasetoKey.Key.ToArray();
 
         if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
         {
             var salt = new byte[32];
-            RandomNumberGenerator.Fill(salt);
+            //RandomNumberGenerator.Fill(salt);
+            var hexSalt = Convert.ToHexString(salt);
 
-            var passwordBytes = Encoding.UTF8.GetBytes(password);
+            var passwordBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(Encoding.UTF8.GetBytes(password)).ToLower());
+            var strPass = Convert.ToHexString(passwordBytes);
 
-            //var pdb = new Pkcs5S2ParametersGenerator(new Sha384Digest());
-            //pdb.Init(PbeParametersGenerator.Pkcs5PasswordToBytes(password.ToCharArray()), salt, iterations);
-            //var key = (KeyParameter)pdb.GenerateDerivedMacParameters(32);
-            //var k = key.GetKey();
-
-#if NET5_0
-    throw new NotImplementedException();
-#endif
-#if NET6_0_OR_GREATER
-
-            var k = Rfc2898DeriveBytes.Pbkdf2(passwordBytes, salt, iterations, HashAlgorithmName.SHA384, 384);
-            //k = k[..32];
+            var k = Pbkdf2.Sha384(passwordBytes, salt, iterations)[..32];
+            var kStr = Convert.ToHexString(k);
 
             using var sha = SHA384.Create();
-            var sfd = new byte[] { 255 };
-            var asd = new byte[] { 254 };
+            var FF = new byte[] { 255 };
+            var FE = new byte[] { 254 };
 
-            var ek = sha.ComputeHash(sfd.Concat(k).ToArray())[..32];
-            var ak = sha.ComputeHash(asd.Concat(k).ToArray());
+            var ek = sha.ComputeHash(FF.Concat(k).ToArray())[..32];
+            var ak = sha.ComputeHash(FE.Concat(k).ToArray());
+
+            var ekStr = Convert.ToHexString(ek);
+            var akStr = Convert.ToHexString(ak);
+
 
             var nonce = new byte[16];
-            RandomNumberGenerator.Fill(nonce);
+            //RandomNumberGenerator.Fill(nonce);
 
             var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
             cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce));
-            var edk = cipher.DoFinal(GetBytes(ptk));
+            var edk = cipher.DoFinal(ptk);
+
+            var edkStr = Convert.ToHexString(edk);
+            //var strPtk = Convert.ToHexString(GetBytes(ptk));
+            //var strPtk = Convert.ToHexString(GetBytes(ptk.Split(".")[2]));
 
             using var hmac = new HMACSHA384(ak);
-            var i = BitConverter.GetBytes(iterations);
+            var i = GetBigEndianInt(iterations);
             var h = Encoding.UTF8.GetBytes(header);
             var msg = h.Concat(salt)
                        .Concat(i)
@@ -120,12 +123,18 @@ internal static class PaserkHelpers
                        .ToArray();
             var t = hmac.ComputeHash(msg);
 
-            var output = salt.Concat(i).Concat(nonce).Concat(edk).Concat(t).ToArray();
+            var bigI = GetBigEndianInt(iterations);
+            var output = salt.Concat(bigI).Concat(nonce).Concat(edk).Concat(t).ToArray();
             return $"{header}{ToBase64Url(output)}";
-#endif
         }
         throw new NotImplementedException();
+    }
 
+    internal static byte[] GetBigEndianInt(int i)
+    {
+        var bytes = new byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(bytes, i);
+        return bytes;
     }
 
     internal static PasetoKey SimpleDecode(PaserkType type, ProtocolVersion version, string encodedKey)
