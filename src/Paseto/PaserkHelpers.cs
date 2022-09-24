@@ -3,12 +3,13 @@ using System.Security.Cryptography;
 using System.Text;
 using Org.BouncyCastle.Crypto.Digests;
 using Paseto;
-using Paseto.Cryptography;
 using Paseto.Cryptography.Key;
 using static Paseto.Utils.EncodingHelper;
 
 internal static class PaserkHelpers
 {
+    private const string RSA_PKCS1_ALG_IDENTIFIER = "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8A";
+
     private const int SYM_KEY_SIZE_IN_BYTES = 32;
 
     private const int V1_ASYM_MIN_PUBLIC_KEY_SIZE = 270;
@@ -29,7 +30,19 @@ internal static class PaserkHelpers
 
         ValidateKeyLength(type, version, pasetoKey.Key.Length);
 
-        return $"{header}{ToBase64Url(pasetoKey.Key.Span)}";
+        var key = pasetoKey.Key.Span;
+        var keyString = ToBase64Url(key);
+
+        // Prepend valid V1 public key algorithm identifier.
+        if (version == ProtocolVersion.V1 && pasetoKey is PasetoAsymmetricPublicKey)
+        {
+            if (!keyString.StartsWith(RSA_PKCS1_ALG_IDENTIFIER))
+            {
+                keyString = $"{RSA_PKCS1_ALG_IDENTIFIER}{keyString}";
+            }
+        }
+
+        return $"{header}{keyString}";
     }
 
     internal static string IdEncode(string header, string paserk, PaserkType type, PasetoKey pasetoKey)
@@ -63,8 +76,18 @@ internal static class PaserkHelpers
 
     internal static PasetoKey SimpleDecode(PaserkType type, ProtocolVersion version, string encodedKey)
     {
-        var key = FromBase64Url(encodedKey);
         var protocolVersion = Paserk.CreateProtocolVersion(version);
+        var key = FromBase64Url(encodedKey);
+
+        // Check and remove algorithm identifier for V1 public keys.
+        if (version == ProtocolVersion.V1 && type == PaserkType.Public)
+        {
+            if (!encodedKey.StartsWith(RSA_PKCS1_ALG_IDENTIFIER))
+            {
+                throw new PaserkInvalidException("Invalid paserk. Paserk V1 public keys should have a valid DER ASN.1 PKCS#1 algorithm identifier.");
+            }
+            key = FromBase64Url(encodedKey[RSA_PKCS1_ALG_IDENTIFIER.Length..]);
+        }
 
         ValidateKeyLength(type, version, key.Length);
 
