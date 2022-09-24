@@ -97,8 +97,6 @@ internal static class PaserkHelpers
 
         if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
         {
-            var passwordBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(Encoding.UTF8.GetBytes(password)).ToLower());
-
             var result = Pbkw.Pbkdf2Encryption(header, ptk, password, iterations);
             var (Header, Salt, Iterations, Nonce, Edk, Tag) = result;
 
