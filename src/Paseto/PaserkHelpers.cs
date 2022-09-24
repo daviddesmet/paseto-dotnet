@@ -1,18 +1,13 @@
 ﻿using System;
 using System.Buffers.Binary;
-using System.Drawing;
 using System.Linq;
-using System.Runtime.Intrinsics.Arm;
 using System.Security.Cryptography;
 using System.Text;
-using NaCl.Core.Internal;
-using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Digests;
-using Org.BouncyCastle.Crypto.Generators;
-using Org.BouncyCastle.Crypto.Parameters;
-using Org.BouncyCastle.Security;
 using Paseto;
+using Paseto.Cryptography.Internal;
 using Paseto.Cryptography.Key;
+using Paseto.PaserkOperations;
 using static Paseto.Utils.EncodingHelper;
 
 internal static class PaserkHelpers
@@ -83,7 +78,7 @@ internal static class PaserkHelpers
         throw new NotImplementedException();
     }
 
-    internal static string PBKDEncode(string header, string password, int iterations, PaserkType type, PasetoKey pasetoKey)
+    internal static string PwEncode(string header, string password, int iterations, PaserkType type, PasetoKey pasetoKey)
     {
         var version = StringToVersion(pasetoKey.Protocol.Version);
 
@@ -92,60 +87,31 @@ internal static class PaserkHelpers
 
         var ptk = pasetoKey.Key.ToArray();
 
+        // Add PEM encoding if V1 SecretKey
+        if (version == ProtocolVersion.V1 && type == PaserkType.SecretPassword)
+        {
+            var ptkString = Convert.ToBase64String(ptk);
+            var pemKey = TryPemEncode(ptkString);
+            ptk = Encoding.UTF8.GetBytes(pemKey);
+        }
+
         if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
         {
             var passwordBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(Encoding.UTF8.GetBytes(password)).ToLower());
 
-            // Generate a random 256-bit (32 byte) salt (s).
-            var salt = new byte[32];
-            RandomNumberGenerator.Fill(salt);
+            var result = Pbkw.Pbkdf2Encryption(header, ptk, password, iterations);
+            var (Header, Salt, Iterations, Nonce, Edk, Tag) = result;
 
-            // Derive the pre-key k from the password and salt. k = PBKDF2-SHA384(pw, s, i)
-            var k = Pbkdf2.Sha384(passwordBytes, salt, iterations)[..32];
+            var bigI = ByteIntegerConverter.Int32ToBigEndianBytes(Iterations);
 
-            using var sha = SHA384.Create();
-            var FF = new byte[] { 255 };
-            var FE = new byte[] { 254 };
-
-            // Derive the encryption key (Ek) from SHA-384(0xFF || k).
-            var ek = sha.ComputeHash(FF.Concat(k).ToArray())[..32];
-
-            // Derive the authentication key (Ak) from SHA-384(0xFE || k).
-            var ak = sha.ComputeHash(FE.Concat(k).ToArray());
-
-            // Generate a random 128-bit nonce (n).
-            var nonce = new byte[16];
-            RandomNumberGenerator.Fill(nonce);
-
-            // Encrypt the plaintext key ptk with Ek and n to obtain the encrypted data key edk.
-            // edk = AES-256-CTR(msg=ptk, key=Ek, nonce=n)
-            var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
-            cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce));
-            var edk = cipher.DoFinal(ptk);
-
-            // Calculate the authentication tag t over h, s, i, n, and edk
-            // t = HMAC-SHA-384(msg = h || s || int2bytes(i) || n || edk, key = Ak)
-            using var hmac = new HMACSHA384(ak);
-            var bigI = GetBigEndianInt(iterations);
-            var h = Encoding.UTF8.GetBytes(header);
-            var msg = h.Concat(salt)
-                       .Concat(bigI)
-                       .Concat(nonce)
-                       .Concat(edk)
-                       .ToArray();
-            var t = hmac.ComputeHash(msg);
-
-            var output = salt.Concat(bigI).Concat(nonce).Concat(edk).Concat(t).ToArray();
+            var output = Salt.Concat(bigI)
+                                    .Concat(Nonce)
+                                    .Concat(Edk)
+                                    .Concat(Tag)
+                                    .ToArray();
             return $"{header}{ToBase64Url(output)}";
         }
         throw new NotImplementedException();
-    }
-
-    internal static byte[] GetBigEndianInt(int i)
-    {
-        var bytes = new byte[4];
-        BinaryPrimitives.WriteInt32BigEndian(bytes, i);
-        return bytes;
     }
 
     internal static PasetoKey SimpleDecode(PaserkType type, ProtocolVersion version, string encodedKey)
@@ -175,14 +141,11 @@ internal static class PaserkHelpers
         };
     }
 
-    internal static PasetoKey PBKDDecode(PaserkType type, ProtocolVersion version, string paserk, string password)
+    internal static PasetoKey PwDecode(PaserkType type, ProtocolVersion version, string paserk, string password)
     {
+        // TODO Assert type matches.
         var split = paserk.Split('.');
         var header = $"{split[0]}.{split[1]}.";
-        var headerBytes = Encoding.UTF8.GetBytes(header);
-
-        // I think the test vector is broken.
-        var passwordBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(Encoding.UTF8.GetBytes(password)).ToLower());
 
         //var passwordBytes = Encoding.UTF8.GetBytes(password);
         var bytes = FromBase64Url(paserk.Split('.')[2]);
@@ -190,59 +153,32 @@ internal static class PaserkHelpers
         if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
         {
             // Unpack values
+            var iterations = BinaryPrimitives.ReadInt32BigEndian(bytes[32..36]);
+
             var salt = bytes[..32];
-
-            var iBigEnd = bytes[32..36].ToArray();
-            var rev = iBigEnd.Reverse().ToArray();
-            var iterations = BitConverter.ToInt32(rev);
-
             var nonce = bytes[36..52];
-
-            var edk = bytes[52..84];
-
-            var hsine = bytes[..^48];
+            var edk = bytes[52..^48];
             var t = bytes[^48..];
+            var hsine = bytes[..^48];
 
-            // Derive the pre-key k from the password and salt. k = PBKDF2-SHA384(pw, s, i)
-            // var k = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA384, 384);
-            var k = Pbkdf2.Sha384(passwordBytes, salt, iterations)[..32];
+            var ptk = Pbkw.Pbkdf2Decryption(header, password, salt, iterations, nonce, edk, t);
 
-            using var sha = SHA384.Create();
-            var FF = new byte[] { 255 };
-            var FE = new byte[] { 254 };
-
-            // Derive the authentication key(Ak) from SHA-384(0xFE || k).
-            var ak = sha.ComputeHash(FE.Concat(k).ToArray());
-
-            // Recalculate the authentication tag t2 over h, s, i, n, and edk.
-            // t2 = HMAC-SHA-384(msg = h || s || int2bytes(i) || n || edk, key = Ak)
-            using var hmac = new HMACSHA384(ak);
-            var msg = headerBytes.Concat(hsine).ToArray();
-            var t2 = hmac.ComputeHash(msg);
-
-            // Compare t with t2 using a constant-time string comparison function.
-            // If it fails, abort.
-            if (!CryptoBytes.ConstantTimeEquals(t, t2))
-                throw new Exception("Paserk has invalid authentication tag.");
-
-            // Derive the encryption key (Ek) from SHA-384(0xFF || k).
-            var ek = sha.ComputeHash(FF.Concat(k).ToArray())[..32];
-
-            // Decrypt the encrypted key (edk) with Ek and n to obtain the plaintext key ptk.
-            // ptk = AES-256-CTR(msg=edk, key=Ek, nonce=n)
-            var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
-            cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce));
-            var ptk = cipher.DoFinal(edk);
+            if (version == ProtocolVersion.V1 && type == PaserkType.SecretPassword)
+            {
+                ptk = RemovePemEncoding(ptk);
+            }
 
             // Extract wrapped paserk
-            return SimpleDecode(PaserkType.Local, version, ToBase64Url(ptk));
+            return type switch
+            {
+                PaserkType.LocalPassword => SimpleDecode(PaserkType.Local, version, ToBase64Url(ptk)),
+                PaserkType.SecretPassword => SimpleDecode(PaserkType.Secret, version, ToBase64Url(ptk)),
+
+                _ => throw new NotSupportedException()
+            }; ;
         }
         throw new NotImplementedException();
-
-
-
     }
-
 
     // TODO: Check Public V3 has valid point compression.
     // TODO: Verify ASN1 encoding for V1
