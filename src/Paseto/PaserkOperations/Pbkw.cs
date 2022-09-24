@@ -17,7 +17,7 @@ internal static class Pbkw
     public static byte[] Pbkdf2Decryption(string header, string password, byte[] salt, int iterations, byte[] nonce, byte[] edk, byte[] t)
     {
         var headerBytes = Encoding.UTF8.GetBytes(header);
-        var passwordBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(Encoding.UTF8.GetBytes(password)).ToLower());
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
 
         // Derive the pre-key k from the password and salt. k = PBKDF2-SHA384(pw, s, i)
         // var k = Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA384, 384);
@@ -61,7 +61,7 @@ internal static class Pbkw
     public static Pbkdf2EncryptionValues Pbkdf2Encryption(string header, byte[] key, string password, int iterations)
     {
         var ptk = key;
-        var passwordBytes = Encoding.UTF8.GetBytes(Convert.ToHexString(Encoding.UTF8.GetBytes(password)).ToLower());
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
 
         // Generate a random 256-bit (32 byte) salt (s).
         var salt = new byte[32];
