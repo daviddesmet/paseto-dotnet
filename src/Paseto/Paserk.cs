@@ -29,7 +29,7 @@ public static class Paserk
             PaserkType.Lid or PaserkType.Sid or PaserkType.Pid =>
             PaserkHelpers.IdEncode(header, Encode(pasetoKey, Map(type)), type, pasetoKey),
 
-            PaserkType.LocalPassword => PaserkHelpers.PBKDEncode(header, password, iterations, type, pasetoKey),
+            PaserkType.LocalPassword or PaserkType.SecretPassword => PaserkHelpers.PwEncode(header, password, iterations, type, pasetoKey),
             _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.")
         };
     }
@@ -139,11 +139,12 @@ public static class Paserk
             PaserkType.Local or PaserkType.Secret or PaserkType.Public => PaserkHelpers.SimpleDecode(type, (ProtocolVersion)version, encodedKey),
 
             PaserkType.Lid or PaserkType.Sid or PaserkType.Pid => throw new PaserkNotSupportedException($"Decode is not supported for type {type}. Id should be used to determine which key should be used."),
-            PaserkType.LocalWrap => PaserkHelpers.SimpleDecode(type,(ProtocolVersion)version,serializedKey),
-            PaserkType.LocalPassword => PaserkHelpers.PBKDDecode(type, (ProtocolVersion)version,serializedKey,password),
-            PaserkType.Seal => throw new NotImplementedException(),
+
+            PaserkType.LocalPassword or PaserkType.SecretPassword => PaserkHelpers.PwDecode(type, (ProtocolVersion)version, serializedKey, password),
+
+            PaserkType.LocalWrap => throw new NotImplementedException(),
             PaserkType.SecretWrap => throw new NotImplementedException(),
-            PaserkType.SecretPassword => throw new NotImplementedException(),
+            PaserkType.Seal => throw new NotImplementedException(),
             _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported."),
         };
     }

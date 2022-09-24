@@ -150,7 +150,7 @@ public class PaserkTests
         paserk.Should().Be(test.Paserk);
     }
 
-    public static IEnumerable<object[]> PwGenerator => TestItemGenerator(new ProtocolVersion[] { ProtocolVersion.V1, ProtocolVersion.V3 }, new PaserkType[] { PaserkType.LocalPassword });
+    public static IEnumerable<object[]> PwGenerator => TestItemGenerator(new ProtocolVersion[] { ProtocolVersion.V1, ProtocolVersion.V3 }, new PaserkType[] { PaserkType.LocalPassword, PaserkType.SecretPassword });
 
     [Theory]
     [MemberData(nameof(PwGenerator))]
@@ -177,17 +177,15 @@ public class PaserkTests
         var purpose = Paserk.GetCompatibility(type);
         var pasetoKey = ParseKey(version, type, test.Unwrapped);
 
-        var expectedUnwrapped = TestHelper.ReadKey(test.Unwrapped);
-
         // Decode paserk to verify decoding works
         var decoded = Paserk.Decode(test.Paserk, test.Password);
-        decoded.Key.Span.ToArray().Should().BeEquivalentTo(expectedUnwrapped);
+        decoded.Key.Span.ToArray().Should().BeEquivalentTo(pasetoKey.Key.ToArray());
 
         // Encode then decode to verify that encoding works
         var wrapped = Paserk.Encode(pasetoKey, type, test.Password, test.Options["iterations"]);
         var unwrapped = Paserk.Decode(wrapped, test.Password);
 
-        unwrapped.Key.Span.ToArray().Should().BeEquivalentTo(expectedUnwrapped);
+        unwrapped.Key.Span.ToArray().Should().BeEquivalentTo(pasetoKey.Key.ToArray());
     }
 
     [Theory]
@@ -233,11 +231,8 @@ public class PaserkTests
             case PaserkType.SecretWrap:
                 break;
 
-            case PaserkType.SecretPassword:
-                break;
-            case PaserkType.Secret or PaserkType.Sid:
+            case PaserkType.Secret or PaserkType.Sid or PaserkType.SecretPassword:
                 return new PasetoAsymmetricSecretKey(TestHelper.ReadKey(key), Paserk.CreateProtocolVersion(version));
-
 
             case PaserkType.Public or PaserkType.Pid:
                 return new PasetoAsymmetricPublicKey(TestHelper.ReadKey(key), Paserk.CreateProtocolVersion(version));
