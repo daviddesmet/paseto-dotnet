@@ -18,14 +18,14 @@ PASERK extension
 
 | type | support |
 | -- | -- |
-| lid | ❌ |
+| lid | ✅ |
 | local | ✅ |
 | seal | ❌ |
 | local-wrap | ❌ |
 | local-pw | ❌ |
-| sid | ❌ |
+| sid | ✅ |
 | public | ✅ |
-| pid | ❌ |
+| pid | ✅ |
 | secret | ✅ |
 | secret-wrap | ❌ |
 | secret-pw | ❌ |
