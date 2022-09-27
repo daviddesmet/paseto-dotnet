@@ -17,6 +17,8 @@ public static class Paserk
     private const string PARSEK_HEADER_K = "k";
     private static readonly Regex HeaderRegex = new(@"^k[1-9]\.\w", RegexOptions.Compiled);
 
+    // TODO add summary and maybe update exceptions.
+
     // Encode LocalPw/SecretPw V1 & V3
     public static string Encode(PasetoKey pasetoKey, PaserkType type, string password, int iterations = 100_000)
     {

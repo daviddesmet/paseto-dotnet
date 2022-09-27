@@ -22,13 +22,13 @@ PASERK extension
 | local | ✅ |
 | seal | ❌ |
 | local-wrap | ❌ |
-| local-pw | ❌ |
+| local-pw | ✅ |
 | sid | ✅ |
 | public | ✅ |
 | pid | ✅ |
 | secret | ✅ |
 | secret-wrap | ❌ |
-| secret-pw | ❌ |
+| secret-pw | ✅ |
 
 ## Installation
 
