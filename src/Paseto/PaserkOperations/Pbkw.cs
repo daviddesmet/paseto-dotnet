@@ -33,7 +33,7 @@ internal static class Pbkw
         var FE = new byte[] { 254 };
 
         // Derive the authentication key(Ak) from SHA-384(0xFE || k).
-        var ak = sha.ComputeHash( FE.Concat(k).ToArray());
+        var ak = sha.ComputeHash(CryptoBytes.Combine(FE, k));
 
         // Recalculate the authentication tag t2 over h, s, i, n, and edk.
         // t2 = HMAC-SHA-384(msg = h || s || int2bytes(i) || n || edk, key = Ak)
@@ -41,11 +41,7 @@ internal static class Pbkw
 
         var bigI = ByteIntegerConverter.Int32ToBigEndianBytes(iterations);
 
-        var msg = headerBytes.Concat(salt)
-                             .Concat(bigI)
-                             .Concat(nonce)
-                             .Concat(edk)
-                             .ToArray();
+        var msg = CryptoBytes.Combine(headerBytes, salt, bigI, nonce, edk);
         var t2 = hmac.ComputeHash(msg);
 
         // Compare t with t2 using a constant-time string comparison function.
@@ -54,7 +50,7 @@ internal static class Pbkw
             throw new Exception("Paserk has invalid authentication tag.");
 
         // Derive the encryption key (Ek) from SHA-384(0xFF || k).
-        var ek = sha.ComputeHash(FF.Concat(k).ToArray())[..32];
+        var ek = sha.ComputeHash(CryptoBytes.Combine(FF, k))[..32];
 
         // Decrypt the encrypted key (edk) with Ek and n to obtain the plaintext key ptk.
         // ptk = AES-256-CTR(msg=edk, key=Ek, nonce=n)
@@ -80,10 +76,10 @@ internal static class Pbkw
         var FE = new byte[] { 254 };
 
         // Derive the encryption key (Ek) from SHA-384(0xFF || k).
-        var ek = sha.ComputeHash(FF.Concat(k).ToArray())[..32];
+        var ek = sha.ComputeHash(CryptoBytes.Combine(FF, k))[..32];
 
         // Derive the authentication key (Ak) from SHA-384(0xFE || k).
-        var ak = sha.ComputeHash(FE.Concat(k).ToArray());
+        var ak = sha.ComputeHash(CryptoBytes.Combine(FE, k));
 
         // Generate a random 128-bit nonce (n).
         var nonce = new byte[16];
