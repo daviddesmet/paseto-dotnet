@@ -149,7 +149,7 @@ public class PaserkTests
         paserk.Should().Be(test.Paserk);
     }
 
-    public static IEnumerable<object[]> PwGenerator => TestItemGenerator(new ProtocolVersion[] { ProtocolVersion.V1, ProtocolVersion.V3 }, new PaserkType[] { PaserkType.LocalPassword, PaserkType.SecretPassword });
+    public static IEnumerable<object[]> PwGenerator => TestItemGenerator(new ProtocolVersion[] { ProtocolVersion.V1, ProtocolVersion.V2, ProtocolVersion.V3, ProtocolVersion.V4 }, new PaserkType[] { PaserkType.LocalPassword, PaserkType.SecretPassword });
 
     [Theory]
     [MemberData(nameof(PwGenerator))]
@@ -160,7 +160,7 @@ public class PaserkTests
         {
             return;
         }
-
+            
         if (test.ExpectFail)
         {
             var act = () =>
@@ -181,9 +181,14 @@ public class PaserkTests
         decoded.Key.Span.ToArray().Should().BeEquivalentTo(pasetoKey.Key.ToArray());
 
         // Encode then decode to verify that encoding works
-        var wrapped = Paserk.Encode(pasetoKey, type, test.Password, test.Options["iterations"]);
-        var unwrapped = Paserk.Decode(wrapped, test.Password);
+        var wrapped = version switch
+        {
+            ProtocolVersion.V1 or ProtocolVersion.V3 => Paserk.Encode(pasetoKey, type, test.Password, test.Options["iterations"]),
+            ProtocolVersion.V2 or ProtocolVersion.V4 => Paserk.Encode(pasetoKey, type, test.Password, test.Options["memlimit"], test.Options["opslimit"]),
+            _ => throw new NotImplementedException(),
+        };
 
+        var unwrapped = Paserk.Decode(wrapped, test.Password);
         unwrapped.Key.Span.ToArray().Should().BeEquivalentTo(pasetoKey.Key.ToArray());
     }
 

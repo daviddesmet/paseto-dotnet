@@ -1,16 +1,21 @@
 ﻿using System;
+using System.Buffers.Binary;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using NaCl.Core;
 using NaCl.Core.Internal;
+using Org.BouncyCastle.Crypto.Digests;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
 using Paseto.Cryptography;
 using Paseto.Cryptography.Internal;
+using Paseto.Cryptography.Internal.Argon2;
 
 namespace Paseto.PaserkOperations;
 
-public record struct Pbkdf2EncryptionValues(string Header, byte[] Salt, int Iterations, byte[] Nonce, byte[] Edk, byte[] Tag);
+internal record struct Pbkdf2EncryptionValues(string Header, byte[] Salt, int Iterations, byte[] Nonce, byte[] Edk, byte[] Tag);
+internal record struct Argon2idEncryptionValues(string Header, byte[] Salt, long Memory, int Iterations, int Parallelism, byte[] Nonce, byte[] Edk, byte[] Tag);
 
 internal static class Pbkw
 {
@@ -28,7 +33,7 @@ internal static class Pbkw
         var FE = new byte[] { 254 };
 
         // Derive the authentication key(Ak) from SHA-384(0xFE || k).
-        var ak = sha.ComputeHash(FE.Concat(k).ToArray());
+        var ak = sha.ComputeHash( FE.Concat(k).ToArray());
 
         // Recalculate the authentication tag t2 over h, s, i, n, and edk.
         // t2 = HMAC-SHA-384(msg = h || s || int2bytes(i) || n || edk, key = Ak)
@@ -95,13 +100,154 @@ internal static class Pbkw
         using var hmac = new HMACSHA384(ak);
         var bigI = ByteIntegerConverter.Int32ToBigEndianBytes(iterations);
         var h = Encoding.UTF8.GetBytes(header);
-        var msg = h.Concat(salt)
-                   .Concat(bigI)
-                   .Concat(nonce)
-                   .Concat(edk)
-                   .ToArray();
+        var msg = CryptoBytes.Combine(h, salt, bigI, nonce, edk).ToArray();
         var tag = hmac.ComputeHash(msg);
 
         return new Pbkdf2EncryptionValues(header, salt, iterations, nonce, edk, tag);
     }
+
+    public static byte[] Argon2IdDecrypt(string header, string password, byte[] salt, long memoryCost, int time, int parallelism, byte[] nonce, byte[] edk, ReadOnlySpan<byte> t)
+    {
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
+
+        if(memoryCost > int.MaxValue)
+        {
+            throw new ArgumentException($"Argument {nameof(memoryCost)} cannot exceed {int.MaxValue}.");
+        }
+        var mem = (int)memoryCost;
+
+        // Derive the pre-key k from the password and salt. k = Argon2id(pw, s, mem, time, para)
+        using var argon = new Argon2id(passwordBytes)
+        {
+            DegreeOfParallelism = parallelism,
+            Iterations = time,
+            MemorySize = mem / 1024,
+            Salt = salt
+        };
+        var preKey = argon.GetBytes(32);
+
+        // Derive the authentication key (Ak) from crypto_generichash(0xFE || k).
+        var FF = new byte[] { 255 };
+        var FE = new byte[] { 254 };
+
+        var prependedFE = CryptoBytes.Combine(FE, preKey);
+
+        var blake = new Blake2bDigest(32*8);
+        blake.BlockUpdate(prependedFE, 0, prependedFE.Length);
+        var ak = new byte[32];
+        blake.DoFinal(ak, 0);
+
+        // Recalculate the authentication tag t2 over h, s, mem, time, para, n, and edk.
+        var gen = new Blake2bMac(32 * 8) { Key = ak };
+
+        var headerBytes = Encoding.UTF8.GetBytes(header);
+        var memBytes = new byte[8];
+        BinaryPrimitives.WriteInt64BigEndian(memBytes, memoryCost);
+        var timeBytes = new byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(timeBytes, time);
+        var paraBytes = new byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(paraBytes, parallelism);
+
+        var msg = CryptoBytes.Combine(headerBytes, salt, memBytes, timeBytes, paraBytes, nonce, edk);
+        gen.Initialize();
+        var t2 = gen.ComputeHash(msg);
+
+        // Compare t with t2 using a constant-time string comparison function. If it fails, abort.
+        if (!CryptoBytes.ConstantTimeEquals(t, t2))
+            throw new Exception("Paserk has invalid authentication tag.");
+
+        // Derive the encryption key (Ek) from crypto_generichash(0xFF || k).
+        var prependedFF = CryptoBytes.Combine(FF, preKey);
+        blake.Reset();
+        blake.BlockUpdate(prependedFF, 0, prependedFF.Length);
+        var ek = new byte[32];
+        blake.DoFinal(ek, 0);
+
+        // Decrypt the encrypted key (edk) with Ek and n to obtain the plaintext key ptk.
+        // ptk = XChaCha20(msg=edk, key=Ek, nonce=n)
+        var ptk = new byte[edk.Length];
+        var algo = new XChaCha20(ek, 0);
+        algo.Encrypt(edk, nonce, ptk);
+
+        return ptk;
+    }
+
+    public static Argon2idEncryptionValues Argon2IdEncrypt(string header, byte[] key, string password, long memoryCost, int time, int parallelism)
+    {
+        var passwordBytes = Encoding.UTF8.GetBytes(password);
+        if (memoryCost > int.MaxValue)
+        {
+            throw new ArgumentException($"Argument {nameof(memoryCost)} cannot exceed {int.MaxValue}.");
+        }
+        var mem = (int)memoryCost;
+
+        // Generate a random 128-bit(16 byte) salt(s).
+        var salt = new byte[16];
+        RandomNumberGenerator.Fill(salt);
+
+        // Derive the pre-key k from the password and salt. k = Argon2id(pw, s, mem, time, para)
+        using var argon = new Argon2id(passwordBytes)
+        {
+            DegreeOfParallelism = parallelism,
+            Iterations = time,
+            MemorySize = mem / 1024,
+            Salt = salt
+        };
+        var preKey = argon.GetBytes(32);
+
+        // Derive the encryption key(Ek) from crypto_generichash(0xFF || k).
+        var FF = new byte[] { 255 };
+        var FE = new byte[] { 254 };
+
+        var prependedFF = CryptoBytes.Combine(FF, preKey);
+
+        var blake = new Blake2bDigest(32*8);
+        blake.BlockUpdate(prependedFF, 0, prependedFF.Length);
+        var ek = new byte[32];
+        blake.DoFinal(ek, 0);
+
+        // Derive the authentication key(Ak) from crypto_generichash(0xFE || k).
+        var prependedFE = CryptoBytes.Combine(FE, preKey);
+
+        blake.Reset();
+        blake.BlockUpdate(prependedFE, 0, prependedFE.Length);
+        var ak = new byte[32];
+        blake.DoFinal(ak, 0);
+
+        // Generate a random 192-bit(24 byte) nonce(n).
+        var nonce = new byte[24];
+        RandomNumberGenerator.Fill(nonce);
+
+        // Encrypt the plaintext key(ptk) with Ek and n to obtain the encrypted data key edk.
+        // edk = XChaCha20(msg=ptk, key=Ek, nonce=n)
+        var edk = new byte[key.Length];
+        var algo = new XChaCha20(ek, 0);
+        algo.Encrypt(key, nonce, edk);
+
+        // Calculate the authentication tag t over h, s, mem, time, para, n, and edk.
+        // t = crypto_generichash(
+        //     msg = h || s || long2bytes(mem) || int2bytes(time) || int2bytes(para) || n || edk,
+        //     key = Ak,
+        //     length = 32 # 32 bytes, 256 bits
+        // )
+        var gen = new Blake2bMac(32 * 8) { Key = ak };
+
+        var headerBytes = Encoding.UTF8.GetBytes(header);
+        var memBytes = new byte[8];
+        BinaryPrimitives.WriteInt64BigEndian(memBytes, memoryCost);
+        var timeBytes = new byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(timeBytes, time);
+        var paraBytes = new byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(paraBytes, parallelism);
+
+        var msg = CryptoBytes.Combine(headerBytes, salt, memBytes, timeBytes, paraBytes, nonce, edk);
+        gen.Initialize();
+        var t = gen.ComputeHash(msg);
+
+
+        // Return h, s, mem, time, para, n, edk, t.
+
+        return new Argon2idEncryptionValues(header, salt, memoryCost, time, parallelism, nonce, edk, t);
+    }
+
 }

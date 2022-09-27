@@ -11,13 +11,61 @@ using static Paseto.Utils.EncodingHelper;
 /// PASERK (Platform-Agnostic Serialized Keys) extension.
 /// </summary>
 ///
-// TODO Refactor Paserk and PAserkHelpers
+// TODO Refactor Paserk and PaserkHelpers
 public static class Paserk
 {
     private const string PARSEK_HEADER_K = "k";
     private static readonly Regex HeaderRegex = new(@"^k[1-9]\.\w", RegexOptions.Compiled);
 
-    public static string Encode(PasetoKey pasetoKey, PaserkType type, string password = null, int iterations = 10_000)
+    // Encode LocalPw/SecretPw V1 & V3
+    public static string Encode(PasetoKey pasetoKey, PaserkType type, string password, int iterations = 100_000)
+    {
+        var version = PaserkHelpers.StringToVersion(pasetoKey.Protocol.Version);
+        if (version is not (ProtocolVersion.V1 or ProtocolVersion.V3))
+            throw new PaserkNotSupportedException($"The PASERK version {version} is not compatible with this method overload. Use versions V2 or V4 instead.");
+
+        if (type is not (PaserkType.LocalPassword or PaserkType.SecretPassword))
+            throw new PaserkNotSupportedException($"The PASERK type {type} is not compatible with this method overload. Use LocalPassword or SecretPassword instead");
+
+        if (!IsKeyTypeCompatible(type, pasetoKey))
+            throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
+
+        if (string.IsNullOrEmpty(password))
+            throw new ArgumentException($"Value {nameof(password)} cannot be null or empty");
+
+        var header = $"{PARSEK_HEADER_K}{pasetoKey.Protocol.VersionNumber}.{type.ToDescription()}.";
+        return type switch
+        {
+            PaserkType.LocalPassword or PaserkType.SecretPassword => PaserkHelpers.PwEncodeXChaCha(header, password, iterations, type, pasetoKey),
+            _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.")
+        };
+    }
+
+    // Encode LocalPw/SecretPw V2 & V4
+    public static string Encode(PasetoKey pasetoKey, PaserkType type, string password, int memoryCost, int iterations, int degreeOfParallelism = 1)
+    {
+        var version = PaserkHelpers.StringToVersion(pasetoKey.Protocol.Version);
+        if (version is not (ProtocolVersion.V2 or ProtocolVersion.V4))
+            throw new PaserkNotSupportedException($"The PASERK version {version} is not compatible with this method overload. Use versions V2 or V4 instead.");
+
+        if (type is not (PaserkType.LocalPassword or PaserkType.SecretPassword))
+            throw new PaserkNotSupportedException($"The PASERK type {type} is not compatible with this method overload. Use LocalPassword or SecretPassword instead");
+
+        if (!IsKeyTypeCompatible(type, pasetoKey))
+            throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
+
+        if (string.IsNullOrEmpty(password))
+            throw new ArgumentException($"Value {nameof(password)} cannot be null or empty");
+
+        var header = $"{PARSEK_HEADER_K}{pasetoKey.Protocol.VersionNumber}.{type.ToDescription()}.";
+        return type switch
+        {
+            PaserkType.LocalPassword or PaserkType.SecretPassword => PaserkHelpers.PwEncodeArgon2(header, password, iterations, memoryCost, degreeOfParallelism, type, pasetoKey),
+            _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.")
+        };
+    }
+
+    public static string Encode(PasetoKey pasetoKey, PaserkType type)
     {
         if (!IsKeyTypeCompatible(type, pasetoKey))
             throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
@@ -30,7 +78,7 @@ public static class Paserk
             PaserkType.Lid or PaserkType.Sid or PaserkType.Pid =>
             PaserkHelpers.IdEncode(header, Encode(pasetoKey, Map(type)), type, pasetoKey),
 
-            PaserkType.LocalPassword or PaserkType.SecretPassword => PaserkHelpers.PwEncode(header, password, iterations, type, pasetoKey),
+            PaserkType.LocalPassword or PaserkType.SecretPassword => throw new PaserkNotSupportedException($"The PASERK type {type} requires a password to be provided."),
             _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.")
         };
     }
@@ -43,7 +91,7 @@ public static class Paserk
         _ => throw new InvalidOperationException(),
     };
 
-    // TODO implement key specific operations.
+    // TODO implement key specific operations or remove?.
     public static string Encode(PasetoSymmetricKey pasetoKey, PaserkType type)
     {
         if (!IsKeyTypeCompatible(type, pasetoKey))

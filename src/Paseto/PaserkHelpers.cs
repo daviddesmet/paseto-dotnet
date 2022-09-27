@@ -3,6 +3,7 @@ using System.Buffers.Binary;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using NaCl.Core.Internal;
 using Org.BouncyCastle.Crypto.Digests;
 using Paseto;
 using Paseto.Cryptography.Internal;
@@ -49,6 +50,7 @@ internal static class PaserkHelpers
         return $"{header}{keyString}";
     }
 
+    // TODO Refactor IdEncode to call SimpleEncode.
     internal static string IdEncode(string header, string paserk, PaserkType type, PasetoKey pasetoKey)
     {
         var version = StringToVersion(pasetoKey.Protocol.Version);
@@ -78,7 +80,7 @@ internal static class PaserkHelpers
         throw new NotImplementedException();
     }
 
-    internal static string PwEncode(string header, string password, int iterations, PaserkType type, PasetoKey pasetoKey)
+    internal static string PwEncodeXChaCha(string header, string password, int iterations, PaserkType type, PasetoKey pasetoKey)
     {
         var version = StringToVersion(pasetoKey.Protocol.Version);
 
@@ -87,7 +89,7 @@ internal static class PaserkHelpers
 
         var ptk = pasetoKey.Key.ToArray();
 
-        // Add PEM encoding if V1 SecretKey
+        // Add PEM encoding if the key is V1 SecretKey
         if (version == ProtocolVersion.V1 && type == PaserkType.SecretPassword)
         {
             var ptkString = Convert.ToBase64String(ptk);
@@ -95,22 +97,44 @@ internal static class PaserkHelpers
             ptk = Encoding.UTF8.GetBytes(pemKey);
         }
 
-        if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
+        if (version is not (ProtocolVersion.V1 or ProtocolVersion.V3))
         {
-            var result = Pbkw.Pbkdf2Encryption(header, ptk, password, iterations);
-            var (Header, Salt, Iterations, Nonce, Edk, Tag) = result;
-
-            var bigI = ByteIntegerConverter.Int32ToBigEndianBytes(Iterations);
-
-            var output = Salt.Concat(bigI)
-                                    .Concat(Nonce)
-                                    .Concat(Edk)
-                                    .Concat(Tag)
-                                    .ToArray();
-            return $"{header}{ToBase64Url(output)}";
+            throw new NotImplementedException();
         }
-        throw new NotImplementedException();
+        var result = Pbkw.Pbkdf2Encryption(header, ptk, password, iterations);
+        var (Header, Salt, Iterations, Nonce, Edk, Tag) = result;
+
+        var iterBytes = ByteIntegerConverter.Int32ToBigEndianBytes(Iterations);
+
+        var data = CryptoBytes.Combine(Salt, iterBytes, Nonce, Edk, Tag);
+        return $"{header}{ToBase64Url(data)}";
     }
+
+    internal static string PwEncodeArgon2(string header, string password, int iterations, int memory, int parallelism, PaserkType type, PasetoKey pasetoKey)
+    {
+        var version = StringToVersion(pasetoKey.Protocol.Version);
+
+        if (!Paserk.IsKeyTypeCompatible(type, pasetoKey))
+            throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
+
+        var ptk = pasetoKey.Key.ToArray();
+
+        if (version is not (ProtocolVersion.V2 or ProtocolVersion.V4))
+        {
+            throw new NotImplementedException();
+        }
+        var result = Pbkw.Argon2IdEncrypt(header, ptk, password, memory, iterations, parallelism);
+        var (_, Salt, Memory, Iterations, Parallelism, Nonce, Edk, Tag) = result;
+
+        var memoryBytes = ByteIntegerConverter.Int64ToBigEndianBytes(Memory);
+        var iterBytes = ByteIntegerConverter.Int32ToBigEndianBytes(Iterations);
+        var paraBytes = ByteIntegerConverter.Int32ToBigEndianBytes(Parallelism);
+
+        var data = CryptoBytes.Combine(Salt, memoryBytes, iterBytes, paraBytes, Nonce, Edk, Tag);
+        return $"{header}{ToBase64Url(data)}";
+    }
+
+
 
     internal static PasetoKey SimpleDecode(PaserkType type, ProtocolVersion version, string encodedKey)
     {
@@ -173,7 +197,30 @@ internal static class PaserkHelpers
                 PaserkType.SecretPassword => SimpleDecode(PaserkType.Secret, version, ToBase64Url(ptk)),
 
                 _ => throw new NotSupportedException()
-            }; ;
+            };
+        }
+        else if (version is ProtocolVersion.V2 or ProtocolVersion.V4)
+        {
+
+            var salt = bytes[..16];
+
+            var mem = BinaryPrimitives.ReadInt64BigEndian(bytes[16..24]);
+            var time = BinaryPrimitives.ReadInt32BigEndian(bytes[24..28]);
+            var para = BinaryPrimitives.ReadInt32BigEndian(bytes[28..32]);
+
+            var nonce = bytes[32..56];
+            var edk = bytes[56..^32];
+            var t = bytes[^32..];
+
+            var ptk = Pbkw.Argon2IdDecrypt(header, password, salt, mem, time, para, nonce, edk, t);
+
+            return type switch
+            {
+                PaserkType.LocalPassword => SimpleDecode(PaserkType.Local, version, ToBase64Url(ptk)),
+                PaserkType.SecretPassword => SimpleDecode(PaserkType.Secret, version, ToBase64Url(ptk)),
+
+                _ => throw new NotSupportedException()
+            };
         }
         throw new NotImplementedException();
     }

@@ -11,7 +11,7 @@ internal static class ByteIntegerConverter
     #region Individual
 
     /// <summary>
-    /// Converts a 32-bit integer to big endian byte form.
+    /// Converts a 32-bit integer to big endian bytes.
     /// </summary>
     /// <param name="value">The input value.</param>
     /// <returns>Big endian byte array of length 4.</returns>
@@ -21,6 +21,19 @@ internal static class ByteIntegerConverter
         BinaryPrimitives.WriteInt32BigEndian(bytes, value);
         return bytes;
     }
+
+    /// <summary>
+    /// Converts a 64-bit integer to big endian bytes.
+    /// </summary>
+    /// <param name="value">The input value.</param>
+    /// <returns>Big endian byte array of length 8.</returns>
+    public static byte[] Int64ToBigEndianBytes(long value)
+    {
+        var bytes = new byte[8];
+        BinaryPrimitives.WriteInt64BigEndian(bytes, value);
+        return bytes;
+    }
+
 
     /// <summary>
     /// Loads 4 bytes of the input buffer into an unsigned 32-bit integer, beginning at the input offset.
