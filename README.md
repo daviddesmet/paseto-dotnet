@@ -151,7 +151,7 @@ var key = Paserk.Decode(paserk);
 ## Cryptography
 
 * Uses Ed25519 (EdDSA over Curve25519) algorithm from CodesInChaos [Chaos.NaCl](https://github.com/CodesInChaos/Chaos.NaCl) cryptography library.
-* Uses Blake2b cryptographic hash function from [Konscious.Security.Cryptography](https://github.com/kmaragon/Konscious.Security.Cryptography) repository.
+* Uses Blake2b cryptographic hash and Argon2 key derivation functions from [Konscious.Security.Cryptography](https://github.com/kmaragon/Konscious.Security.Cryptography) repository.
 * Uses AES-256-CTR, ECDSA over P-384 algorithms from [Bouncy Castle](https://github.com/novotnyllc/bc-csharp) cryptography library.
 * Uses XChaCha20-Poly1305 AEAD from [NaCl.Core](https://github.com/daviddesmet/NaCl.Core) repository.
 
