@@ -17,9 +17,19 @@ public static class Paserk
     private const string PARSEK_HEADER_K = "k";
     private static readonly Regex HeaderRegex = new(@"^k[1-9]\.\w", RegexOptions.Compiled);
 
-    // TODO add summary and maybe update exceptions.
+    // TODO Use more informative errors. Ie correct key/paserktype pair but invalid ProtocolVersion should throw an error saying what method overload should be used.
 
-    // Encode LocalPw/SecretPw V1 & V3
+    /// <summary>
+    /// Wraps a Paseto key using a unique Pkdf2 encryption key derived from a password.
+    /// This method is intended for <see cref="PaserkType.LocalPassword"/> and <see cref="PaserkType.SecretPassword"/> for versions <see cref="ProtocolVersion.V1"/> and <see cref="ProtocolVersion.V3"/>.
+    /// </summary>
+    /// <param name="pasetoKey">PasetoKey of type <see cref="PasetoSymmetricKey"/> or <see cref="PasetoAsymmetricSecretKey"/>.</param>
+    /// <param name="type">PaserkType of type <see cref="PaserkType.LocalPassword"/> or <see cref="PaserkType.SecretPassword"/>.</param>
+    /// <param name="password">Password used to derive encryption key.</param>
+    /// <param name="iterations">The number of internal iterations to perform for the derivation.</param>
+    /// <returns>Password wrapped <see cref="PasetoKey"/>.</returns>
+    /// <exception cref="PaserkNotSupportedException"></exception>
+    /// <exception cref="ArgumentException"></exception>
     public static string Encode(PasetoKey pasetoKey, PaserkType type, string password, int iterations = 100_000)
     {
         var version = PaserkHelpers.StringToVersion(pasetoKey.Protocol.Version);
@@ -43,7 +53,19 @@ public static class Paserk
         };
     }
 
-    // Encode LocalPw/SecretPw V2 & V4
+    /// <summary>
+    /// Wraps a Paseto key using a unique Argon2id encryption key derived from a password.
+    /// This method is intended for <see cref="PaserkType.LocalPassword"/> and <see cref="PaserkType.SecretPassword"/> for versions <see cref="ProtocolVersion.V2"/> and <see cref="ProtocolVersion.V4"/>.
+    /// </summary>
+    /// <param name="pasetoKey">PasetoKey of type <see cref="PasetoSymmetricKey"/> or <see cref="PasetoAsymmetricSecretKey"/>.</param>
+    /// <param name="type">PaserkType of type <see cref="PaserkType.LocalPassword"/> or <see cref="PaserkType.SecretPassword"/>.</param>
+    /// <param name="password">Password used to derive encryption key.</param>
+    /// <param name="memoryCost">The number of 1kB memory blocks to use while processing the Argon2id hash.</param>
+    /// <param name="iterations">The number of iterations to apply to the password hash.</param>
+    /// <param name="degreeOfParallelism">The number of lanes to use while processing the hash.</param>
+    /// <returns>Password wrapped <see cref="PasetoKey"/>.</returns>
+    /// <exception cref="PaserkNotSupportedException"></exception>
+    /// <exception cref="ArgumentException"></exception>
     public static string Encode(PasetoKey pasetoKey, PaserkType type, string password, int memoryCost, int iterations, int degreeOfParallelism = 1)
     {
         var version = PaserkHelpers.StringToVersion(pasetoKey.Protocol.Version);
@@ -67,6 +89,13 @@ public static class Paserk
         };
     }
 
+    /// <summary>
+    /// Encodes a valid <see cref="PasetoKey"/> using a <see cref="PaserkType"/> operation.
+    /// </summary>
+    /// <param name="pasetoKey">Valid <see cref="PasetoKey"/>.</param>
+    /// <param name="type"><see cref="PaserkType"/> sets the key wrapping operation. Note that certain operations may require additional arguments.</param>
+    /// <returns>Encoded <see cref="PasetoKey"/>.</returns>
+    /// <exception cref="PaserkNotSupportedException"></exception>
     public static string Encode(PasetoKey pasetoKey, PaserkType type)
     {
         if (!IsKeyTypeCompatible(type, pasetoKey))
