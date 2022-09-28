@@ -18,14 +18,14 @@ PASERK extension
 
 | type | support |
 | -- | -- |
-| lid | ❌ |
+| lid | ✅ |
 | local | ✅ |
 | seal | ❌ |
 | local-wrap | ❌ |
 | local-pw | ❌ |
-| sid | ❌ |
+| sid | ✅ |
 | public | ✅ |
-| pid | ❌ |
+| pid | ✅ |
 | secret | ✅ |
 | secret-wrap | ❌ |
 | secret-pw | ❌ |
@@ -125,7 +125,7 @@ k[version].[type].[data]
 #### Encoding a Key
 
 ```csharp
-var paserk = Paserk.Encode(pasetoKey, purpose, type);
+var paserk = Paserk.Encode(pasetoKey, type);
 ```
 
 #### Decoding a Key
