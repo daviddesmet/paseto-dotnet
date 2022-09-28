@@ -77,21 +77,12 @@ public static class Paserk
         return type switch
         {
             PaserkType.Local or PaserkType.Public or PaserkType.Secret => PaserkHelpers.SimpleEncode(header, type, pasetoKey),
-            PaserkType.Lid or PaserkType.Sid or PaserkType.Pid =>
-            PaserkHelpers.IdEncode(header, Encode(pasetoKey, Map(type)), type, pasetoKey),
+            PaserkType.Lid or PaserkType.Sid or PaserkType.Pid => PaserkHelpers.IdEncode(header, type, pasetoKey),
 
             PaserkType.LocalPassword or PaserkType.SecretPassword => throw new PaserkNotSupportedException($"The PASERK type {type} requires a password to be provided."),
             _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.")
         };
     }
-
-    public static PaserkType Map(PaserkType type) => type switch
-    {
-        PaserkType.Lid => PaserkType.Local,
-        PaserkType.Pid => PaserkType.Public,
-        PaserkType.Sid => PaserkType.Secret,
-        _ => throw new InvalidOperationException(),
-    };
 
     // TODO implement key specific operations or remove?.
     public static string Encode(PasetoSymmetricKey pasetoKey, PaserkType type)

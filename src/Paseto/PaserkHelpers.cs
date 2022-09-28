@@ -33,6 +33,7 @@ internal static class PaserkHelpers
         if (!Paserk.IsKeyTypeCompatible(type, pasetoKey))
             throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
 
+        var version = StringToVersion(pasetoKey.Protocol.Version);
         ValidateKeyLength(type, version, pasetoKey.Key.Length);
 
         var key = pasetoKey.Key.Span;
@@ -51,13 +52,22 @@ internal static class PaserkHelpers
     }
 
     // TODO Refactor IdEncode to call SimpleEncode.
-    internal static string IdEncode(string header, string paserk, PaserkType type, PasetoKey pasetoKey)
+    internal static string IdEncode(string header, PaserkType type, PasetoKey pasetoKey)
     {
         var version = StringToVersion(pasetoKey.Protocol.Version);
 
         if (!Paserk.IsKeyTypeCompatible(type, pasetoKey))
             throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
 
+        var simpleType = type switch
+        {
+            PaserkType.Lid => PaserkType.Local,
+            PaserkType.Pid => PaserkType.Public,
+            PaserkType.Sid => PaserkType.Secret,
+            _ => throw new InvalidOperationException(),
+        };
+
+        var paserk = Paserk.Encode(pasetoKey, simpleType);
         var combined = Encoding.UTF8.GetBytes(header + paserk);
 
         if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
