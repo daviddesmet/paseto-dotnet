@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Buffers.Binary;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using NaCl.Core.Internal;
@@ -28,8 +27,6 @@ internal static class PaserkHelpers
 
     internal static string SimpleEncode(string header, PaserkType type, PasetoKey pasetoKey)
     {
-        var version = StringToVersion(pasetoKey.Protocol.Version);
-
         if (!Paserk.IsKeyTypeCompatible(type, pasetoKey))
             throw new PaserkNotSupportedException($"The PASERK type is not compatible with the key {pasetoKey}.");
 
@@ -144,8 +141,6 @@ internal static class PaserkHelpers
         return $"{header}{ToBase64Url(data)}";
     }
 
-
-
     internal static PasetoKey SimpleDecode(PaserkType type, ProtocolVersion version, string encodedKey)
     {
         var protocolVersion = Paserk.CreateProtocolVersion(version);
@@ -180,7 +175,9 @@ internal static class PaserkHelpers
         var header = $"{split[0]}.{split[1]}.";
 
         //var passwordBytes = Encoding.UTF8.GetBytes(password);
-        var bytes = FromBase64Url(paserk.Split('.')[2]);
+        var bytes = FromBase64Url(split[2]);
+
+        byte[] ptk;
 
         if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
         {
@@ -193,25 +190,15 @@ internal static class PaserkHelpers
             var t = bytes[^48..];
             var hsine = bytes[..^48];
 
-            var ptk = Pbkw.Pbkdf2Decryption(header, password, salt, iterations, nonce, edk, t);
+            ptk = Pbkw.Pbkdf2Decryption(header, password, salt, iterations, nonce, edk, t);
 
             if (version == ProtocolVersion.V1 && type == PaserkType.SecretPassword)
             {
                 ptk = RemovePemEncoding(ptk);
             }
-
-            // Extract wrapped paserk
-            return type switch
-            {
-                PaserkType.LocalPassword => SimpleDecode(PaserkType.Local, version, ToBase64Url(ptk)),
-                PaserkType.SecretPassword => SimpleDecode(PaserkType.Secret, version, ToBase64Url(ptk)),
-
-                _ => throw new NotSupportedException()
-            };
         }
         else if (version is ProtocolVersion.V2 or ProtocolVersion.V4)
         {
-
             var salt = bytes[..16];
 
             var mem = BinaryPrimitives.ReadInt64BigEndian(bytes[16..24]);
@@ -222,17 +209,21 @@ internal static class PaserkHelpers
             var edk = bytes[56..^32];
             var t = bytes[^32..];
 
-            var ptk = Pbkw.Argon2IdDecrypt(header, password, salt, mem, time, para, nonce, edk, t);
-
-            return type switch
-            {
-                PaserkType.LocalPassword => SimpleDecode(PaserkType.Local, version, ToBase64Url(ptk)),
-                PaserkType.SecretPassword => SimpleDecode(PaserkType.Secret, version, ToBase64Url(ptk)),
-
-                _ => throw new NotSupportedException()
-            };
+            ptk = Pbkw.Argon2IdDecrypt(header, password, salt, mem, time, para, nonce, edk, t);
         }
-        throw new NotImplementedException();
+        else
+        {
+            throw new NotImplementedException();
+        }
+
+        // Extract wrapped paserk
+        return type switch
+        {
+            PaserkType.LocalPassword => SimpleDecode(PaserkType.Local, version, ToBase64Url(ptk)),
+            PaserkType.SecretPassword => SimpleDecode(PaserkType.Secret, version, ToBase64Url(ptk)),
+
+            _ => throw new NotSupportedException()
+        };
     }
 
     // TODO: Check Public V3 has valid point compression.

@@ -1,4 +1,6 @@
-﻿using System;
+﻿namespace Paseto.PaserkOperations;
+
+using System;
 using System.Buffers.Binary;
 using System.Linq;
 using System.Security.Cryptography;
@@ -11,8 +13,6 @@ using Org.BouncyCastle.Security;
 using Paseto.Cryptography;
 using Paseto.Cryptography.Internal;
 using Paseto.Cryptography.Internal.Argon2;
-
-namespace Paseto.PaserkOperations;
 
 internal record struct Pbkdf2EncryptionValues(string Header, byte[] Salt, int Iterations, byte[] Nonce, byte[] Edk, byte[] Tag);
 internal record struct Argon2idEncryptionValues(string Header, byte[] Salt, long Memory, int Iterations, int Parallelism, byte[] Nonce, byte[] Edk, byte[] Tag);
@@ -106,7 +106,7 @@ internal static class Pbkw
     {
         var passwordBytes = Encoding.UTF8.GetBytes(password);
 
-        if(memoryCost > int.MaxValue)
+        if (memoryCost > int.MaxValue)
         {
             throw new ArgumentException($"Argument {nameof(memoryCost)} cannot exceed {int.MaxValue}.");
         }
@@ -240,10 +240,7 @@ internal static class Pbkw
         gen.Initialize();
         var t = gen.ComputeHash(msg);
 
-
         // Return h, s, mem, time, para, n, edk, t.
-
         return new Argon2idEncryptionValues(header, salt, memoryCost, time, parallelism, nonce, edk, t);
     }
-
 }
