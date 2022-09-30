@@ -117,7 +117,7 @@ internal static class PaserkHelpers
         return $"{header}{ToBase64Url(data)}";
     }
 
-    internal static string PwEncodeArgon2(string header, string password, int iterations, int memory, int parallelism, PaserkType type, PasetoKey pasetoKey)
+    internal static string PwEncodeArgon2(string header, string password, long memoryCostBytes, int iterations, int parallelism, PaserkType type, PasetoKey pasetoKey)
     {
         var version = StringToVersion(pasetoKey.Protocol.Version);
 
@@ -130,7 +130,8 @@ internal static class PaserkHelpers
         {
             throw new NotImplementedException();
         }
-        var result = Pbkw.Argon2IdEncrypt(header, ptk, password, memory, iterations, parallelism);
+
+        var result = Pbkw.Argon2IdEncrypt(header, ptk, password, memoryCostBytes, iterations, parallelism);
         var (_, Salt, Memory, Iterations, Parallelism, Nonce, Edk, Tag) = result;
 
         var memoryBytes = ByteIntegerConverter.Int64ToBigEndianBytes(Memory);

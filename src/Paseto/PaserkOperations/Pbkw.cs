@@ -102,22 +102,17 @@ internal static class Pbkw
         return new Pbkdf2EncryptionValues(header, salt, iterations, nonce, edk, tag);
     }
 
-    public static byte[] Argon2IdDecrypt(string header, string password, byte[] salt, long memoryCost, int time, int parallelism, byte[] nonce, byte[] edk, ReadOnlySpan<byte> t)
+    public static byte[] Argon2IdDecrypt(string header, string password, byte[] salt, long memoryCostBytes, int time, int parallelism, byte[] nonce, byte[] edk, ReadOnlySpan<byte> t)
     {
         var passwordBytes = Encoding.UTF8.GetBytes(password);
-
-        if (memoryCost > int.MaxValue)
-        {
-            throw new ArgumentException($"Argument {nameof(memoryCost)} cannot exceed {int.MaxValue}.");
-        }
-        var mem = (int)memoryCost;
+        var memoryKiBytes = MemorytoKiBytes(memoryCostBytes);
 
         // Derive the pre-key k from the password and salt. k = Argon2id(pw, s, mem, time, para)
         using var argon = new Argon2id(passwordBytes)
         {
             DegreeOfParallelism = parallelism,
             Iterations = time,
-            MemorySize = mem / 1024,
+            MemorySize = memoryKiBytes,
             Salt = salt
         };
         var preKey = argon.GetBytes(32);
@@ -138,7 +133,7 @@ internal static class Pbkw
 
         var headerBytes = Encoding.UTF8.GetBytes(header);
         var memBytes = new byte[8];
-        BinaryPrimitives.WriteInt64BigEndian(memBytes, memoryCost);
+        BinaryPrimitives.WriteInt64BigEndian(memBytes, memoryCostBytes);
         var timeBytes = new byte[4];
         BinaryPrimitives.WriteInt32BigEndian(timeBytes, time);
         var paraBytes = new byte[4];
@@ -168,14 +163,10 @@ internal static class Pbkw
         return ptk;
     }
 
-    public static Argon2idEncryptionValues Argon2IdEncrypt(string header, byte[] key, string password, long memoryCost, int time, int parallelism)
+    public static Argon2idEncryptionValues Argon2IdEncrypt(string header, byte[] key, string password, long memoryCostBytes, int time, int parallelism)
     {
         var passwordBytes = Encoding.UTF8.GetBytes(password);
-        if (memoryCost > int.MaxValue)
-        {
-            throw new ArgumentException($"Argument {nameof(memoryCost)} cannot exceed {int.MaxValue}.");
-        }
-        var mem = (int)memoryCost;
+        var memoryKiBytes = MemorytoKiBytes(memoryCostBytes);
 
         // Generate a random 128-bit(16 byte) salt(s).
         var salt = new byte[16];
@@ -186,7 +177,7 @@ internal static class Pbkw
         {
             DegreeOfParallelism = parallelism,
             Iterations = time,
-            MemorySize = mem / 1024,
+            MemorySize = memoryKiBytes,
             Salt = salt
         };
         var preKey = argon.GetBytes(32);
@@ -229,10 +220,13 @@ internal static class Pbkw
         var gen = new Blake2bMac(32 * 8) { Key = ak };
 
         var headerBytes = Encoding.UTF8.GetBytes(header);
+
         var memBytes = new byte[8];
-        BinaryPrimitives.WriteInt64BigEndian(memBytes, memoryCost);
+        BinaryPrimitives.WriteInt64BigEndian(memBytes, (long)memoryCostBytes);
+
         var timeBytes = new byte[4];
         BinaryPrimitives.WriteInt32BigEndian(timeBytes, time);
+
         var paraBytes = new byte[4];
         BinaryPrimitives.WriteInt32BigEndian(paraBytes, parallelism);
 
@@ -241,6 +235,16 @@ internal static class Pbkw
         var t = gen.ComputeHash(msg);
 
         // Return h, s, mem, time, para, n, edk, t.
-        return new Argon2idEncryptionValues(header, salt, memoryCost, time, parallelism, nonce, edk, t);
+        return new Argon2idEncryptionValues(header, salt, memoryCostBytes, time, parallelism, nonce, edk, t);
+    }
+
+    private static int MemorytoKiBytes(long memoryCostBytes)
+    {
+        if (memoryCostBytes > (long)int.MaxValue * 1024)
+        {
+            throw new ArgumentException($"Argument {nameof(memoryCostBytes)} cannot exceed {(long)int.MaxValue * 1024}.");
+        }
+
+        return (int)(memoryCostBytes / 1024);
     }
 }

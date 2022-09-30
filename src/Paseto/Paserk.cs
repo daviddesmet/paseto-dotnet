@@ -60,13 +60,13 @@ public static class Paserk
     /// <param name="pasetoKey">PasetoKey of type <see cref="PasetoSymmetricKey"/> or <see cref="PasetoAsymmetricSecretKey"/>.</param>
     /// <param name="type">PaserkType of type <see cref="PaserkType.LocalPassword"/> or <see cref="PaserkType.SecretPassword"/>.</param>
     /// <param name="password">Password used to derive encryption key.</param>
-    /// <param name="memoryCost">The number of 1kB memory blocks to use while processing the Argon2id hash.</param>
+    /// <param name="memoryCost">Amount of memory to use in bytes..</param>
     /// <param name="iterations">The number of iterations to apply to the password hash.</param>
     /// <param name="degreeOfParallelism">The number of lanes to use while processing the hash.</param>
     /// <returns>Password wrapped <see cref="PasetoKey"/>.</returns>
     /// <exception cref="PaserkNotSupportedException"></exception>
     /// <exception cref="ArgumentException"></exception>
-    public static string Encode(PasetoKey pasetoKey, PaserkType type, string password, int memoryCost, int iterations, int degreeOfParallelism = 1)
+    public static string Encode(PasetoKey pasetoKey, PaserkType type, string password, long memoryCost, int iterations, int degreeOfParallelism = 1)
     {
         var version = PaserkHelpers.StringToVersion(pasetoKey.Protocol.Version);
         if (version is not (ProtocolVersion.V2 or ProtocolVersion.V4))
@@ -81,10 +81,13 @@ public static class Paserk
         if (string.IsNullOrEmpty(password))
             throw new ArgumentException($"Value {nameof(password)} cannot be null or empty");
 
+        if (memoryCost > (long)int.MaxValue * 1024)
+            throw new ArgumentException($"Argument {nameof(memoryCost)} cannot exceed {(long)int.MaxValue * 1024}.");
+
         var header = $"{PARSEK_HEADER_K}{pasetoKey.Protocol.VersionNumber}.{type.ToDescription()}.";
         return type switch
         {
-            PaserkType.LocalPassword or PaserkType.SecretPassword => PaserkHelpers.PwEncodeArgon2(header, password, iterations, memoryCost, degreeOfParallelism, type, pasetoKey),
+            PaserkType.LocalPassword or PaserkType.SecretPassword => PaserkHelpers.PwEncodeArgon2(header, password, memoryCost, iterations, degreeOfParallelism, type, pasetoKey),
             _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported.")
         };
     }
