@@ -160,7 +160,7 @@ public class PaserkTests
         {
             return;
         }
-            
+         
         if (test.ExpectFail)
         {
             var act = () =>
@@ -184,7 +184,8 @@ public class PaserkTests
         var wrapped = version switch
         {
             ProtocolVersion.V1 or ProtocolVersion.V3 => Paserk.Encode(pasetoKey, type, test.Password, test.Options["iterations"]),
-            ProtocolVersion.V2 or ProtocolVersion.V4 => Paserk.Encode(pasetoKey, type, test.Password, test.Options["memlimit"], test.Options["opslimit"]),
+            // Lower the memorycost and ops to reduce run time.
+            ProtocolVersion.V2 or ProtocolVersion.V4 => Paserk.Encode(pasetoKey, type, test.Password, test.Options["memlimit"] / 16, test.Options["opslimit"] - 1, 1),
             _ => throw new NotImplementedException(),
         };
 
