@@ -109,7 +109,7 @@ internal static class PaserkHelpers
             throw new NotImplementedException();
         }
         var result = Pbkw.Pbkdf2Encryption(header, ptk, password, iterations);
-        var (Header, Salt, Iterations, Nonce, Edk, Tag) = result;
+        var (_, Salt, Iterations, Nonce, Edk, Tag) = result;
 
         var iterBytes = ByteIntegerConverter.Int32ToBigEndianBytes(Iterations);
 
@@ -117,7 +117,7 @@ internal static class PaserkHelpers
         return $"{header}{ToBase64Url(data)}";
     }
 
-    internal static string PwEncodeArgon2(string header, string password, long memoryCostBytes, int iterations, int parallelism, PaserkType type, PasetoKey pasetoKey)
+    internal static string PwEncodeArgon2(string header, string password, int memoryCost, int iterations, int parallelism, PaserkType type, PasetoKey pasetoKey)
     {
         var version = StringToVersion(pasetoKey.Protocol.Version);
 
@@ -131,10 +131,10 @@ internal static class PaserkHelpers
             throw new NotImplementedException();
         }
 
-        var result = Pbkw.Argon2IdEncrypt(header, ptk, password, memoryCostBytes, iterations, parallelism);
+        var result = Pbkw.Argon2IdEncrypt(header, ptk, password, memoryCost, iterations, parallelism);
         var (_, Salt, MemoryKiBytes, Iterations, Parallelism, Nonce, Edk, Tag) = result;
 
-        var memoryBytes = ByteIntegerConverter.Int64ToBigEndianBytes(Memory);
+        var memoryBytes = ByteIntegerConverter.Int64ToBigEndianBytes(MemoryKiBytes * 1024);
         var iterBytes = ByteIntegerConverter.Int32ToBigEndianBytes(Iterations);
         var paraBytes = ByteIntegerConverter.Int32ToBigEndianBytes(Parallelism);
 
@@ -171,11 +171,9 @@ internal static class PaserkHelpers
 
     internal static PasetoKey PwDecode(PaserkType type, ProtocolVersion version, string paserk, string password)
     {
-        // TODO Assert type matches.
         var split = paserk.Split('.');
         var header = $"{split[0]}.{split[1]}.";
 
-        //var passwordBytes = Encoding.UTF8.GetBytes(password);
         var bytes = FromBase64Url(split[2]);
 
         byte[] ptk;
@@ -183,13 +181,12 @@ internal static class PaserkHelpers
         if (version is ProtocolVersion.V1 or ProtocolVersion.V3)
         {
             // Unpack values
-            var iterations = BinaryPrimitives.ReadInt32BigEndian(bytes[32..36]);
+            var iterations = BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan()[32..36]);
 
             var salt = bytes[..32];
             var nonce = bytes[36..52];
             var edk = bytes[52..^48];
             var t = bytes[^48..];
-            var hsine = bytes[..^48];
 
             ptk = Pbkw.Pbkdf2Decryption(header, password, salt, iterations, nonce, edk, t);
 
@@ -202,9 +199,9 @@ internal static class PaserkHelpers
         {
             var salt = bytes[..16];
 
-            var mem = BinaryPrimitives.ReadInt64BigEndian(bytes[16..24]);
-            var time = BinaryPrimitives.ReadInt32BigEndian(bytes[24..28]);
-            var para = BinaryPrimitives.ReadInt32BigEndian(bytes[28..32]);
+            var mem = BinaryPrimitives.ReadInt64BigEndian(bytes.AsSpan()[16..24]);
+            var time = BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan()[24..28]);
+            var para = BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan()[28..32]);
 
             var nonce = bytes[32..56];
             var edk = bytes[56..^32];

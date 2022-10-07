@@ -185,7 +185,7 @@ public class PaserkTests
         {
             ProtocolVersion.V1 or ProtocolVersion.V3 => Paserk.Encode(pasetoKey, type, test.Password, test.Options["iterations"]),
             // Lower the memorycost and ops to reduce run time.
-            ProtocolVersion.V2 or ProtocolVersion.V4 => Paserk.Encode(pasetoKey, type, test.Password, test.Options["memlimit"] / 16, test.Options["opslimit"] - 1, 1),
+            ProtocolVersion.V2 or ProtocolVersion.V4 => Paserk.Encode(pasetoKey, type, test.Password, test.Options["memlimit"] / (16 * 1024), test.Options["opslimit"] - 1, 1),
             _ => throw new NotImplementedException(),
         };
 
