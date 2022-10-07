@@ -188,7 +188,7 @@ public static class Paserk
         {
             PaserkType.LocalPassword or PaserkType.SecretPassword => PaserkHelpers.PwDecode(type, (ProtocolVersion)version, serializedKey, password),
 
-            PaserkType.Local or PaserkType.Secret or PaserkType.Public => throw new PaserkNotSupportedException($"A password is not required to decode paserk of {type}, use a different overload."),
+            PaserkType.Local or PaserkType.Secret or PaserkType.Public => throw new PaserkNotSupportedException($"A password is not required to decode paserk of type {type}, use a different overload."),
 
             PaserkType.Lid or PaserkType.Sid or PaserkType.Pid => throw new PaserkNotSupportedException($"Decode is not supported for type {type}. Id should be used to determine which key should be used."),
 
