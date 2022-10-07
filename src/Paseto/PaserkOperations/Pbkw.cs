@@ -170,7 +170,7 @@ internal static class Pbkw
     public static Argon2idEncryptionValues Argon2IdEncrypt(string header, byte[] key, string password, int memoryCostKiBytes, int time, int parallelism)
     {
         var passwordBytes = Encoding.UTF8.GetBytes(password);
-        var memoryKiBytes = MemorytoKiBytes(memoryCostBytes);
+        long memoryCostBytes = memoryCostKiBytes * 1024;
 
         // Generate a random 128-bit(16 byte) salt(s).
         var salt = new byte[16];
@@ -181,7 +181,7 @@ internal static class Pbkw
         {
             DegreeOfParallelism = parallelism,
             Iterations = time,
-            MemorySize = memoryKiBytes,
+            MemorySize = memoryCostKiBytes,
             Salt = salt
         };
         var preKey = argon.GetBytes(32);
@@ -226,7 +226,7 @@ internal static class Pbkw
         var headerBytes = Encoding.UTF8.GetBytes(header);
 
         var memBytes = new byte[8];
-        BinaryPrimitives.WriteInt64BigEndian(memBytes, (long)memoryCostBytes);
+        BinaryPrimitives.WriteInt64BigEndian(memBytes, memoryCostBytes);
 
         var timeBytes = new byte[4];
         BinaryPrimitives.WriteInt32BigEndian(timeBytes, time);
@@ -239,7 +239,7 @@ internal static class Pbkw
         var t = gen.ComputeHash(msg);
 
         // Return h, s, mem, time, para, n, edk, t.
-        return new Argon2idEncryptionValues(header, salt, memoryCostBytes, time, parallelism, nonce, edk, t);
+        return new Argon2idEncryptionValues(header, salt, memoryCostKiBytes, time, parallelism, nonce, edk, t);
     }
 
     private static int MemorytoKiBytes(long memoryCostBytes)

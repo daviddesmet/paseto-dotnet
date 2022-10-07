@@ -110,7 +110,15 @@ public static class Paserk
         };
     }
 
-    public static PasetoKey Decode(string serializedKey, string password = null)
+    /// <summary>
+    /// Decodes a paserk encoded paseto key.
+    /// </summary>
+    /// <param name="serializedKey">Paserk password wrapped key.</param>
+    /// <returns>Decoded <see cref="PasetoKey"/>.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="PaserkInvalidException"></exception>
+    /// <exception cref="PaserkNotSupportedException"></exception>
+    public static PasetoKey Decode(string serializedKey)
     {
         if (string.IsNullOrWhiteSpace(serializedKey))
             throw new ArgumentNullException(nameof(serializedKey));
@@ -138,11 +146,53 @@ public static class Paserk
 
             PaserkType.Lid or PaserkType.Sid or PaserkType.Pid => throw new PaserkNotSupportedException($"Decode is not supported for type {type}. Id should be used to determine which key should be used."),
 
+            PaserkType.LocalPassword or PaserkType.SecretPassword => throw new PaserkNotSupportedException($"Decoding a password wrapped key of {type} requires a password to be provided."),
+
+            _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported."),
+        };
+    }
+
+    /// <summary>
+    /// Decodes a password wrapped key.
+    /// </summary>
+    /// <param name="serializedKey">Paserk password wrapped key.</param>
+    /// <param name="password">Password used to decode paserk.</param>
+    /// <returns>Decoded <see cref="PasetoKey"/>.</returns>
+    /// <exception cref="ArgumentNullException"></exception>
+    /// <exception cref="PaserkInvalidException"></exception>
+    /// <exception cref="PaserkNotSupportedException"></exception>
+    public static PasetoKey Decode(string serializedKey, string password)
+    {
+        if (string.IsNullOrWhiteSpace(serializedKey))
+            throw new ArgumentNullException(nameof(serializedKey));
+
+        if (!HeaderRegex.IsMatch(serializedKey))
+            throw new PaserkInvalidException("Serialized key is not valid");
+
+        var parts = serializedKey.Split('.');
+        if (parts.Length < 3 || parts.Length > 4)
+            throw new PaserkInvalidException("Serialized key is not valid");
+
+        if (!int.TryParse(parts[0][1..], out var version))
+            throw new PaserkInvalidException("Serialized key has an undefined version");
+
+        if (!Enum.IsDefined(typeof(ProtocolVersion), version))
+            throw new PaserkInvalidException("Serialized key has an unsupported version");
+
+        if (string.IsNullOrEmpty(password))
+            throw new ArgumentException($"Value {nameof(password)} cannot be null or empty");
+
+        var type = parts[1].FromDescription<PaserkType>();
+
+        return type switch
+        {
             PaserkType.LocalPassword or PaserkType.SecretPassword => PaserkHelpers.PwDecode(type, (ProtocolVersion)version, serializedKey, password),
 
-            PaserkType.LocalWrap => throw new NotImplementedException(),
-            PaserkType.SecretWrap => throw new NotImplementedException(),
-            PaserkType.Seal => throw new NotImplementedException(),
+            PaserkType.Local or PaserkType.Secret or PaserkType.Public => throw new PaserkNotSupportedException($"A password is not required to decode {type}, use a different overload."),
+
+            PaserkType.Lid or PaserkType.Sid or PaserkType.Pid => throw new PaserkNotSupportedException($"Decode is not supported for type {type}. Id should be used to determine which key should be used."),
+
+
             _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported."),
         };
     }
