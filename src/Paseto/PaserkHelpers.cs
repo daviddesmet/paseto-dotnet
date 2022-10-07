@@ -132,7 +132,7 @@ internal static class PaserkHelpers
         }
 
         var result = Pbkw.Argon2IdEncrypt(header, ptk, password, memoryCostBytes, iterations, parallelism);
-        var (_, Salt, Memory, Iterations, Parallelism, Nonce, Edk, Tag) = result;
+        var (_, Salt, MemoryKiBytes, Iterations, Parallelism, Nonce, Edk, Tag) = result;
 
         var memoryBytes = ByteIntegerConverter.Int64ToBigEndianBytes(Memory);
         var iterBytes = ByteIntegerConverter.Int32ToBigEndianBytes(Iterations);
@@ -222,7 +222,6 @@ internal static class PaserkHelpers
         {
             PaserkType.LocalPassword => SimpleDecode(PaserkType.Local, version, ToBase64Url(ptk)),
             PaserkType.SecretPassword => SimpleDecode(PaserkType.Secret, version, ToBase64Url(ptk)),
-
             _ => throw new NotSupportedException()
         };
     }

@@ -15,10 +15,11 @@ using Paseto.Cryptography.Internal;
 using Paseto.Cryptography.Internal.Argon2;
 
 internal record struct Pbkdf2EncryptionValues(string Header, byte[] Salt, int Iterations, byte[] Nonce, byte[] Edk, byte[] Tag);
-internal record struct Argon2idEncryptionValues(string Header, byte[] Salt, long Memory, int Iterations, int Parallelism, byte[] Nonce, byte[] Edk, byte[] Tag);
+internal record struct Argon2idEncryptionValues(string Header, byte[] Salt, long MemoryBytes, int Iterations, int Parallelism, byte[] Nonce, byte[] Edk, byte[] Tag);
 
 internal static class Pbkw
 {
+    // For version V1 or V3.
     public static byte[] Pbkdf2Decryption(string header, string password, byte[] salt, int iterations, byte[] nonce, byte[] edk, byte[] t)
     {
         var headerBytes = Encoding.UTF8.GetBytes(header);
@@ -59,6 +60,7 @@ internal static class Pbkw
         return cipher.DoFinal(edk);
     }
 
+    // For version V1 or V3.
     public static Pbkdf2EncryptionValues Pbkdf2Encryption(string header, byte[] key, string password, int iterations)
     {
         var ptk = key;
@@ -102,6 +104,7 @@ internal static class Pbkw
         return new Pbkdf2EncryptionValues(header, salt, iterations, nonce, edk, tag);
     }
 
+    // For version V2 or V4.
     public static byte[] Argon2IdDecrypt(string header, string password, byte[] salt, long memoryCostBytes, int time, int parallelism, byte[] nonce, byte[] edk, ReadOnlySpan<byte> t)
     {
         var passwordBytes = Encoding.UTF8.GetBytes(password);
@@ -163,7 +166,8 @@ internal static class Pbkw
         return ptk;
     }
 
-    public static Argon2idEncryptionValues Argon2IdEncrypt(string header, byte[] key, string password, long memoryCostBytes, int time, int parallelism)
+    // For version V2 or V4.
+    public static Argon2idEncryptionValues Argon2IdEncrypt(string header, byte[] key, string password, int memoryCostKiBytes, int time, int parallelism)
     {
         var passwordBytes = Encoding.UTF8.GetBytes(password);
         var memoryKiBytes = MemorytoKiBytes(memoryCostBytes);

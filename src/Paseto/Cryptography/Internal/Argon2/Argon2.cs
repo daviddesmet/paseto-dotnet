@@ -72,7 +72,7 @@ internal abstract class Argon2 : DeriveBytes
     public int Iterations { get; set; }
 
     /// <summary>
-    /// The number of 1kB memory blocks to use while proessing the hash
+    /// The number of 1kB memory blocks to use while processing the hash
     /// </summary>
     public int MemorySize { get; set; }
 
