@@ -125,13 +125,24 @@ k[version].[type].[data]
 #### Encoding a Key
 
 ```csharp
-var paserk = Paserk.Encode(pasetoKey, purpose, type);
+// Paserk encode local, public and secret keys.
+var paserk = Paserk.Encode(pasetoKey, paserkType);
+
+// Password wrap a local or secret key for versions 1 and 3.
+// var pwPaserk = Paserk.Encode(pasetoKey, type, password, iterations);
+
+// Password wrap a local or secret key for versions 2 and 4.
+// var pwPaserk = Paserk.Encode(pasetoKey, type, password, memoryCost, iterations, parallelism);
 ```
 
 #### Decoding a Key
 
 ```csharp
+// Decode a paserk encoded paseto key.
 var key = Paserk.Decode(paserk);
+
+// Decode a password wrapped paseto key.
+// var key = Paserk.Decode(paserk, password);
 ```
 
 ## Roadmap
