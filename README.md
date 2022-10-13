@@ -22,13 +22,13 @@ PASERK extension
 | local | ✅ |
 | seal | ❌ |
 | local-wrap | ❌ |
-| local-pw | ❌ |
+| local-pw | ✅ |
 | sid | ✅ |
 | public | ✅ |
 | pid | ✅ |
 | secret | ✅ |
 | secret-wrap | ❌ |
-| secret-pw | ❌ |
+| secret-pw | ✅ |
 
 ## Installation
 
@@ -125,13 +125,24 @@ k[version].[type].[data]
 #### Encoding a Key
 
 ```csharp
-var paserk = Paserk.Encode(pasetoKey, type);
+// Paserk encode local, public and secret keys.
+var paserk = Paserk.Encode(pasetoKey, paserkType);
+
+// Password wrap a local or secret key for versions 1 and 3.
+// var pwPaserk = Paserk.Encode(pasetoKey, type, password, iterations);
+
+// Password wrap a local or secret key for versions 2 and 4.
+// var pwPaserk = Paserk.Encode(pasetoKey, type, password, memoryCost, iterations, parallelism);
 ```
 
 #### Decoding a Key
 
 ```csharp
+// Decode a paserk encoded paseto key.
 var key = Paserk.Decode(paserk);
+
+// Decode a password wrapped paseto key.
+// var key = Paserk.Decode(paserk, password);
 ```
 
 ## Roadmap
@@ -151,7 +162,7 @@ var key = Paserk.Decode(paserk);
 ## Cryptography
 
 * Uses Ed25519 (EdDSA over Curve25519) algorithm from CodesInChaos [Chaos.NaCl](https://github.com/CodesInChaos/Chaos.NaCl) cryptography library.
-* Uses Blake2b cryptographic hash function from [Konscious.Security.Cryptography](https://github.com/kmaragon/Konscious.Security.Cryptography) repository.
+* Uses Blake2b cryptographic hash and Argon2 key derivation functions from [Konscious.Security.Cryptography](https://github.com/kmaragon/Konscious.Security.Cryptography) repository.
 * Uses AES-256-CTR, ECDSA over P-384 algorithms from [Bouncy Castle](https://github.com/novotnyllc/bc-csharp) cryptography library.
 * Uses XChaCha20-Poly1305 AEAD from [NaCl.Core](https://github.com/daviddesmet/NaCl.Core) repository.
 

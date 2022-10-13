@@ -1,6 +1,7 @@
 ﻿namespace Paseto.Cryptography.Internal;
 
 using System;
+using System.Buffers.Binary;
 
 // Loops? Arrays? Never heard of that stuff
 // Library avoids unnecessary heap allocations and unsafe code
@@ -8,6 +9,31 @@ using System;
 internal static class ByteIntegerConverter
 {
     #region Individual
+
+    /// <summary>
+    /// Converts a 32-bit integer to big endian bytes.
+    /// </summary>
+    /// <param name="value">The input value.</param>
+    /// <returns>Big endian byte array of length 4.</returns>
+    public static byte[] Int32ToBigEndianBytes(int value)
+    {
+        var bytes = new byte[4];
+        BinaryPrimitives.WriteInt32BigEndian(bytes, value);
+        return bytes;
+    }
+
+    /// <summary>
+    /// Converts a 64-bit integer to big endian bytes.
+    /// </summary>
+    /// <param name="value">The input value.</param>
+    /// <returns>Big endian byte array of length 8.</returns>
+    public static byte[] Int64ToBigEndianBytes(long value)
+    {
+        var bytes = new byte[8];
+        BinaryPrimitives.WriteInt64BigEndian(bytes, value);
+        return bytes;
+    }
+
 
     /// <summary>
     /// Loads 4 bytes of the input buffer into an unsigned 32-bit integer, beginning at the input offset.
@@ -96,7 +122,7 @@ internal static class ByteIntegerConverter
     #endregion
 
     #region Array8
-    
+
     public static void Array8LoadLittleEndian32(out Array8<uint> output, byte[] input, int inputOffset)
     {
         output.x0 = LoadLittleEndian32(input, inputOffset + 0);

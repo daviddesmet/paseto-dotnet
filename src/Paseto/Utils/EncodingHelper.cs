@@ -4,7 +4,9 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using Paseto.Extensions;
 
 /// <summary>
@@ -12,6 +14,48 @@ using Paseto.Extensions;
 /// </summary>
 internal static class EncodingHelper
 {
+    private static readonly Regex RsaPrivateKeyRegex = new(@"-----(BEGIN|END) (RSA|OPENSSH|ENCRYPTED) PRIVATE KEY-----[\W]*", RegexOptions.Compiled);
+
+    /// <summary>
+    /// Adds PEM header and footer to a key if it doesn't exist.
+    /// </summary>
+    /// <param name="keyString">Cryptographic key string.</param>
+    /// <returns>PEM formatted string.</returns>
+    internal static string TryPemEncode(string keyString)
+    {
+        // Add PEM encoding
+        if (!RsaPrivateKeyRegex.IsMatch(keyString))
+        {
+            return "-----BEGIN RSA PRIVATE KEY-----\n" + keyString + "\n-----END RSA PRIVATE KEY-----";
+        }
+        return keyString;
+    }
+
+    /// <summary>
+    /// Removes PEM formatting from UTF8 encoded bytes.
+    /// </summary>
+    /// <param name="bytes">UTF8 encoded key bytes.</param>
+    /// <returns>UTF8 encoded bytes without PEM formatting.</returns>
+    internal static byte[] RemovePemEncoding(byte[] bytes)
+    {
+        var keyString = Encoding.UTF8.GetString(bytes);
+        if (RsaPrivateKeyRegex.IsMatch(keyString))
+        {
+            var rsaSecretKey = RSA.Create();
+#if NET5_0_OR_GREATER
+            rsaSecretKey.ImportFromPem(keyString);
+#elif NETCOREAPP3_1
+            var privateKeyBase64 = RsaPrivateKeyRegex.Replace(key, "");
+            var privateKey = Convert.FromBase64String(privateKeyBase64);
+            rsaSecretKey.ImportRSAPrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
+#endif
+
+            return rsaSecretKey.ExportRSAPrivateKey();
+        }
+
+        return bytes;
+    }
+
     #region Authentication Padding
 
     /// <summary>

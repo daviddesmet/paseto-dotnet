@@ -149,6 +149,50 @@ public class PaserkTests
         paserk.Should().Be(test.Paserk);
     }
 
+    public static IEnumerable<object[]> PwGenerator => TestItemGenerator(new ProtocolVersion[] { ProtocolVersion.V1, ProtocolVersion.V2, ProtocolVersion.V3, ProtocolVersion.V4 }, new PaserkType[] { PaserkType.LocalPassword, PaserkType.SecretPassword });
+
+    [Theory]
+    [MemberData(nameof(PwGenerator))]
+    public void TestPwVectors(PaserkTestItem test, ProtocolVersion version, PaserkType type)
+    {
+        // Paserk implementation is not version specific so we skip this test.
+        if (test is { ExpectFail: true, Comment: "Implementations MUST NOT accept a PASERK of the wrong version." })
+        {
+            return;
+        }
+         
+        if (test.ExpectFail)
+        {
+            var act = () =>
+            {
+                var key = ParseKey(version, type, test.Key);
+                Paserk.Decode(test.Paserk, test.Password);
+            };
+
+            act.Should().Throw<Exception>();
+            return;
+        }
+
+        var purpose = Paserk.GetCompatibility(type);
+        var pasetoKey = ParseKey(version, type, test.Unwrapped);
+
+        // Decode paserk to verify decoding works
+        var decoded = Paserk.Decode(test.Paserk, test.Password);
+        decoded.Key.Span.ToArray().Should().BeEquivalentTo(pasetoKey.Key.ToArray());
+
+        // Encode then decode to verify that encoding works
+        var wrapped = version switch
+        {
+            ProtocolVersion.V1 or ProtocolVersion.V3 => Paserk.Encode(pasetoKey, type, test.Password, test.Options["iterations"]),
+            // Lower the memorycost and ops to reduce run time.
+            ProtocolVersion.V2 or ProtocolVersion.V4 => Paserk.Encode(pasetoKey, type, test.Password, test.Options["memlimit"] / (16 * 1024), test.Options["opslimit"] - 1, 1),
+            _ => throw new NotImplementedException(),
+        };
+
+        var unwrapped = Paserk.Decode(wrapped, test.Password);
+        unwrapped.Key.Span.ToArray().Should().BeEquivalentTo(pasetoKey.Key.ToArray());
+    }
+
     [Theory]
     [MemberData(nameof(Data))]
     public void PaserkTypeShouldNotEncodeIncompatibleKey(ProtocolVersion version, PaserkType type)
@@ -182,23 +226,18 @@ public class PaserkTests
     {
         switch (type)
         {
-            case PaserkType.Local or PaserkType.Lid:
-                return new PasetoSymmetricKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
-
             case PaserkType.LocalWrap:
-
-            case PaserkType.LocalPassword:
 
             case PaserkType.Seal:
 
-            case PaserkType.Secret or PaserkType.Sid:
-                return new PasetoAsymmetricSecretKey(TestHelper.ReadKey(key), Paserk.CreateProtocolVersion(version));
+            case PaserkType.Local or PaserkType.Lid or PaserkType.LocalPassword:
+                return new PasetoSymmetricKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
 
             case PaserkType.SecretWrap:
                 break;
 
-            case PaserkType.SecretPassword:
-                break;
+            case PaserkType.Secret or PaserkType.Sid or PaserkType.SecretPassword:
+                return new PasetoAsymmetricSecretKey(TestHelper.ReadKey(key), Paserk.CreateProtocolVersion(version));
 
             case PaserkType.Public or PaserkType.Pid:
                 return new PasetoAsymmetricPublicKey(TestHelper.ReadKey(key), Paserk.CreateProtocolVersion(version));
