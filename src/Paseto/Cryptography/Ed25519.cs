@@ -59,21 +59,21 @@ public static class Ed25519
         return signature;
     }
 
-    public static byte[] PublicKeyFromSeed(byte[] privateKeySeed)
+    public static byte[] PublicKeyFromSeed(ReadOnlySpan<byte> privateKeySeed)
     {
         KeyPairFromSeed(out byte[] publicKey, out byte[] privateKey, privateKeySeed);
         CryptoBytes.Wipe(privateKey);
         return publicKey;
     }
 
-    public static byte[] ExpandedPrivateKeyFromSeed(byte[] privateKeySeed)
+    public static byte[] ExpandedPrivateKeyFromSeed(ReadOnlySpan<byte> privateKeySeed)
     {
         KeyPairFromSeed(out byte[] publicKey, out byte[] privateKey, privateKeySeed);
         CryptoBytes.Wipe(publicKey);
         return privateKey;
     }
 
-    public static void KeyPairFromSeed(out byte[] publicKey, out byte[] expandedPrivateKey, byte[] privateKeySeed)
+    public static void KeyPairFromSeed(out byte[] publicKey, out byte[] expandedPrivateKey, ReadOnlySpan<byte> privateKeySeed)
     {
         if (privateKeySeed == null)
             throw new ArgumentNullException(nameof(privateKeySeed));
@@ -84,32 +84,23 @@ public static class Ed25519
         var pk = new byte[PublicKeySizeInBytes];
         var sk = new byte[ExpandedPrivateKeySizeInBytes];
 
-        Ed25519Operations.crypto_sign_keypair(pk, 0, sk, 0, privateKeySeed, 0);
+        KeyPairFromSeed(pk, sk, privateKeySeed);
 
         publicKey = pk;
         expandedPrivateKey = sk;
     }
 
-    public static void KeyPairFromSeed(ArraySegment<byte> publicKey, ArraySegment<byte> expandedPrivateKey, ArraySegment<byte> privateKeySeed)
+    public static void KeyPairFromSeed(Span<byte> publicKey, Span<byte> expandedPrivateKey, ReadOnlySpan<byte> privateKeySeed)
     {
-        if (publicKey.Array == null)
-            throw new ArgumentNullException("publicKey.Array");
-
-        if (expandedPrivateKey.Array == null)
-            throw new ArgumentNullException("expandedPrivateKey.Array");
-
-        if (privateKeySeed.Array == null)
-            throw new ArgumentNullException("privateKeySeed.Array");
-
-        if (publicKey.Count != PublicKeySizeInBytes)
+        if (publicKey.Length != PublicKeySizeInBytes)
             throw new ArgumentException("publicKey.Count");
 
-        if (expandedPrivateKey.Count != ExpandedPrivateKeySizeInBytes)
+        if (expandedPrivateKey.Length != ExpandedPrivateKeySizeInBytes)
             throw new ArgumentException("expandedPrivateKey.Count");
 
-        if (privateKeySeed.Count != PrivateKeySeedSizeInBytes)
+        if (privateKeySeed.Length != PrivateKeySeedSizeInBytes)
             throw new ArgumentException("privateKeySeed.Count");
 
-        Ed25519Operations.crypto_sign_keypair(publicKey.Array, publicKey.Offset, expandedPrivateKey.Array, expandedPrivateKey.Offset, privateKeySeed.Array, privateKeySeed.Offset);
+        Ed25519Operations.crypto_sign_keypair(publicKey, 0, expandedPrivateKey, 0, privateKeySeed, 0);
     }
 }
