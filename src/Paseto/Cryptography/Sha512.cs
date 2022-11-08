@@ -1,6 +1,7 @@
 ﻿namespace Paseto.Cryptography;
 
 using System;
+using System.Buffers.Binary;
 using Paseto.Cryptography.Internal;
 using Paseto.Extensions;
 
@@ -76,7 +77,7 @@ public class Sha512
         // Hash complete blocks without copying
         while (count >= BlockSize)
         {
-            ByteIntegerConverterExtensions.Array16LoadBigEndian64(out block, data, offset);
+            ByteIntegerConverter.Array16LoadBigEndian64(out block, data, offset);
             Sha512Internal.Core(out _state, ref _state, ref block);
             offset += BlockSize;
             count -= BlockSize;
@@ -107,14 +108,14 @@ public class Sha512
         block.x15 = (_totalBytes - 1) * 8;
         Sha512Internal.Core(out _state, ref _state, ref block);
 
-        ByteIntegerConverter.StoreBigEndian64(output, _state.x0);
-        ByteIntegerConverter.StoreBigEndian64(output[8..], _state.x1);
-        ByteIntegerConverter.StoreBigEndian64(output[16..], _state.x2);
-        ByteIntegerConverter.StoreBigEndian64(output[24..], _state.x3);
-        ByteIntegerConverter.StoreBigEndian64(output[32..], _state.x4);
-        ByteIntegerConverter.StoreBigEndian64(output[40..], _state.x5);
-        ByteIntegerConverter.StoreBigEndian64(output[48..], _state.x6);
-        ByteIntegerConverter.StoreBigEndian64(output[56..], _state.x7);
+        BinaryPrimitives.WriteUInt64BigEndian(output, _state.x0);
+        BinaryPrimitives.WriteUInt64BigEndian(output[8..], _state.x1);
+        BinaryPrimitives.WriteUInt64BigEndian(output[16..], _state.x2);
+        BinaryPrimitives.WriteUInt64BigEndian(output[24..], _state.x3);
+        BinaryPrimitives.WriteUInt64BigEndian(output[32..], _state.x4);
+        BinaryPrimitives.WriteUInt64BigEndian(output[40..], _state.x5);
+        BinaryPrimitives.WriteUInt64BigEndian(output[48..], _state.x6);
+        BinaryPrimitives.WriteUInt64BigEndian(output[56..], _state.x7);
         _state = default(Array8<ulong>);
     }
 
