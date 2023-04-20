@@ -208,6 +208,7 @@ public static class Paserk
     internal static IPasetoProtocolVersion CreateProtocolVersion(ProtocolVersion version)
     {
 #pragma warning disable IDE0022 // Use expression body for methods
+#pragma warning disable CS0618 // obsolete
         return version switch
         {
             ProtocolVersion.V1 => new Version1(),
@@ -217,5 +218,6 @@ public static class Paserk
             _ => throw new PaserkNotSupportedException($"The protocol version {version} is currently not supported."),
         };
 #pragma warning restore IDE0022 // Use expression body for methods
+#pragma warning restore CS0618 // obsolete
     }
 }

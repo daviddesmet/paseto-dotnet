@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup Label="Build">
-    <TargetFrameworks>net5.0;net6.0</TargetFrameworks>
+    <TargetFrameworks>net5.0;net6.0;net7.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -10,7 +10,7 @@
     <Authors>David De Smet</Authors>
     <Company />
     <Description>A Paseto (Platform-Agnostic Security Tokens) implementation for .NET</Description>
-    <Copyright>Copyright © 2018-2022 David De Smet</Copyright>
+    <Copyright>Copyright © 2018-2023 David De Smet</Copyright>
     <PackageId>Paseto.Core</PackageId>
     <PackageTags>paseto paserk tokens cryptography dotnet dotnet-core netstandard</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -48,8 +48,8 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="NaCl.Core" Version="2.0.4" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="NaCl.Core" Version="2.0.5" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
   </ItemGroup>
 
@@ -60,12 +60,7 @@
 
   <Target Name="Versioning" BeforeTargets="MinVer">
     <PropertyGroup Label="Build">
-      <MinVerDefaultPreReleasePhase>preview</MinVerDefaultPreReleasePhase>
-      <!-- Tag your repository with the semantic version e.g. '1.0.0' to version all NuGet packages. If you have
-           multiple NuGet packages in your solution and want to version them separately, then uncomment this line
-           and tag your repository with the name of the package followed by the semantic version e.g.
-           'PackageName-1.0.0'. -->
-      <!--<MinVerTagPrefix>$(PackageId)-</MinVerTagPrefix>-->
+      <AssemblyVersion>$(MinVerMajor).$(MinVerMinor).$(MinVerPatch).0</AssemblyVersion>
       <MinVerVerbosity>normal</MinVerVerbosity>
     </PropertyGroup>
   </Target>
