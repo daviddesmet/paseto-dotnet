@@ -52,11 +52,11 @@ jobs:
     
     steps:
     - name: 'Checkout'
-      uses: actions/checkout@v1
+      uses: actions/checkout@v4
     - name: 'Git Fetch Tags'
       run: git fetch --tags
     - name: 'Install .NET SDK'
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
     - name: '.NET Restore'
       run: dotnet tool restore
     - name: 'Build Project'
@@ -64,7 +64,7 @@ jobs:
     - name: 'Run Unit Tests'
       run: dotnet cake --target=Test
     - name: 'Run Unit Tests'
-      run: dotnet test -f net7.0 --no-restore --logger trx -r ${{env.BUILD_ARTIFACT_PATH}} --settings "CodeCoverage.runsettings"
+      run: dotnet test -f net8.0 --no-restore --logger trx -r ${{env.BUILD_ARTIFACT_PATH}} --settings "CodeCoverage.runsettings"
       if: ${{ false }} # always skip since coverage is somehow always empty in GitHub Actions
     - name: 'Run Test Report'
       uses: zyborg/dotnet-tests-report@v1
@@ -80,7 +80,7 @@ jobs:
     - name: 'Pack NuGet'
       run: dotnet cake --target=Pack
     - name: 'Publish Artifacts'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: ${{matrix.os}}
         path: |
@@ -93,9 +93,9 @@ jobs:
     needs: build
     steps:
     - name: 'Checkout'
-      uses: actions/checkout@v1
+      uses: actions/checkout@v4
     - name: 'Download Artifact'
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: 'ubuntu-latest'
     - name: 'Install ReportGenerator'
@@ -103,12 +103,12 @@ jobs:
     - name: 'Generate Coverage Report'
       run: reportgenerator -reports:./TestResults/**/coverage.cobertura.xml -targetdir:${{env.BUILD_ARTIFACT_PATH}}/TestResults/Coverage/Reports "-reporttypes:HtmlInline;HTMLChart;Cobertura"
     - name: 'Upload Coverage'
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v4
       with:
         file: Cobertura.xml
         fail_ci_if_error: false
     - name: 'Publish Coverage Report'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: 'coverage-report'
         path: ${{env.BUILD_ARTIFACT_PATH}}
@@ -119,9 +119,9 @@ jobs:
     needs: coverage
     steps:
     - name: 'Checkout'
-      uses: actions/checkout@v1
+      uses: actions/checkout@v4
     - name: 'Run Benchmarks'
-      run: cd benchmarks/Paseto.Benchmark && dotnet run -f net7.0 -c Release --exporters json --filter '*'
+      run: cd benchmarks/Paseto.Benchmark && dotnet run -f net8.0 -c Release --exporters json --filter '*'
     - name: 'Store Benchmark Result'
       uses: rhysd/github-action-benchmark@v1
       with:
@@ -146,7 +146,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: 'Download Artifact'
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: 'windows-latest'
     - name: 'NuGet Push'
@@ -162,7 +162,7 @@ jobs:
     runs-on: windows-latest
     steps:
     - name: 'Download Artifact'
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: 'windows-latest'
     - name: 'NuGet Push'
