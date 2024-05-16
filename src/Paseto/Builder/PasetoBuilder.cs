@@ -345,15 +345,15 @@ public sealed class PasetoBuilder
     /// </summary>
     /// <param name="type">The PASERK type.</param>
     /// <returns>The encoded serialized key in PASERK format.</returns>
-    /// <exception cref="PasetoBuilderException">Can't generate PASERK key. Check if you have call the 'Use' method.</exception>
-    /// <exception cref="PasetoBuilderException">Can't generate PASERK key. Check if you have call the 'WithKey' method.</exception>
+    /// <exception cref="PasetoBuilderException">Can't generate PASERK serialized key. Check if you have call the 'Use' method.</exception>
+    /// <exception cref="PasetoBuilderException">Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.</exception>
     public string GenerateSerializedKey(PaserkType type)
     {
         if (_protocol is null)
-            throw new PasetoBuilderException("Can't generate PASERK key. Check if you have call the 'Use' method.");
+            throw new PasetoBuilderException("Can't generate PASERK serialized key. Check if you have call the 'Use' method.");
 
         if (_pasetoKey is null)
-            throw new PasetoBuilderException("Can't generate PASERK key. Check if you have call the 'WithKey' method.");
+            throw new PasetoBuilderException("Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.");
 
         return Paserk.Encode(_pasetoKey, type);
     }
