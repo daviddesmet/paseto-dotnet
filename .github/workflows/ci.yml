@@ -49,6 +49,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
+        dotnet: [ '6.0.x', '8.0.x' ]
     
     steps:
     - name: 'Checkout'
@@ -57,6 +58,8 @@ jobs:
       run: git fetch --tags
     - name: 'Install .NET SDK'
       uses: actions/setup-dotnet@v4
+      with:
+          dotnet-version: ${{ matrix.dotnet }}
     - name: '.NET Restore'
       run: dotnet tool restore
     - name: 'Build Project'
