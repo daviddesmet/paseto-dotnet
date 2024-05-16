@@ -57,7 +57,7 @@ jobs:
       with:
         fetch-depth: 0
         fetch-tags: true
-        filter: tree:0
+        #filter: tree:0
     - name: 'Install .NET SDK'
       uses: actions/setup-dotnet@v4
       with:
