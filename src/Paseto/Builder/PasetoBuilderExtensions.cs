@@ -9,6 +9,7 @@ public static class PasetoBuilderExtensions
     /// <summary>
     /// Adds an issuer claim to the Paseto.
     /// </summary>
+    /// <param name="builder">The PasetoBuilder instance.</param>
     /// <param name="issuer">The issuer.</param>
     /// <returns>Current builder instance</returns>
     public static PasetoBuilder Issuer(this PasetoBuilder builder, string issuer) => builder.AddClaim(RegisteredClaims.Issuer, issuer);
@@ -16,6 +17,7 @@ public static class PasetoBuilderExtensions
     /// <summary>
     /// Adds a subject claim to the Paseto.
     /// </summary>
+    /// <param name="builder">The PasetoBuilder instance.</param>
     /// <param name="subject">The subject.</param>
     /// <returns>Current builder instance</returns>
     public static PasetoBuilder Subject(this PasetoBuilder builder, string subject) => builder.AddClaim(RegisteredClaims.Subject, subject);
@@ -23,6 +25,7 @@ public static class PasetoBuilderExtensions
     /// <summary>
     /// Adds an audience claim to the Paseto.
     /// </summary>
+    /// <param name="builder">The PasetoBuilder instance.</param>
     /// <param name="audience">The audience.</param>
     /// <returns>Current builder instance</returns>
     public static PasetoBuilder Audience(this PasetoBuilder builder, string audience) => builder.AddClaim(RegisteredClaims.Audience, audience);
@@ -33,6 +36,7 @@ public static class PasetoBuilderExtensions
     ///
     /// This method behaves the same as <see cref="ValidTo" />.
     /// </summary>
+    /// <param name="builder">The PasetoBuilder instance.</param>
     /// <param name="time">The Utc time.</param>
     /// <returns>Current builder instance</returns>
     public static PasetoBuilder Expiration(this PasetoBuilder builder, DateTime time) => builder.AddClaim(RegisteredClaims.ExpirationTime, time);
@@ -43,6 +47,7 @@ public static class PasetoBuilderExtensions
     ///
     /// This method behaves the same as <see cref="ValidFrom" />.
     /// </summary>
+    /// <param name="builder">The PasetoBuilder instance.</param>
     /// <param name="time">The Utc time.</param>
     /// <returns>Current builder instance</returns>
     public static PasetoBuilder NotBefore(this PasetoBuilder builder, DateTime time) => builder.AddClaim(RegisteredClaims.NotBefore, time);
@@ -53,6 +58,7 @@ public static class PasetoBuilderExtensions
     ///
     /// This method behaves the same as <see cref="NotBefore" />.
     /// </summary>
+    /// <param name="builder">The PasetoBuilder instance.</param>
     /// <param name="time">The Utc time.</param>
     /// <returns>Current builder instance</returns>
     public static PasetoBuilder ValidFrom(this PasetoBuilder builder, DateTime time) => builder.AddClaim(RegisteredClaims.NotBefore, time);
@@ -63,6 +69,7 @@ public static class PasetoBuilderExtensions
     ///
     /// This method behaves the same as <see cref="Expiration" />.
     /// </summary>
+    /// <param name="builder">The PasetoBuilder instance.</param>
     /// <param name="time">The Utc time.</param>
     /// <returns>Current builder instance</returns>
     public static PasetoBuilder ValidTo(this PasetoBuilder builder, DateTime time) => builder.AddClaim(RegisteredClaims.ExpirationTime, time);
@@ -71,6 +78,7 @@ public static class PasetoBuilderExtensions
     /// Adds an issued claim to the Paseto.
     /// The Utc time will be converted to Unix time.
     /// </summary>
+    /// <param name="builder">The PasetoBuilder instance.</param>
     /// <param name="time">The Utc time.</param>
     /// <returns>Current builder instance</returns>
     public static PasetoBuilder IssuedAt(this PasetoBuilder builder, DateTime time) => builder.AddClaim(RegisteredClaims.IssuedAt, time);
@@ -78,6 +86,7 @@ public static class PasetoBuilderExtensions
     /// <summary>
     /// Adds a token identifier or jti claim to the Paseto.
     /// </summary>
+    /// <param name="builder">The PasetoBuilder instance.</param>
     /// <param name="jti">The token identifier.</param>
     /// <returns>Current builder instance</returns>
     public static PasetoBuilder TokenIdentifier(this PasetoBuilder builder, string jti) => builder.AddClaim(RegisteredClaims.TokenIdentifier, jti);

@@ -54,7 +54,7 @@ internal static class EnumExtensions
     internal static string ToDescription<T>(this T source) where T : struct => GetDescription(source);
 
     /// <summary>
-    /// Gets the value of the Describtion Attribute from the object.
+    /// Gets the value of the Description Attribute from the object.
     /// </summary>
     /// <param name="value">An object that is decorated with <see cref="DescriptionAttribute"/></param>
     private static string GetDescription(object value) => value.GetType().GetField(value.ToString()).GetCustomAttribute<DescriptionAttribute>()?.Description ?? value.ToString();

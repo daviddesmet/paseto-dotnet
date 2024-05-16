@@ -11,7 +11,7 @@ public class Sha512
     private readonly byte[] _buffer;
     private ulong _totalBytes;
     public const int BlockSize = 128;
-    private static readonly byte[] _padding = new byte[] { 0x80 };
+    private static readonly byte[] _padding = [0x80];
 
     public Sha512()
     {
@@ -97,7 +97,7 @@ public class Sha512
             throw new ArgumentException("output.Length must be 64");
 
         Update(_padding, 0, _padding.Length);
-        ByteIntegerConverter.Array16LoadBigEndian64(out Array16<ulong> block, _buffer, 0);
+        ByteIntegerConverter.Array16LoadBigEndian64(out var block, _buffer, 0);
         Array.Clear(_buffer, 0, _buffer.Length);
         var bytesInBuffer = (int)_totalBytes & (BlockSize - 1);
         if (bytesInBuffer > BlockSize - 16)

@@ -29,7 +29,7 @@ internal static class ByteArrayExtensions
         BigInteger dQ = null;
         BigInteger qInv = null;
         BigInteger d = null;
-        if (xmlDoc.DocumentElement.Name.Equals("RSAKeyValue"))
+        if (xmlDoc.DocumentElement!.Name.Equals("RSAKeyValue"))
         {
             foreach (XmlNode node in xmlDoc.DocumentElement.ChildNodes)
             {
@@ -63,7 +63,7 @@ internal static class ByteArrayExtensions
 
         BigInteger modulus = null;
         BigInteger exponent = null;
-        if (xmlDoc.DocumentElement.Name.Equals("RSAKeyValue"))
+        if (xmlDoc.DocumentElement!.Name.Equals("RSAKeyValue"))
         {
             foreach (XmlNode node in xmlDoc.DocumentElement.ChildNodes)
             {

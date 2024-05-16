@@ -141,6 +141,9 @@ public sealed class PasetoBuilder
     /// <summary>
     /// Sets the paseto key.
     /// </summary>
+    /// <remarks>
+    /// Use for encoding and/or decoding the Paseto Token.
+    /// </remarks>
     /// <param name="pasetoKey">The paseto key.</param>
     /// <returns>Current builder instance</returns>
     public PasetoBuilder WithKey(PasetoKey pasetoKey)
@@ -153,6 +156,9 @@ public sealed class PasetoBuilder
     /// Sets the key used for the specific encryption classification.
     /// A private secret key (for encoding) or a public key (for decoding and validating) the Paseto Token.
     /// </summary>
+    /// <remarks>
+    /// Use for encoding and/or decoding the Paseto Token.
+    /// </remarks>
     /// <param name="key">The key.</param>
     /// <param name="encryption">The encryption classification.</param>
     /// <returns>Current builder instance</returns>
@@ -172,6 +178,9 @@ public sealed class PasetoBuilder
     /// <summary>
     /// Sets the symmetric shared key used for local purpose.
     /// </summary>
+    /// <remarks>
+    /// Use for encoding and/or decoding the Paseto Token.
+    /// </remarks>
     /// <param name="key">The shared key.</param>
     /// <returns>Current builder instance</returns>
     public PasetoBuilder WithSharedKey(byte[] key) => WithKey(key, Encryption.SymmetricKey);
@@ -179,6 +188,9 @@ public sealed class PasetoBuilder
     /// <summary>
     /// Sets the asymmetric secret key used for public purpose.
     /// </summary>
+    /// <remarks>
+    /// Use for encoding and/or decoding the Paseto Token.
+    /// </remarks>
     /// <param name="key">The secret key.</param>
     /// <returns>Current builder instance</returns>
     public PasetoBuilder WithSecretKey(byte[] key) => WithKey(key, Encryption.AsymmetricSecretKey);
@@ -186,6 +198,9 @@ public sealed class PasetoBuilder
     /// <summary>
     /// Sets the asymmetric public key used for public purpose.
     /// </summary>
+    /// <remarks>
+    /// Use for encoding and/or decoding the Paseto Token.
+    /// </remarks>
     /// <param name="key">The public key.</param>
     /// <returns>Current builder instance</returns>
     public PasetoBuilder WithPublicKey(byte[] key) => WithKey(key, Encryption.AsymmetricPublicKey);
@@ -193,6 +208,9 @@ public sealed class PasetoBuilder
     /// <summary>
     /// Sets the nonce for encoding the token used exclusively for testing purposes.
     /// </summary>
+    /// <remarks>
+    /// Use exclusively for testing purposes.
+    /// </remarks>
     /// <param name="nonce">The nonce used exclusively for testing purposes.</param>
     /// <returns>Current builder instance</returns>
     internal PasetoBuilder WithNonce(byte[] nonce)
@@ -275,7 +293,7 @@ public sealed class PasetoBuilder
     /// <summary>
     /// Adds a implicit assertion payload to the Paseto.
     /// </summary>
-    /// <param name="footer">The implicit assertion payload.</param>
+    /// <param name="assertion">The implicit assertion payload.</param>
     /// <returns>PasetoBuilder&lt;TProtocol&gt;.</returns>
     public PasetoBuilder AddImplicitAssertion(PasetoPayload assertion)
     {
@@ -286,8 +304,11 @@ public sealed class PasetoBuilder
     }
 
     /// <summary>
-    /// Generates an symmetric key using the supplied dependencies.
+    /// Generates a random symmetric key using the specified protocol version.
     /// </summary>
+    /// <remarks>
+    /// Ignores the supplied keys as it generates a new random symmetric key.
+    /// </remarks>
     /// <returns></returns>
     /// <exception cref="PasetoBuilderException">Can't generate serialized key. Check if you have call the 'Use' method.</exception>
     /// <exception cref="PasetoBuilderException">Can't generate symmetric key. Specified purpose is not compatible.</exception>
@@ -317,6 +338,24 @@ public sealed class PasetoBuilder
             throw new PasetoBuilderException($"Can't generate symmetric key. {_purpose} purpose is not compatible.");
 
         return _protocol.GenerateAsymmetricKeyPair(seed);
+    }
+
+    /// <summary>
+    /// Generates a serialized key in PASERK format.
+    /// </summary>
+    /// <param name="type">The PASERK type.</param>
+    /// <returns>The encoded serialized key in PASERK format.</returns>
+    /// <exception cref="PasetoBuilderException">Can't generate PASERK key. Check if you have call the 'Use' method.</exception>
+    /// <exception cref="PasetoBuilderException">Can't generate PASERK key. Check if you have call the 'WithKey' method.</exception>
+    public string GenerateSerializedKey(PaserkType type)
+    {
+        if (_protocol is null)
+            throw new PasetoBuilderException("Can't generate PASERK key. Check if you have call the 'Use' method.");
+
+        if (_pasetoKey is null)
+            throw new PasetoBuilderException("Can't generate PASERK key. Check if you have call the 'WithKey' method.");
+
+        return Paserk.Encode(_pasetoKey, type);
     }
 
     /// <summary>
@@ -380,10 +419,10 @@ public sealed class PasetoBuilder
                 case Purpose.Public:
                     var publicHandler = new PasetoPublicPurposeHandler((PasetoAsymmetricPublicKey)_pasetoKey);
                     var result = publicHandler.Verify(_protocol, token, _footer ?? string.Empty, _assertion ?? string.Empty);
-                    if (!result.IsValid)
-                        return PasetoTokenValidationResult.Failed(new PasetoTokenValidationException("The token signature is not valid"));
+                    return !result.IsValid
+                        ? PasetoTokenValidationResult.Failed(new PasetoTokenValidationException("The token signature is not valid"))
+                        : publicHandler.ValidateTokenPayload(new PasetoToken(token, result.Payload), validationParameters);
 
-                    return publicHandler.ValidateTokenPayload(new PasetoToken(token, result.Payload), validationParameters);
                 default:
                     return PasetoTokenValidationResult.Failed(new PasetoNotSupportedException($"The {_purpose} purpose is not supported"));
             }

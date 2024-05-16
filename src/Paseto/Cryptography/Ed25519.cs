@@ -24,10 +24,10 @@ public static class Ed25519
             throw new ArgumentNullException(nameof(publicKey));
 
         if (signature.Length != SignatureSizeInBytes)
-            throw new ArgumentException(string.Format("Signature size must be {0}", SignatureSizeInBytes), "signature.Length");
+            throw new ArgumentException($"Signature size must be {SignatureSizeInBytes}", nameof(signature));
 
         if (publicKey.Length != PublicKeySizeInBytes)
-            throw new ArgumentException(string.Format("Public key size must be {0}", PublicKeySizeInBytes), "publicKey.Length");
+            throw new ArgumentException($"Public key size must be {PublicKeySizeInBytes}", nameof(publicKey));
 
         return Ed25519Operations.crypto_sign_verify(signature, 0, message, 0, message.Length, publicKey, 0);
     }
@@ -35,19 +35,19 @@ public static class Ed25519
     public static void Sign(Span<byte> signature, ReadOnlySpan<byte> message, ReadOnlySpan<byte> expandedPrivateKey)
     {
         if (signature == default)
-            throw new ArgumentNullException("signature.Array");
+            throw new ArgumentNullException(nameof(signature));
 
         if (signature.Length != SignatureSizeInBytes)
-            throw new ArgumentException("signature.Length");
+            throw new ArgumentException($"The signature length must be {SignatureSizeInBytes} bytes.");
 
         if (expandedPrivateKey == default)
-            throw new ArgumentNullException("expandedPrivateKey.Array");
+            throw new ArgumentNullException(nameof(expandedPrivateKey));
 
         if (expandedPrivateKey.Length != ExpandedPrivateKeySizeInBytes)
-            throw new ArgumentException("expandedPrivateKey.Length");
+            throw new ArgumentException($"The expanded private key length must be {ExpandedPrivateKeySizeInBytes} bytes.");
 
         if (message == default)
-            throw new ArgumentNullException("message.Array");
+            throw new ArgumentNullException(nameof(message));
 
         Ed25519Operations.crypto_sign2(signature, message, expandedPrivateKey);
     }
@@ -61,14 +61,14 @@ public static class Ed25519
 
     public static byte[] PublicKeyFromSeed(ReadOnlySpan<byte> privateKeySeed)
     {
-        KeyPairFromSeed(out byte[] publicKey, out byte[] privateKey, privateKeySeed);
+        KeyPairFromSeed(out var publicKey, out var privateKey, privateKeySeed);
         CryptoBytes.Wipe(privateKey);
         return publicKey;
     }
 
     public static byte[] ExpandedPrivateKeyFromSeed(ReadOnlySpan<byte> privateKeySeed)
     {
-        KeyPairFromSeed(out byte[] publicKey, out byte[] privateKey, privateKeySeed);
+        KeyPairFromSeed(out var publicKey, out var privateKey, privateKeySeed);
         CryptoBytes.Wipe(publicKey);
         return privateKey;
     }
@@ -93,13 +93,13 @@ public static class Ed25519
     public static void KeyPairFromSeed(Span<byte> publicKey, Span<byte> expandedPrivateKey, ReadOnlySpan<byte> privateKeySeed)
     {
         if (publicKey.Length != PublicKeySizeInBytes)
-            throw new ArgumentException("publicKey.Count");
+            throw new ArgumentException($"The public key length must be {PublicKeySizeInBytes} bytes.");
 
         if (expandedPrivateKey.Length != ExpandedPrivateKeySizeInBytes)
-            throw new ArgumentException("expandedPrivateKey.Count");
+            throw new ArgumentException($"The expanded private key length must be {ExpandedPrivateKeySizeInBytes} bytes.");
 
         if (privateKeySeed.Length != PrivateKeySeedSizeInBytes)
-            throw new ArgumentException("privateKeySeed.Count");
+            throw new ArgumentException($"The private key seed length must be {PrivateKeySeedSizeInBytes} bytes.");
 
         Ed25519Operations.crypto_sign_keypair(publicKey, 0, expandedPrivateKey, 0, privateKeySeed, 0);
     }

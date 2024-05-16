@@ -22,39 +22,30 @@ public class PaserkTests
 
     public PaserkTests(ITestOutputHelper output) => _output = output;
 
-    private static readonly ProtocolVersion[] ValidProtocols = new[]
-    {
+    private static readonly ProtocolVersion[] ValidProtocols =
+    [
         ProtocolVersion.V1,
         ProtocolVersion.V2,
         ProtocolVersion.V3,
-        ProtocolVersion.V4,
-    };
+        ProtocolVersion.V4
+    ];
 
-    private static readonly PaserkType[] SupportedPaserkTypes = new[]
-    {
+    private static readonly PaserkType[] SupportedPaserkTypes =
+    [
         PaserkType.Local,
         PaserkType.Public,
-        PaserkType.Secret,
-    };
+        PaserkType.Secret
+    ];
 
-    private static readonly PaserkType[] PaserkIdTypes = new[]
-    {
+    private static readonly PaserkType[] PaserkIdTypes =
+    [
         PaserkType.Lid,
         PaserkType.Pid,
-        PaserkType.Sid,
-    };
+        PaserkType.Sid
+    ];
 
     // TODO: Construct dynamically when supporting all types
-    public static IEnumerable<object[]> Data()
-    {
-        foreach (var version in ValidProtocols)
-        {
-            foreach (var type in SupportedPaserkTypes)
-            {
-                yield return new object[] { version, type };
-            }
-        }
-    }
+    public static IEnumerable<object[]> Data() => from version in ValidProtocols from type in SupportedPaserkTypes select (object[])[version, type];
 
     public static IEnumerable<object[]> TestItemGenerator(ProtocolVersion[] versions, PaserkType[] types)
     {
@@ -67,7 +58,7 @@ public class PaserkTests
                 var vector = JsonConvert.DeserializeObject<PaserkTestCollection>(json);
                 foreach (var test in vector.Tests)
                 {
-                    yield return new object[] { test, version, type };
+                    yield return [test, version, type];
                 }
             }
         }
@@ -106,7 +97,7 @@ public class PaserkTests
             return;
         }
 
-        var purpose = Paserk.GetCompatibility(type);
+        var purpose = Paserk.GetPurpose(type);
         var pasetoKey = ParseKey(version, type, test.Key);
 
         var paserk = Paserk.Encode(pasetoKey, type);
@@ -142,7 +133,7 @@ public class PaserkTests
             return;
         }
 
-        var purpose = Paserk.GetCompatibility(type);
+        var purpose = Paserk.GetPurpose(type);
         var pasetoKey = ParseKey(version, type, test.Key);
 
         var paserk = Paserk.Encode(pasetoKey, type);
@@ -158,7 +149,7 @@ public class PaserkTests
         var vector = JsonConvert.DeserializeObject<PaserkTestCollection>(json);
 
         var test = vector.Tests.First();
-        var purpose = Paserk.GetCompatibility(type);
+        var purpose = Paserk.GetPurpose(type);
 
         PasetoKey pasetoKey;
         try
@@ -183,26 +174,18 @@ public class PaserkTests
         switch (type)
         {
             case PaserkType.Local or PaserkType.Lid:
-                return new PasetoSymmetricKey(CryptoBytes.FromHexString(key), Paserk.CreateProtocolVersion(version));
-
+                return new PasetoSymmetricKey(CryptoBytes.FromHexString(key), PaserkHelpers.CreateProtocolVersion(version));
             case PaserkType.LocalWrap:
-
             case PaserkType.LocalPassword:
-
             case PaserkType.Seal:
-
             case PaserkType.Secret or PaserkType.Sid:
-                return new PasetoAsymmetricSecretKey(TestHelper.ReadKey(key), Paserk.CreateProtocolVersion(version));
-
+                return new PasetoAsymmetricSecretKey(TestHelper.ReadKey(key), PaserkHelpers.CreateProtocolVersion(version));
             case PaserkType.SecretWrap:
                 break;
-
             case PaserkType.SecretPassword:
                 break;
-
             case PaserkType.Public or PaserkType.Pid:
-                return new PasetoAsymmetricPublicKey(TestHelper.ReadKey(key), Paserk.CreateProtocolVersion(version));
-
+                return new PasetoAsymmetricPublicKey(TestHelper.ReadKey(key), PaserkHelpers.CreateProtocolVersion(version));
             default:
                 throw new ArgumentOutOfRangeException(nameof(type), type, "Type not supported");
         }

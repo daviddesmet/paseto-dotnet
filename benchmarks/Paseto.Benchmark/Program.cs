@@ -11,8 +11,8 @@ using Xunit;
 BenchmarkRunner.Run<Benchmarks>();
 
 [MemoryDiagnoser]
-[SimpleJob(RuntimeMoniker.Net50)]
 [SimpleJob(RuntimeMoniker.Net60)]
+[SimpleJob(RuntimeMoniker.Net80)]
 [JsonExporterAttribute.Full]
 [JsonExporterAttribute.FullCompressed]
 public class Benchmarks

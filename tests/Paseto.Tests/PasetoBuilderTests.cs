@@ -510,4 +510,88 @@ public class PasetoBuilderTests
 
         act.Should().Throw<ArgumentNullException>().WithParameterName("token");
     }
+
+    [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Local Purpose and Symmetric Key")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldSucceedOnEncodeToParsekWhenIsLocalPurposeAndSymmetricKey(ProtocolVersion version)
+    {
+        var parsek = new PasetoBuilder().Use(version, Purpose.Local)
+            .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+            .GenerateSerializedKey(PaserkType.Local);
+
+        parsek.Should().StartWith($"k{(int)version}.local");
+        parsek.Split('.').Should().HaveCount(3);
+    }
+
+    [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Local Purpose and Shared Key")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldSucceedOnEncodeToParsekWhenIsLocalPurposeAndSharedKey(ProtocolVersion version)
+    {
+        var parsek = new PasetoBuilder().Use(version, Purpose.Local)
+            .WithSharedKey(CryptoBytes.FromHexString(LocalKey))
+            .GenerateSerializedKey(PaserkType.Local);
+
+        parsek.Should().StartWith($"k{(int)version}.local");
+        parsek.Split('.').Should().HaveCount(3);
+    }
+
+    [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Public Purpose and Public Asymmetric Key")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldSucceedOnEncodeToParsekWhenIsPublicPurposeAndPublicAsymmetricKey(ProtocolVersion version)
+    {
+        var keyLength = version switch
+        {
+            ProtocolVersion.V1 => 270,
+            ProtocolVersion.V2 => 32,
+            ProtocolVersion.V3 => 49,
+            ProtocolVersion.V4 => 32,
+            _ => throw new ArgumentOutOfRangeException(nameof(version))
+        };
+
+        var key = new byte[keyLength];
+        RandomNumberGenerator.Fill(key);
+
+        var parsek = new PasetoBuilder().Use(version, Purpose.Public)
+            .WithKey(key, Encryption.AsymmetricPublicKey)
+            .GenerateSerializedKey(PaserkType.Public);
+
+        parsek.Should().StartWith($"k{(int)version}.public");
+        parsek.Split('.').Should().HaveCount(3);
+    }
+
+    [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Public Purpose and Secret Asymmetric Key")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldSucceedOnEncodeToParsekWhenIsPublicPurposeAndSecretAsymmetricKey(ProtocolVersion version)
+    {
+        var keyLength = version switch
+        {
+            ProtocolVersion.V1 => 1180,
+            ProtocolVersion.V2 => 64,
+            ProtocolVersion.V3 => 48,
+            ProtocolVersion.V4 => 64,
+            _ => throw new ArgumentOutOfRangeException(nameof(version))
+        };
+
+        var key = new byte[keyLength];
+        RandomNumberGenerator.Fill(key);
+
+        var parsek = new PasetoBuilder().Use(version, Purpose.Public)
+            .WithKey(key, Encryption.AsymmetricSecretKey)
+            .GenerateSerializedKey(PaserkType.Secret);
+
+        parsek.Should().StartWith($"k{(int)version}.secret");
+        parsek.Split('.').Should().HaveCount(3);
+    }
 }

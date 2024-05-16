@@ -1,7 +1,7 @@
 # Paseto.NET, a [Paseto](https://github.com/paragonie/paseto) (Platform-Agnostic Security Tokens) implementation for .NET
 
 [![CI](https://github.com/daviddesmet/paseto-dotnet/workflows/CI/badge.svg?branch=master)](https://github.com/daviddesmet/paseto-dotnet/actions)
-[![Maintenance](https://img.shields.io/maintenance/yes/2023.svg)](https://github.com/daviddesmet/paseto-dotnet)
+[![Maintenance](https://img.shields.io/maintenance/yes/2024.svg)](https://github.com/daviddesmet/paseto-dotnet)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/daviddesmet/paseto-dotnet/issues)
 
 ## Features
@@ -53,7 +53,7 @@ The library exposes a Fluent API with several method overloads found in `Use()`,
 
 Below are a couple of examples for the most common use cases:
 
-#### Generating a Symmetric Key
+#### Generating a crypto random Symmetric Key
 
 ```csharp
 var pasetoKey = new PasetoBuilder().Use(version, Purpose.Local)
