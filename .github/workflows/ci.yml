@@ -113,6 +113,7 @@ jobs:
       with:
         file: Cobertura.xml
         fail_ci_if_error: false
+        token: ${{ secrets.CODECOV_TOKEN }}
     - name: 'Publish Coverage Report'
       uses: actions/upload-artifact@v4
       with:
