@@ -11,7 +11,7 @@ using static Paseto.Utils.EncodingHelper;
 /// PASERK (Platform-Agnostic Serialized Keys) extension.
 /// </summary>
 ///
-// TODO Refactor Paserk and PAserkHelpers
+// TODO Refactor Paserk and PaserkHelpers
 public static class Paserk
 {
     private const string PARSEK_HEADER_K = "k";

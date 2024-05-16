@@ -23,11 +23,4 @@ public class PaserkNotSupportedException : Exception
     /// <param name="message">The exception message</param>
     /// <param name="inner">The inner exception</param>
     public PaserkNotSupportedException(string message, Exception inner) : base(message, inner) { }
-
-    /// <summary>
-    /// Creates a new instance of <see cref="PaserkNotSupportedException" />.
-    /// </summary>
-    /// <param name="info">The SerializationInfo</param>
-    /// <param name="context">The streaming context</param>
-    protected PaserkNotSupportedException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 }
