@@ -35,7 +35,7 @@ public class PasetoToken
         if (string.IsNullOrWhiteSpace(token))
             throw new ArgumentNullException(nameof(token));
 
-        var parts = token.Split(new[] { '.' }, MAX_SEGMENT_LEN + 1);
+        var parts = token.Split(['.'], MAX_SEGMENT_LEN + 1);
         if (parts.Length != 3 && parts.Length != 4)
             throw new PasetoInvalidException("The specified token has an invalid number of segments");
 

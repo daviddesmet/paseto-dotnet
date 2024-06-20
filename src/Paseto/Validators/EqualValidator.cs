@@ -1,6 +1,7 @@
 ﻿namespace Paseto.Validators;
 
 using System;
+using System.Text.Json;
 using Internal;
 
 /// <summary>
@@ -13,6 +14,7 @@ public sealed class EqualValidator : BaseValidator
     /// Initializes a new instance of the <see cref="EqualValidator"/> class.
     /// </summary>
     /// <param name="payload">The payload.</param>
+    /// <param name="claim">The claim.</param>
     public EqualValidator(PasetoPayload payload, string claim) : base(payload)
     {
         if (string.IsNullOrWhiteSpace(claim))
@@ -34,7 +36,7 @@ public sealed class EqualValidator : BaseValidator
     /// <exception cref="PasetoTokenValidationException">
     /// Token is not yet valid.
     /// </exception>
-    public override void Validate(IComparable expected)
+    public override void Validate(IComparable expected = null)
     {
         if (!Payload.TryGetValue(ClaimName, out var value))
             throw new PasetoTokenValidationException($"Claim '{ClaimName}' not found.");
@@ -46,6 +48,9 @@ public sealed class EqualValidator : BaseValidator
         }
         else
         {
+            if (value is JsonElement json)
+                value = GetValueFromJsonElement(json);
+
             if (Equals(value, expected))
                 return;
         }
@@ -74,4 +79,12 @@ public sealed class EqualValidator : BaseValidator
             return false;
         }
     }
+
+    private static object GetValueFromJsonElement(JsonElement element) => element.ValueKind switch
+    {
+        JsonValueKind.Number => element.GetDouble(),
+        JsonValueKind.String => element.GetString(),
+        JsonValueKind.True or JsonValueKind.False => element.GetBoolean(),
+        _ => element.GetRawText().Trim('"')
+    };
 }

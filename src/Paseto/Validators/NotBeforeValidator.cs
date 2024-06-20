@@ -43,8 +43,7 @@ public sealed class NotBeforeValidator : BaseValidator
             throw new PasetoTokenValidationException($"Claim '{ClaimName}' must be a DateTime");
         }
 
-        if (expected is null)
-            expected = DateTime.UtcNow;
+        expected ??= DateTime.UtcNow;
 
         if (Comparer.GetComparisonResult(nbf, expected) >= 0) // expected <= nbf
             throw new PasetoTokenValidationException("Token is not yet valid");
