@@ -1,11 +1,12 @@
 ﻿namespace Paseto.Validators;
 
 using System;
+using System.Text.Json;
 
 /// <summary>
 /// The Base Validator.
 /// </summary>
-/// <seealso cref="Paseto.Validation.IPasetoPayloadValidator" />
+/// <seealso cref="IPasetoPayloadValidator" />
 public abstract class BaseValidator : IPasetoPayloadValidator
 {
     /// <summary>
@@ -38,4 +39,12 @@ public abstract class BaseValidator : IPasetoPayloadValidator
     /// <param name="expected">The optional expected value.</param>
     /// <returns><c>true</c> if the specified value is valid; otherwise, <c>false</c>.</returns>
     public abstract bool IsValid(IComparable expected = null);
+
+    internal static object GetValueFromJsonElement(JsonElement element) => element.ValueKind switch
+    {
+        JsonValueKind.Number => element.GetDouble(),
+        JsonValueKind.String => element.GetString(),
+        JsonValueKind.True or JsonValueKind.False => element.GetBoolean(),
+        _ => element.GetRawText().Trim('"')
+    };
 }

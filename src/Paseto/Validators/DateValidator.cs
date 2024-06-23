@@ -2,64 +2,58 @@
 
 using System;
 using System.Text.Json;
-using Internal;
+using Paseto.Validators.Internal;
 
 /// <summary>
-/// The Equality Validator. This class cannot be inherited.
+/// The Base Date Validator.
 /// </summary>
-/// <seealso cref="Paseto.Validators.BaseValidator" />
-public sealed class EqualValidator : BaseValidator
+/// <seealso cref="IPasetoPayloadValidator" />
+public abstract class DateValidator : BaseValidator
 {
     /// <summary>
-    /// Initializes a new instance of the <see cref="EqualValidator"/> class.
+    /// Initializes a new instance of the <see cref="DateValidator"/> class.
     /// </summary>
     /// <param name="payload">The payload.</param>
-    /// <param name="claim">The claim.</param>
-    public EqualValidator(PasetoPayload payload, string claim) : base(payload)
-    {
-        if (string.IsNullOrWhiteSpace(claim))
-            throw new ArgumentNullException(nameof(claim));
-
-        ClaimName = claim;
-    }
+    public DateValidator(PasetoPayload payload) : base(payload) { }
 
     /// <summary>
-    /// Gets the name of the claim.
+    /// Validates the input value against the provided optional expected value. Throws an exception if not valid.
     /// </summary>
-    /// <value>The name of the claim.</value>
-    public override string ClaimName { get; }
+    /// <param name="value">The input value to validate.</param>
+    /// <param name="expected">The optional expected value.</param>
+    public abstract void ValidateDate(IComparable value, IComparable expected = null);
 
     /// <summary>
     /// Validates the payload against the provided optional expected value. Throws an exception if not valid.
     /// </summary>
     /// <param name="expected">The optional expected value.</param>
     /// <exception cref="PasetoTokenValidationException">
-    /// Token is not yet valid.
+    /// Token has expired.
     /// </exception>
     public override void Validate(IComparable expected = null)
     {
         if (!Payload.TryGetValue(ClaimName, out var value))
-            throw new PasetoTokenValidationException($"Claim '{ClaimName}' not found.");
+            throw new PasetoTokenValidationException($"Claim '{ClaimName}' not found");
 
-        if (value is IComparable comparable)
-        {
-            if (Comparer.GetEqualsResult(comparable, expected))
-                return;
-        }
-        else
+        DateTime exp;
+        try
         {
             if (value is JsonElement json)
                 value = GetValueFromJsonElement(json);
 
-            if (Equals(value, expected))
-                return;
+            if (value is string s)
+                exp = DateTimeOffset.Parse(s).UtcDateTime;
+            else
+                exp = Convert.ToDateTime(value);
+        }
+        catch (Exception)
+        {
+            throw new PasetoTokenValidationException($"Claim '{ClaimName}' must be a DateTime");
         }
 
-        throw new PasetoTokenValidationException($"Token Claim '{ClaimName}' is not valid.")
-        {
-            Expected = expected,
-            Received = value
-        };
+        expected ??= DateTime.UtcNow;
+
+        ValidateDate(exp, expected);
     }
 
     /// <summary>

@@ -594,4 +594,51 @@ public class PasetoBuilderTests
         parsek.Should().StartWith($"k{(int)version}.secret");
         parsek.Split('.').Should().HaveCount(3);
     }
+
+    [Theory(DisplayName = "Should succeed on Decoding with Date Validations")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldSucceedOnDecodingWithDateValidations(ProtocolVersion version)
+    {
+        const Purpose purpose = Purpose.Public;
+        var keyLength = version switch
+        {
+            ProtocolVersion.V1 => 0,
+            ProtocolVersion.V2 => 32,
+            ProtocolVersion.V3 => 32,
+            ProtocolVersion.V4 => 32,
+            _ => throw new ArgumentOutOfRangeException(nameof(version))
+        };
+
+        var sharedKey = new byte[keyLength];
+        RandomNumberGenerator.Fill(sharedKey);
+
+        var keyPair = new PasetoBuilder()
+            .Use(version, purpose)
+            .GenerateAsymmetricKeyPair(sharedKey);
+
+        var now = DateTime.UtcNow;
+
+        var encoded = new PasetoBuilder()
+            .Use(version, purpose)
+            .WithSecretKey([.. keyPair.SecretKey.Key.Span])
+            .IssuedAt(now.AddSeconds(-10))
+            .Expiration(now.AddHours(1))
+            .ValidFrom(now.AddSeconds(-10))
+            .Encode();
+
+        var validationParameters = new PasetoTokenValidationParameters
+        {
+            ValidateLifetime = true
+        };
+
+        var decoded = new PasetoBuilder()
+            .Use(version, purpose)
+            .WithPublicKey([.. keyPair.PublicKey.Key.Span])
+            .Decode(encoded, validationParameters);
+
+        decoded.IsValid.Should().BeTrue();
+    }
 }
