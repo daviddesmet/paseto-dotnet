@@ -624,9 +624,9 @@ public class PasetoBuilderTests
         var encoded = new PasetoBuilder()
             .Use(version, purpose)
             .WithSecretKey([.. keyPair.SecretKey.Key.Span])
+            .NotBefore(now)
             .IssuedAt(now.AddSeconds(-10))
             .Expiration(now.AddHours(1))
-            .ValidFrom(now.AddSeconds(-10))
             .Encode();
 
         var validationParameters = new PasetoTokenValidationParameters
