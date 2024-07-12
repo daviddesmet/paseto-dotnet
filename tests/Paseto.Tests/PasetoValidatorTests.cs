@@ -1,11 +1,9 @@
-﻿namespace Paseto.Tests;
+namespace Paseto.Tests;
 
 using System;
-
 using FluentAssertions;
 using Xunit;
-
-using Paseto.Builder;
+using Builder;
 using Paseto.Extensions;
 
 public class PasetoValidatorTests
@@ -13,89 +11,72 @@ public class PasetoValidatorTests
     private const string HelloPaseto = "Hello Paseto!";
     private const string IssuedBy = "Paragon Initiative Enterprises";
 
-    [Fact]
-    public void PayloadIssuedAtNextDayValidationFails()
+    [Theory]
+    [MemberData(nameof(FutureTimes))]
+    public void PayloadIssuedAtNextDayValidationFails(IComparable when, IComparable compareTo)
     {
-        var iat = new Validators.IssuedAtValidator(new PasetoPayload
-        {
-            { RegisteredClaims.IssuedAt.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
-        });
+        var iat = new Validators.IssuedAtValidator(CreateDateValidatorPayload(RegisteredClaims.IssuedAt, when));
 
-        Action act = () => iat.Validate(DateTime.UtcNow);
+        Action act = () => iat.Validate(compareTo);
         act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token is not yet valid");
     }
 
-    [Fact]
-    public void PayloadIssuedAtPreviousDayValidationSucceeds()
+    [Theory]
+    [MemberData(nameof(PastTimes))]
+    public void PayloadIssuedAtPreviousDayValidationSucceeds(IComparable when, IComparable compareTo)
     {
-        var iat = new Validators.IssuedAtValidator(new PasetoPayload
-        {
-            { RegisteredClaims.IssuedAt.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
-        });
+        var iat = new Validators.IssuedAtValidator(CreateDateValidatorPayload(RegisteredClaims.IssuedAt, when));
 
-        Action act = () => iat.Validate(DateTime.UtcNow);
+        Action act = () => iat.Validate(compareTo);
         act.Should().NotThrow();
     }
 
-    [Fact]
-    public void PayloadIssuedAtSameDayValidationSucceeds()
+    [Theory]
+    [MemberData(nameof(NowTimes))]
+    public void PayloadIssuedAtSameDayValidationSucceeds(IComparable when)
     {
-        var now = DateTime.UtcNow;
+        var iat = new Validators.IssuedAtValidator(CreateDateValidatorPayload(RegisteredClaims.IssuedAt, when));
 
-        var iat = new Validators.IssuedAtValidator(new PasetoPayload
-        {
-            { RegisteredClaims.IssuedAt.GetRegisteredClaimName(), now }
-        });
-
-        Action act = () => iat.Validate(now);
+        Action act = () => iat.Validate(when);
         act.Should().NotThrow();
     }
 
-    [Fact]
-    public void PayloadNotBeforeNextDayValidationFails()
+    [Theory]
+    [MemberData(nameof(FutureTimes))]
+    public void PayloadNotBeforeNextDayValidationFails(IComparable when, IComparable compareTo)
     {
-        var nbf = new Validators.NotBeforeValidator(new PasetoPayload
-        {
-            { RegisteredClaims.NotBefore.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
-        });
+        var nbf = new Validators.NotBeforeValidator(CreateDateValidatorPayload(RegisteredClaims.NotBefore, when));
 
-        Action act = () => nbf.Validate(DateTime.UtcNow);
+        Action act = () => nbf.Validate(compareTo);
         act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token is not yet valid");
     }
 
-    [Fact]
-    public void PayloadNotBeforeDayValidationSucceeds()
+    [Theory]
+    [MemberData(nameof(PastTimes))]
+    public void PayloadNotBeforeDayValidationSucceeds(IComparable when, IComparable compareTo)
     {
-        var nbf = new Validators.NotBeforeValidator(new PasetoPayload
-        {
-            { RegisteredClaims.NotBefore.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
-        });
+        var nbf = new Validators.NotBeforeValidator(CreateDateValidatorPayload(RegisteredClaims.NotBefore, when));
 
-        Action act = () => nbf.Validate(DateTime.UtcNow);
+        Action act = () => nbf.Validate(compareTo);
         act.Should().NotThrow();
     }
 
-    [Fact]
-    public void PayloadExpirationTimeYesterdayValidationFails()
+    [Theory]
+    [MemberData(nameof(PastTimes))]
+    public void PayloadExpirationTimeYesterdayValidationFails(IComparable when, IComparable compareTo)
     {
-        var exp = new Validators.ExpirationTimeValidator(new PasetoPayload
-        {
-            { RegisteredClaims.ExpirationTime.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(-24) }
-        });
-
-        Action act = () => exp.Validate(DateTime.UtcNow);
+        var exp = new Validators.ExpirationTimeValidator(CreateDateValidatorPayload(RegisteredClaims.ExpirationTime, when));
+        Action act = () => exp.Validate(compareTo);
         act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token has expired");
     }
 
-    [Fact]
-    public void PayloadExpirationNextDayTimeValidationSucceeds()
+    [Theory]
+    [MemberData(nameof(FutureTimes))]
+    public void PayloadExpirationNextDayTimeValidationSucceeds(IComparable when, IComparable compareTo)
     {
-        var exp = new Validators.ExpirationTimeValidator(new PasetoPayload
-        {
-            { RegisteredClaims.ExpirationTime.GetRegisteredClaimName(), DateTime.UtcNow.AddHours(24) }
-        });
+        var exp = new Validators.ExpirationTimeValidator(CreateDateValidatorPayload(RegisteredClaims.ExpirationTime, when));
 
-        Action act = () => exp.Validate(DateTime.UtcNow);
+        Action act = () => exp.Validate(compareTo);
         act.Should().NotThrow();
     }
 
@@ -146,4 +127,27 @@ public class PasetoValidatorTests
         Action act = () => val.Validate(HelloPaseto);
         act.Should().NotThrow();
     }
+
+    public static TheoryData<IComparable, IComparable> FutureTimes => new()
+    {
+        { DateTime.UtcNow.AddHours(24), DateTime.UtcNow },
+        { DateTimeOffset.UtcNow.AddHours(24), DateTimeOffset.UtcNow }
+    };
+
+    public static TheoryData<IComparable, IComparable> PastTimes => new()
+    {
+        { DateTime.UtcNow.AddHours(-24), DateTime.UtcNow },
+        { DateTimeOffset.UtcNow.AddHours(-24), DateTimeOffset.UtcNow }
+    };
+
+    public static TheoryData<IComparable> NowTimes = new()
+    {
+        { DateTime.UtcNow },
+        { DateTimeOffset.UtcNow }
+    };
+
+    private static PasetoPayload CreateDateValidatorPayload(RegisteredClaims claim, IComparable when) => new()
+    {
+        { claim.ToDescription(), when }
+    };
 }
