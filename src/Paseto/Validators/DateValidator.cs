@@ -1,4 +1,4 @@
-﻿namespace Paseto.Validators;
+namespace Paseto.Validators;
 
 using System;
 using System.Text.Json;
@@ -35,23 +35,18 @@ public abstract class DateValidator : BaseValidator
         if (!Payload.TryGetValue(ClaimName, out var value))
             throw new PasetoTokenValidationException($"Claim '{ClaimName}' not found");
 
-        DateTime exp;
-        try
+        var exp = value switch
         {
-            if (value is JsonElement json)
-                value = GetValueFromJsonElement(json);
+            JsonElement { ValueKind: JsonValueKind.String } str when DateTimeOffset.TryParse(str.GetString(), out var dto) => dto.UtcDateTime,
+            DateTimeOffset offset => offset.UtcDateTime,
+            DateTime dt => dt,
+            _ => throw new PasetoTokenValidationException($"Claim '{ClaimName}' must be a DateTime")
+        };
 
-            if (value is string s)
-                exp = DateTimeOffset.Parse(s).UtcDateTime;
-            else
-                exp = Convert.ToDateTime(value);
-        }
-        catch (Exception)
-        {
-            throw new PasetoTokenValidationException($"Claim '{ClaimName}' must be a DateTime");
-        }
-
-        expected ??= DateTime.UtcNow;
+        if (expected is DateTimeOffset o)
+            expected = o.UtcDateTime;
+        else
+            expected ??= DateTime.UtcNow;
 
         ValidateDate(exp, expected);
     }
