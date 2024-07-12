@@ -1,5 +1,7 @@
 ﻿namespace Paseto.Tests;
 
+using System;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
@@ -8,6 +10,8 @@ using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.OpenSsl;
+using Paseto.Extensions;
+using Xunit;
 
 public static class TestHelper
 {
@@ -96,4 +100,30 @@ public static class TestHelper
 
         return CryptoBytes.FromHexString(key);
     }
+
+    public static TheoryData<ProtocolVersion, Purpose> AllVersionsAndPurposesData()
+    {
+        var ret = new TheoryData<ProtocolVersion, Purpose>();
+
+        foreach (var version in Enum.GetValues<ProtocolVersion>())
+        foreach (var purpose in Enum.GetValues<Purpose>())
+            ret.Add(version, purpose);
+
+        return ret;
+    }
+
+    public static TheoryData<ProtocolVersion> AllVersionsData() =>  Enum.GetValues<ProtocolVersion>()
+        .Aggregate(new TheoryData<ProtocolVersion>(), (x, y) =>
+        {
+            x.Add(y);
+            return x;
+        });
+
+    public static TheoryData<string> VersionStringNameData() =>  Enum.GetValues<ProtocolVersion>()
+        .Select(x => x.ToDescription())
+        .Aggregate(new TheoryData<string>(), (x, y) =>
+        {
+            x.Add(y);
+            return x;
+        });
 }
