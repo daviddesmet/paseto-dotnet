@@ -12,9 +12,9 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Categories;
 
-using Paseto.Builder;
-using Paseto.Cryptography;
-using Paseto.Tests.Vectors;
+using Builder;
+using Cryptography;
+using Vectors;
 
 using static TestHelper;
 
@@ -28,10 +28,7 @@ public class PasetoTestVectors
     public PasetoTestVectors(ITestOutputHelper output) => _output = output;
 
     [Theory]
-    [InlineData("v1")]
-    [InlineData("v2")]
-    [InlineData("v3")]
-    [InlineData("v4")]
+    [MemberData(nameof(VersionStringNameData), MemberType = typeof(TestHelper))]
     public void VersionTestVectors(string version)
     {
         var json = GetPasetoTestVector(version);

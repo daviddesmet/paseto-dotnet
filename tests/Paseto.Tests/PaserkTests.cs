@@ -22,13 +22,7 @@ public class PaserkTests
 
     public PaserkTests(ITestOutputHelper output) => _output = output;
 
-    private static readonly ProtocolVersion[] ValidProtocols =
-    [
-        ProtocolVersion.V1,
-        ProtocolVersion.V2,
-        ProtocolVersion.V3,
-        ProtocolVersion.V4
-    ];
+    private static readonly ProtocolVersion[] ValidProtocols = Enum.GetValues<ProtocolVersion>();
 
     private static readonly PaserkType[] SupportedPaserkTypes =
     [

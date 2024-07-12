@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Security.Cryptography;
 
 using FluentAssertions;
@@ -106,10 +107,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should throw exception on GenerateSymmetricKey when incorrect purpose is provided")]
-    [InlineData(ProtocolVersion.V1)]
-    [InlineData(ProtocolVersion.V2)]
-    [InlineData(ProtocolVersion.V3)]
-    [InlineData(ProtocolVersion.V4)]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldThrowExceptionOnGenerateSymmetricKeyWhenIncorrectPurposeIsProvided(ProtocolVersion version)
     {
         var incorrectPurpose = Purpose.Public;
@@ -151,10 +149,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should throw exception on GenerateAsymmetricKeyPair when incorrect purpose is provided")]
-    [InlineData(ProtocolVersion.V1)]
-    [InlineData(ProtocolVersion.V2)]
-    [InlineData(ProtocolVersion.V3)]
-    [InlineData(ProtocolVersion.V4)]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldThrowExceptionOnGenerateAsymmetricKeyPairWhenIncorrectPurposeIsProvided(ProtocolVersion version)
     {
         var incorrectPurpose = Purpose.Local;
@@ -166,18 +161,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should throw exception on GenerateAsymmetricKeyPair when invalid seed is provided")]
-    [InlineData(ProtocolVersion.V2, null)]
-    [InlineData(ProtocolVersion.V2, new byte[0])]
-    [InlineData(ProtocolVersion.V2, new byte[] { 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V2, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V3, null)]
-    [InlineData(ProtocolVersion.V3, new byte[0])]
-    [InlineData(ProtocolVersion.V3, new byte[] { 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V3, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V4, null)]
-    [InlineData(ProtocolVersion.V4, new byte[0])]
-    [InlineData(ProtocolVersion.V4, new byte[] { 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V4, new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 })]
+    [MemberData(nameof(VersionsAndInvalidSeedData))]
     public void ShouldThrowExceptionOnGenerateAsymmetricKeyPairWhenInvalidSeedIsProvided(ProtocolVersion version, byte[] seed)
     {
         Action act = () => new PasetoBuilder().Use(version, Purpose.Public)
@@ -190,10 +174,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key and optional Footer when dependencies are provided")]
-    [InlineData(ProtocolVersion.V1)]
-    [InlineData(ProtocolVersion.V2)]
-    [InlineData(ProtocolVersion.V3)]
-    [InlineData(ProtocolVersion.V4)]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldSucceedOnLocalEncodeWithByteArrayKeyAndOptionalFooterWhenDependenciesAreProvided(ProtocolVersion version)
     {
         var token = new PasetoBuilder().Use(version, Purpose.Local)
@@ -215,10 +196,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key and optional Footer Payload when dependencies are provided")]
-    [InlineData(ProtocolVersion.V1)]
-    [InlineData(ProtocolVersion.V2)]
-    [InlineData(ProtocolVersion.V3)]
-    [InlineData(ProtocolVersion.V4)]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldSucceedOnLocalEncodeWithByteArrayKeyAndOptionalFooterPayloadWhenDependenciesAreProvided(ProtocolVersion version)
     {
         var token = new PasetoBuilder().Use(version, Purpose.Local)
@@ -240,10 +218,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key when dependencies are provided")]
-    [InlineData(ProtocolVersion.V1)]
-    [InlineData(ProtocolVersion.V2)]
-    [InlineData(ProtocolVersion.V3)]
-    [InlineData(ProtocolVersion.V4)]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldSucceedOnLocalEncodeWithByteArrayKeyWhenDependenciesAreProvided(ProtocolVersion version)
     {
         var token = new PasetoBuilder().Use(version, Purpose.Local)
@@ -332,14 +307,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should throw exception on Encode when WithKey is not called")]
-    [InlineData(ProtocolVersion.V1, Purpose.Local)]
-    [InlineData(ProtocolVersion.V1, Purpose.Public)]
-    [InlineData(ProtocolVersion.V2, Purpose.Local)]
-    [InlineData(ProtocolVersion.V2, Purpose.Public)]
-    [InlineData(ProtocolVersion.V3, Purpose.Local)]
-    [InlineData(ProtocolVersion.V3, Purpose.Public)]
-    [InlineData(ProtocolVersion.V4, Purpose.Local)]
-    [InlineData(ProtocolVersion.V4, Purpose.Public)]
+    [MemberData(nameof(AllVersionsAndPurposesData), MemberType = typeof(TestHelper))]
     public void ShouldThrowExceptionOnEncodeWhenWithKeyIsNotCalled(ProtocolVersion version, Purpose purpose)
     {
         Action act = () => new PasetoBuilder().Use(version, purpose)
@@ -349,14 +317,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should throw exception on Encode when Payload is not added")]
-    [InlineData(ProtocolVersion.V1, Purpose.Local)]
-    [InlineData(ProtocolVersion.V1, Purpose.Public)]
-    [InlineData(ProtocolVersion.V2, Purpose.Local)]
-    [InlineData(ProtocolVersion.V2, Purpose.Public)]
-    [InlineData(ProtocolVersion.V3, Purpose.Local)]
-    [InlineData(ProtocolVersion.V3, Purpose.Public)]
-    [InlineData(ProtocolVersion.V4, Purpose.Local)]
-    [InlineData(ProtocolVersion.V4, Purpose.Public)]
+    [MemberData(nameof(AllVersionsAndPurposesData), MemberType = typeof(TestHelper))]
     public void ShouldThrowExceptionOnEncodeWhenPayloadIsNotAdded(ProtocolVersion version, Purpose purpose)
     {
         Action act = () => new PasetoBuilder().Use(version, purpose)
@@ -367,18 +328,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should throw exception on Local Encode when invalid key is provided")]
-    [InlineData(ProtocolVersion.V1, null)]
-    [InlineData(ProtocolVersion.V1, new byte[0])]
-    [InlineData(ProtocolVersion.V1, new byte[] { 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V2, null)]
-    [InlineData(ProtocolVersion.V2, new byte[0])]
-    [InlineData(ProtocolVersion.V2, new byte[] { 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V3, null)]
-    [InlineData(ProtocolVersion.V3, new byte[0])]
-    [InlineData(ProtocolVersion.V3, new byte[] { 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V4, null)]
-    [InlineData(ProtocolVersion.V4, new byte[0])]
-    [InlineData(ProtocolVersion.V4, new byte[] { 0x00, 0x00 })]
+    [MemberData(nameof(VersionsAndInvalidKeyData))]
     public void ShouldThrowExceptionOnLocalEncodeWhenInvalidKeyIsProvided(ProtocolVersion version, byte[] key)
     {
         Action act = () => new PasetoBuilder().Use(version, Purpose.Local)
@@ -391,18 +341,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should throw exception on Public Encode when invalid key is provided")]
-    [InlineData(ProtocolVersion.V1, null)]
-    [InlineData(ProtocolVersion.V1, new byte[0])]
-    [InlineData(ProtocolVersion.V1, new byte[] { 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V2, null)]
-    [InlineData(ProtocolVersion.V2, new byte[0])]
-    [InlineData(ProtocolVersion.V2, new byte[] { 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V3, null)]
-    [InlineData(ProtocolVersion.V3, new byte[0])]
-    [InlineData(ProtocolVersion.V3, new byte[] { 0x00, 0x00 })]
-    [InlineData(ProtocolVersion.V4, null)]
-    [InlineData(ProtocolVersion.V4, new byte[0])]
-    [InlineData(ProtocolVersion.V4, new byte[] { 0x00, 0x00 })]
+    [MemberData(nameof(VersionsAndInvalidKeyData))]
     public void ShouldThrowExceptionOnPublicEncodeWhenInvalidKeyIsProvided(ProtocolVersion version, byte[] key)
     {
         Action act = () => new PasetoBuilder().Use(version, Purpose.Public)
@@ -512,10 +451,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Local Purpose and Symmetric Key")]
-    [InlineData(ProtocolVersion.V1)]
-    [InlineData(ProtocolVersion.V2)]
-    [InlineData(ProtocolVersion.V3)]
-    [InlineData(ProtocolVersion.V4)]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldSucceedOnEncodeToParsekWhenIsLocalPurposeAndSymmetricKey(ProtocolVersion version)
     {
         var parsek = new PasetoBuilder().Use(version, Purpose.Local)
@@ -527,10 +463,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Local Purpose and Shared Key")]
-    [InlineData(ProtocolVersion.V1)]
-    [InlineData(ProtocolVersion.V2)]
-    [InlineData(ProtocolVersion.V3)]
-    [InlineData(ProtocolVersion.V4)]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldSucceedOnEncodeToParsekWhenIsLocalPurposeAndSharedKey(ProtocolVersion version)
     {
         var parsek = new PasetoBuilder().Use(version, Purpose.Local)
@@ -542,10 +475,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Public Purpose and Public Asymmetric Key")]
-    [InlineData(ProtocolVersion.V1)]
-    [InlineData(ProtocolVersion.V2)]
-    [InlineData(ProtocolVersion.V3)]
-    [InlineData(ProtocolVersion.V4)]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldSucceedOnEncodeToParsekWhenIsPublicPurposeAndPublicAsymmetricKey(ProtocolVersion version)
     {
         var keyLength = version switch
@@ -569,10 +499,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Public Purpose and Secret Asymmetric Key")]
-    [InlineData(ProtocolVersion.V1)]
-    [InlineData(ProtocolVersion.V2)]
-    [InlineData(ProtocolVersion.V3)]
-    [InlineData(ProtocolVersion.V4)]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldSucceedOnEncodeToParsekWhenIsPublicPurposeAndSecretAsymmetricKey(ProtocolVersion version)
     {
         var keyLength = version switch
@@ -596,10 +523,7 @@ public class PasetoBuilderTests
     }
 
     [Theory(DisplayName = "Should succeed on Decoding with Date Validations")]
-    [InlineData(ProtocolVersion.V1)]
-    [InlineData(ProtocolVersion.V2)]
-    [InlineData(ProtocolVersion.V3)]
-    [InlineData(ProtocolVersion.V4)]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldSucceedOnDecodingWithDateValidations(ProtocolVersion version)
     {
         const Purpose purpose = Purpose.Public;
@@ -640,5 +564,42 @@ public class PasetoBuilderTests
             .Decode(encoded, validationParameters);
 
         decoded.IsValid.Should().BeTrue();
+    }
+
+    public static TheoryData<ProtocolVersion, byte[]> VersionsAndInvalidKeyData()
+    {
+        var bytes = new List<byte[]>
+        {
+            null,
+            Array.Empty<byte>(),
+            new byte[] { 0x80, 0x00 }
+        };
+
+        var ret = new TheoryData<ProtocolVersion, byte[]>();
+
+        foreach (var version in Enum.GetValues<ProtocolVersion>())
+        foreach (var key in bytes)
+            ret.Add(version, key);
+
+        return ret;
+    }
+
+    public static TheoryData<ProtocolVersion, byte[]> VersionsAndInvalidSeedData()
+    {
+        var bytes = new List<byte[]>
+        {
+            null,
+            Array.Empty<byte>(),
+            new byte[] { 0x80, 0x00 },
+            new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }
+        };
+
+        var ret = new TheoryData<ProtocolVersion, byte[]>();
+
+        foreach (var version in Enum.GetValues<ProtocolVersion>().Where(x => x != ProtocolVersion.V1))
+        foreach (var key in bytes)
+            ret.Add(version, key);
+
+        return ret;
     }
 }

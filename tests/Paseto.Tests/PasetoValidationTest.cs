@@ -1,24 +1,16 @@
 ﻿namespace Paseto.Tests;
 
-using System;
 using System.ComponentModel;
 using System.Linq;
 using FluentAssertions;
-using Paseto.Builder;
-using Paseto.Cryptography.Key;
+using Builder;
+using Cryptography.Key;
 using Xunit;
 
 public sealed class PasetoValidationTest
 {
     [Theory(DisplayName = "Should succeed on token with valid audience")]
-    [InlineData(ProtocolVersion.V1, Purpose.Local)]
-    [InlineData(ProtocolVersion.V1, Purpose.Public)]
-    [InlineData(ProtocolVersion.V2, Purpose.Local)]
-    [InlineData(ProtocolVersion.V2, Purpose.Public)]
-    [InlineData(ProtocolVersion.V3, Purpose.Local)]
-    [InlineData(ProtocolVersion.V3, Purpose.Public)]
-    [InlineData(ProtocolVersion.V4, Purpose.Local)]
-    [InlineData(ProtocolVersion.V4, Purpose.Public)]
+    [MemberData(nameof(TestHelper.AllVersionsAndPurposesData), MemberType = typeof(TestHelper))]
     public void TokenWithValidAudienceValidationSucceeds(ProtocolVersion version, Purpose purpose)
     {
         var validationParameters = new PasetoTokenValidationParameters()
@@ -37,14 +29,7 @@ public sealed class PasetoValidationTest
     }
 
     [Theory(DisplayName = "Should fail on token with invalid audience")]
-    [InlineData(ProtocolVersion.V1, Purpose.Local)]
-    [InlineData(ProtocolVersion.V1, Purpose.Public)]
-    [InlineData(ProtocolVersion.V2, Purpose.Local)]
-    [InlineData(ProtocolVersion.V2, Purpose.Public)]
-    [InlineData(ProtocolVersion.V3, Purpose.Local)]
-    [InlineData(ProtocolVersion.V3, Purpose.Public)]
-    [InlineData(ProtocolVersion.V4, Purpose.Local)]
-    [InlineData(ProtocolVersion.V4, Purpose.Public)]
+    [MemberData(nameof(TestHelper.AllVersionsAndPurposesData), MemberType = typeof(TestHelper))]
     public void TokenWithInValidAudienceValidationFails(ProtocolVersion version, Purpose purpose)
     {
         var validationParameters = new PasetoTokenValidationParameters()
@@ -63,14 +48,7 @@ public sealed class PasetoValidationTest
     }
 
     [Theory(DisplayName = "Should succeed on token with valid issuer")]
-    [InlineData(ProtocolVersion.V1, Purpose.Local)]
-    [InlineData(ProtocolVersion.V1, Purpose.Public)]
-    [InlineData(ProtocolVersion.V2, Purpose.Local)]
-    [InlineData(ProtocolVersion.V2, Purpose.Public)]
-    [InlineData(ProtocolVersion.V3, Purpose.Local)]
-    [InlineData(ProtocolVersion.V3, Purpose.Public)]
-    [InlineData(ProtocolVersion.V4, Purpose.Local)]
-    [InlineData(ProtocolVersion.V4, Purpose.Public)]
+    [MemberData(nameof(TestHelper.AllVersionsAndPurposesData), MemberType = typeof(TestHelper))]
     public void TokenWithValidIssuerValidationSucceeds(ProtocolVersion version, Purpose purpose)
     {
         var validationParameters = new PasetoTokenValidationParameters()
@@ -89,14 +67,7 @@ public sealed class PasetoValidationTest
     }
 
     [Theory(DisplayName = "Should fail on token with invalid issuer")]
-    [InlineData(ProtocolVersion.V1, Purpose.Local)]
-    [InlineData(ProtocolVersion.V1, Purpose.Public)]
-    [InlineData(ProtocolVersion.V2, Purpose.Local)]
-    [InlineData(ProtocolVersion.V2, Purpose.Public)]
-    [InlineData(ProtocolVersion.V3, Purpose.Local)]
-    [InlineData(ProtocolVersion.V3, Purpose.Public)]
-    [InlineData(ProtocolVersion.V4, Purpose.Local)]
-    [InlineData(ProtocolVersion.V4, Purpose.Public)]
+    [MemberData(nameof(TestHelper.AllVersionsAndPurposesData), MemberType = typeof(TestHelper))]
     public void TokenWithInValidIssuerValidationFails(ProtocolVersion version, Purpose purpose)
     {
         var validationParameters = new PasetoTokenValidationParameters()
@@ -115,14 +86,7 @@ public sealed class PasetoValidationTest
     }
 
     [Theory(DisplayName = "Should succeed on token with valid subject")]
-    [InlineData(ProtocolVersion.V1, Purpose.Local)]
-    [InlineData(ProtocolVersion.V1, Purpose.Public)]
-    [InlineData(ProtocolVersion.V2, Purpose.Local)]
-    [InlineData(ProtocolVersion.V2, Purpose.Public)]
-    [InlineData(ProtocolVersion.V3, Purpose.Local)]
-    [InlineData(ProtocolVersion.V3, Purpose.Public)]
-    [InlineData(ProtocolVersion.V4, Purpose.Local)]
-    [InlineData(ProtocolVersion.V4, Purpose.Public)]
+    [MemberData(nameof(TestHelper.AllVersionsAndPurposesData), MemberType = typeof(TestHelper))]
     public void TokenWithValidSubjectValidationSucceeds(ProtocolVersion version, Purpose purpose)
     {
         var validationParameters = new PasetoTokenValidationParameters()
@@ -141,14 +105,7 @@ public sealed class PasetoValidationTest
     }
 
     [Theory(DisplayName = "Should fail on token with invalid subject")]
-    [InlineData(ProtocolVersion.V1, Purpose.Local)]
-    [InlineData(ProtocolVersion.V1, Purpose.Public)]
-    [InlineData(ProtocolVersion.V2, Purpose.Local)]
-    [InlineData(ProtocolVersion.V2, Purpose.Public)]
-    [InlineData(ProtocolVersion.V3, Purpose.Local)]
-    [InlineData(ProtocolVersion.V3, Purpose.Public)]
-    [InlineData(ProtocolVersion.V4, Purpose.Local)]
-    [InlineData(ProtocolVersion.V4, Purpose.Public)]
+    [MemberData(nameof(TestHelper.AllVersionsAndPurposesData), MemberType = typeof(TestHelper))]
     public void TokenWithInValidSubjectValidationFails(ProtocolVersion version, Purpose purpose)
     {
         var validationParameters = new PasetoTokenValidationParameters()
