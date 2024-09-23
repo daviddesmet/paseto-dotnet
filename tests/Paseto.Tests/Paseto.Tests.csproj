@@ -180,7 +180,7 @@
     <PackageReference Include="FluentAssertions" Version="6.12.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.10.0" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
-    <PackageReference Include="xunit" Version="2.8.1" />
+    <PackageReference Include="xunit" Version="2.9.1" />
     <PackageReference Include="xunit.categories" Version="2.0.8" />
     <PackageReference Include="xunit.runner.console" Version="2.8.1">
       <PrivateAssets>all</PrivateAssets>
