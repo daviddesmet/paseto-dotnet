@@ -31,7 +31,7 @@ PASERK extension
 
 ## Installation
 
-[![NuGet](https://buildstats.info/nuget/Paseto.Core)](https://www.nuget.org/packages/Paseto.Core/)
+![NuGet Version](https://img.shields.io/nuget/v/Paseto.Core)
 
 Install the Paseto.Core NuGet package from the .NET CLI using:
 ```
