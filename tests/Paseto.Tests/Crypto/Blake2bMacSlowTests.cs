@@ -3,7 +3,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 using Paseto.Cryptography;
 
@@ -29,7 +29,7 @@ public class Blake2bMacSlowTests
         };
 
         var actual = ComputeHash(bytes, _key512, 512);
-        actual.Should().BeEquivalentTo(expected);
+        actual.ShouldBeEquivalentTo(expected);
     }
 
     [Fact]
@@ -52,7 +52,7 @@ public class Blake2bMacSlowTests
         };
 
         var actual = ComputeHash(data, _key512, 256);
-        actual.Should().BeEquivalentTo(expected);
+        actual.ShouldBeEquivalentTo(expected);
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public class Blake2bMacSlowTests
         };
 
         var actual = ComputeHash(data, key, 256);
-        actual.Should().BeEquivalentTo(expected);
+        actual.ShouldBeEquivalentTo(expected);
     }
 
     [Fact]
@@ -131,7 +131,7 @@ public class Blake2bMacSlowTests
         };
 
         var actual = ComputeHash(data, _key512, 512);
-        actual.Should().BeEquivalentTo(expected);
+        actual.ShouldBeEquivalentTo(expected);
     }
 
     [Fact]
@@ -161,7 +161,7 @@ public class Blake2bMacSlowTests
         };
 
         var actual = ComputeHash(data, _key512, 512);
-        actual.Should().BeEquivalentTo(expected);
+        actual.ShouldBeEquivalentTo(expected);
     }
 
     [Fact]
@@ -190,7 +190,7 @@ public class Blake2bMacSlowTests
         };
 
         var actual = ComputeHash(data, _key512, 512);
-        actual.Should().BeEquivalentTo(expected);
+        actual.ShouldBeEquivalentTo(expected);
     }
 
     [Fact]
@@ -220,7 +220,7 @@ public class Blake2bMacSlowTests
         };
 
         var actual = ComputeHash(data, key, 512);
-        actual.Should().BeEquivalentTo(expected);
+        actual.ShouldBeEquivalentTo(expected);
     }
 
     [Fact]
@@ -251,7 +251,7 @@ public class Blake2bMacSlowTests
         };
 
         var actual = ComputeHash(data, key, 512);
-        actual.Should().BeEquivalentTo(expected);
+        actual.ShouldBeEquivalentTo(expected);
     }
 
     [Fact]
@@ -266,7 +266,7 @@ public class Blake2bMacSlowTests
         };
 
         var actual = ComputeHash(Array.Empty<byte>(), Encoding.UTF8.GetBytes("abc"), 512);
-        actual.Should().BeEquivalentTo(expected);
+        actual.ShouldBeEquivalentTo(expected);
     }
 
     private static byte[] _key512 = new byte[] {

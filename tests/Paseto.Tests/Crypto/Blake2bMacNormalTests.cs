@@ -2,7 +2,7 @@
 
 using System;
 using System.Text;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 using Paseto.Cryptography;
 
@@ -41,7 +41,7 @@ public class Blake2bMacNormalTests
         var subject = new Blake2bMac(512);
         var data = subject.ComputeHash(Encoding.UTF8.GetBytes("Hello"));
 
-        data.Should().BeEquivalentTo(new byte[]
+        data.ShouldBeEquivalentTo(new byte[]
         {
             0xef, 0x15, 0xea, 0xf9, 0x2d, 0x5e, 0x33, 0x53, 0x45, 0xa3, 0xe1, 0xd9, 0x77, 0xbc, 0x7d, 0x87,
             0x97, 0xc3, 0xd2, 0x75, 0x71, 0x7c, 0xc1, 0xb1, 0x0a, 0xf7, 0x9c, 0x93, 0xcd, 0xa0, 0x1a, 0xeb,
@@ -67,7 +67,7 @@ public class Blake2bMacNormalTests
         normal.Initialize();
         deflt.Initialize();
 
-        slow.ComputeHash(data).Should().BeEquivalentTo(normal.ComputeHash(data));
-        deflt.ComputeHash(data).Should().BeEquivalentTo(normal.ComputeHash(data));
+        slow.ComputeHash(data).ShouldBeEquivalentTo(normal.ComputeHash(data));
+        deflt.ComputeHash(data).ShouldBeEquivalentTo(normal.ComputeHash(data));
     }
 }

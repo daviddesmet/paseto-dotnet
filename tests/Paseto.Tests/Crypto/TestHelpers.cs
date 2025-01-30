@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-using FluentAssertions;
+using Shouldly;
 
 public static class TestHelpers
 {
@@ -19,7 +19,7 @@ public static class TestHelpers
         }
     }
 
-    public static void AssertEqualBytes(byte[] expected, byte[] actual) => BitConverter.ToString(actual).Should().Be(BitConverter.ToString(expected));
+    public static void AssertEqualBytes(byte[] expected, byte[] actual) => BitConverter.ToString(actual).ShouldBe(BitConverter.ToString(expected));
 
     public static ArraySegment<byte> Pad(this byte[] array) => array.Pad(Random(1, 100), Random(0, 50));
 

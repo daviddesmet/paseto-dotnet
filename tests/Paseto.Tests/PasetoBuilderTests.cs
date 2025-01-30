@@ -5,12 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 
-using FluentAssertions;
+using Shouldly;
 using NaCl.Core.Internal;
 using Xunit;
 
 using Paseto.Builder;
-using Paseto.Cryptography;
 using static Paseto.Tests.TestHelper;
 
 public class PasetoBuilderTests
@@ -93,9 +92,9 @@ public class PasetoBuilderTests
         var pasetoKey = new PasetoBuilder().Use(version, Purpose.Local)
                                            .GenerateSymmetricKey();
 
-        pasetoKey.Should().NotBeNull();
-        pasetoKey.Key.IsEmpty.Should().BeFalse();
-        pasetoKey.Key.Length.Should().Be(keySize);
+        pasetoKey.ShouldNotBeNull();
+        pasetoKey.Key.IsEmpty.ShouldBe(false);
+        pasetoKey.Key.Length.ShouldBe(keySize);
     }
 
     [Fact(DisplayName = "Should throw exception on GenerateSymmetricKey when no dependencies are provided")]
@@ -103,7 +102,7 @@ public class PasetoBuilderTests
     {
         Action act = () => new PasetoBuilder().GenerateSymmetricKey();
 
-        act.Should().Throw<PasetoBuilderException>().WithMessage("Can't generate serialized key. Check if you have call the 'Use' method.");
+        act.ShouldThrow<PasetoBuilderException>("Can't generate serialized key. Check if you have call the 'Use' method.");
     }
 
     [Theory(DisplayName = "Should throw exception on GenerateSymmetricKey when incorrect purpose is provided")]
@@ -115,7 +114,7 @@ public class PasetoBuilderTests
         Action act = () => new PasetoBuilder().Use(version, incorrectPurpose)
                                               .GenerateSymmetricKey();
 
-        act.Should().Throw<PasetoBuilderException>().WithMessage($"Can't generate symmetric key. {incorrectPurpose} purpose is not compatible.");
+        act.ShouldThrow<PasetoBuilderException>($"Can't generate symmetric key. {incorrectPurpose} purpose is not compatible.");
     }
 
     [Theory(DisplayName = "Should succeed on GenerateAsymmetricKeyPair when Seed is provided")]
@@ -131,13 +130,13 @@ public class PasetoBuilderTests
         var pasetoKey = new PasetoBuilder().Use(version, Purpose.Public)
                                            .GenerateAsymmetricKeyPair(seed);
 
-        pasetoKey.Should().NotBeNull();
-        pasetoKey.SecretKey.Key.IsEmpty.Should().BeFalse();
-        pasetoKey.PublicKey.Key.IsEmpty.Should().BeFalse();
+        pasetoKey.ShouldNotBeNull();
+        pasetoKey.SecretKey.Key.IsEmpty.ShouldBe(false);
+        pasetoKey.PublicKey.Key.IsEmpty.ShouldBe(false);
 
         if (version == ProtocolVersion.V1) return;
-        pasetoKey.SecretKey.Key.Length.Should().Be(secretKeyLength);
-        pasetoKey.PublicKey.Key.Length.Should().Be(publicKeyLength);
+        pasetoKey.SecretKey.Key.Length.ShouldBe(secretKeyLength);
+        pasetoKey.PublicKey.Key.Length.ShouldBe(publicKeyLength);
     }
 
     [Fact(DisplayName = "Should throw exception on GenerateAsymmetricKeyPair when no dependencies are provided")]
@@ -145,7 +144,7 @@ public class PasetoBuilderTests
     {
         Action act = () => new PasetoBuilder().GenerateAsymmetricKeyPair();
 
-        act.Should().Throw<PasetoBuilderException>().WithMessage("Can't generate serialized key. Check if you have call the 'Use' method.");
+        act.ShouldThrow<PasetoBuilderException>("Can't generate serialized key. Check if you have call the 'Use' method.");
     }
 
     [Theory(DisplayName = "Should throw exception on GenerateAsymmetricKeyPair when incorrect purpose is provided")]
@@ -157,7 +156,7 @@ public class PasetoBuilderTests
         Action act = () => new PasetoBuilder().Use(version, incorrectPurpose)
                                               .GenerateAsymmetricKeyPair();
 
-        act.Should().Throw<PasetoBuilderException>().WithMessage($"Can't generate symmetric key. {incorrectPurpose} purpose is not compatible.");
+        act.ShouldThrow<PasetoBuilderException>($"Can't generate symmetric key. {incorrectPurpose} purpose is not compatible.");
     }
 
     [Theory(DisplayName = "Should throw exception on GenerateAsymmetricKeyPair when invalid seed is provided")]
@@ -168,9 +167,9 @@ public class PasetoBuilderTests
                                               .GenerateAsymmetricKeyPair(seed);
 
         if (seed is null)
-            act.Should().Throw<ArgumentNullException>();
+            act.ShouldThrow<ArgumentNullException>();
         else
-            act.Should().Throw<ArgumentException>().WithMessage("The seed length in bytes must be*");
+            act.ShouldThrow<ArgumentException>("The seed length in bytes must be*");
     }
 
     [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key and optional Footer when dependencies are provided")]
@@ -190,9 +189,9 @@ public class PasetoBuilderTests
                                                    .AddFooter(Footer)
                                                    .Encode();
 
-        token.Should().NotBeNullOrEmpty();
-        token.Should().StartWith($"v{(int)version}.local.");
-        token.Split('.').Should().HaveCount(4);
+        token.ShouldNotBeNullOrEmpty();
+        token.ShouldStartWith($"v{(int)version}.local.");
+        token.Split('.').Length.ShouldBe(4);
     }
 
     [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key and optional Footer Payload when dependencies are provided")]
@@ -212,9 +211,9 @@ public class PasetoBuilderTests
             .AddFooter(new PasetoPayload { { "kid", "gandalf0" } })
             .Encode();
 
-        token.Should().NotBeNullOrEmpty();
-        token.Should().StartWith($"v{(int)version}.local.");
-        token.Split('.').Should().HaveCount(4);
+        token.ShouldNotBeNullOrEmpty();
+        token.ShouldStartWith($"v{(int)version}.local.");
+        token.Split('.').Length.ShouldBe(4);
     }
 
     [Theory(DisplayName = "Should succeed on Local Encode with Byte Array Key when dependencies are provided")]
@@ -233,9 +232,9 @@ public class PasetoBuilderTests
             .TokenIdentifier("123456ABCD")
             .Encode();
 
-        token.Should().NotBeNullOrEmpty();
-        token.Should().StartWith($"v{(int)version}.local.");
-        token.Split('.').Should().HaveCount(3);
+        token.ShouldNotBeNullOrEmpty();
+        token.ShouldStartWith($"v{(int)version}.local.");
+        token.Split('.').Length.ShouldBe(3);
     }
 
     [Theory(DisplayName = "Should succeed on Public Encode with Byte Array Key and optional Footer Payload when dependencies are provided")]
@@ -255,9 +254,9 @@ public class PasetoBuilderTests
             .AddFooter(new PasetoPayload { { "kid", "gandalf0" } })
             .Encode();
 
-        token.Should().NotBeNullOrEmpty();
-        token.Should().StartWith($"v{(int)version}.public.");
-        token.Split('.').Should().HaveCount(4);
+        token.ShouldNotBeNullOrEmpty();
+        token.ShouldStartWith($"v{(int)version}.public.");
+        token.Split('.').Length.ShouldBe(4);
     }
 
     [Theory(DisplayName = "Should succeed on Public Encode with Byte Array Key when dependencies are provided")]
@@ -276,9 +275,9 @@ public class PasetoBuilderTests
             .TokenIdentifier("123456ABCD")
             .Encode();
 
-        token.Should().NotBeNullOrEmpty();
-        token.Should().StartWith($"v{(int)version}.public.");
-        token.Split('.').Should().HaveCount(3);
+        token.ShouldNotBeNullOrEmpty();
+        token.ShouldStartWith($"v{(int)version}.public.");
+        token.Split('.').Length.ShouldBe(3);
     }
 
     [Fact(DisplayName = "Should throw exception on Encode when Use is not called")]
@@ -286,7 +285,7 @@ public class PasetoBuilderTests
     {
         Action act = () => new PasetoBuilder().Encode();
 
-        act.Should().Throw<PasetoBuilderException>().WithMessage("Can't build a token. Check if you have call the 'Use' method.");
+        act.ShouldThrow<PasetoBuilderException>("Can't build a token. Check if you have call the 'Use' method.");
     }
 
     [Theory(DisplayName = "Should throw exception on Encode when Use is passing an invalid or unsupported protocol version")]
@@ -303,7 +302,7 @@ public class PasetoBuilderTests
         Action act = () => new PasetoBuilder().Use(version, purpose)
                                               .Encode();
 
-        act.Should().Throw<PasetoNotSupportedException>().WithMessage("The protocol version * is currently not supported.");
+        act.ShouldThrow<PasetoNotSupportedException>("The protocol version * is currently not supported.");
     }
 
     [Theory(DisplayName = "Should throw exception on Encode when WithKey is not called")]
@@ -313,7 +312,7 @@ public class PasetoBuilderTests
         Action act = () => new PasetoBuilder().Use(version, purpose)
                                               .Encode();
 
-        act.Should().Throw<PasetoBuilderException>().WithMessage("Can't build a token. Check if you have call the 'WithKey' method.");
+        act.ShouldThrow<PasetoBuilderException>("Can't build a token. Check if you have call the 'WithKey' method.");
     }
 
     [Theory(DisplayName = "Should throw exception on Encode when Payload is not added")]
@@ -324,7 +323,7 @@ public class PasetoBuilderTests
                                               .WithKey(Array.Empty<byte>(), purpose == Purpose.Local ? Encryption.SymmetricKey : Encryption.AsymmetricSecretKey)
                                               .Encode();
 
-        act.Should().Throw<PasetoBuilderException>().WithMessage("Can't build a token. Check if you have call the 'AddClaim' method.");
+        act.ShouldThrow<PasetoBuilderException>("Can't build a token. Check if you have call the 'AddClaim' method.");
     }
 
     [Theory(DisplayName = "Should throw exception on Local Encode when invalid key is provided")]
@@ -337,7 +336,7 @@ public class PasetoBuilderTests
                                               .Expiration(DateTime.UtcNow.AddHours(1))
                                               .Encode();
 
-        act.Should().Throw<ArgumentException>().WithMessage("The key length in bytes must be*");
+        act.ShouldThrow<ArgumentException>("The key length in bytes must be*");
     }
 
     [Theory(DisplayName = "Should throw exception on Public Encode when invalid key is provided")]
@@ -350,7 +349,7 @@ public class PasetoBuilderTests
                                               .Expiration(DateTime.UtcNow.AddHours(1))
                                               .Encode();
 
-        act.Should().Throw<ArgumentException>();
+        act.ShouldThrow<ArgumentException>();
     }
 
     [Theory(DisplayName = "Should succeed on Local Decode with Byte Array Key and optional Footer when dependencies are provided")]
@@ -362,11 +361,11 @@ public class PasetoBuilderTests
             .AddFooter(footer)
             .Decode(token);
 
-        result.IsValid.Should().BeTrue();
-        result.Paseto.Should().NotBeNull();
-        result.Paseto.Payload["data"].Should().NotBeNull();
-        result.Paseto.Payload["exp"].Should().NotBeNull();
-        result.Exception.Should().BeNull();
+        result.IsValid.ShouldBe(true);
+        result.Paseto.ShouldNotBeNull();
+        result.Paseto.Payload["data"].ShouldNotBeNull();
+        result.Paseto.Payload["exp"].ShouldNotBeNull();
+        result.Exception.ShouldBeNull();
     }
 
     [Theory(DisplayName = "Should succeed on Public Decode with Byte Array Key and optional Footer and optional implicit assertion when dependencies are provided")]
@@ -379,11 +378,11 @@ public class PasetoBuilderTests
             .AddImplicitAssertion(assertion)
             .Decode(token);
 
-        result.IsValid.Should().BeTrue();
-        result.Paseto.Should().NotBeNull();
-        result.Paseto.Payload["data"].Should().NotBeNull();
-        result.Paseto.Payload["exp"].Should().NotBeNull();
-        result.Exception.Should().BeNull();
+        result.IsValid.ShouldBe(true);
+        result.Paseto.ShouldNotBeNull();
+        result.Paseto.Payload["data"].ShouldNotBeNull();
+        result.Paseto.Payload["exp"].ShouldNotBeNull();
+        result.Exception.ShouldBeNull();
     }
 
     [Theory(DisplayName = "Should fail on Local Decode when Token is not valid")]
@@ -401,8 +400,8 @@ public class PasetoBuilderTests
             .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
             .Decode(token);
 
-        result.IsValid.Should().BeFalse();
-        result.Exception.Should().NotBeNull();
+        result.IsValid.ShouldBe(false);
+        result.Exception.ShouldNotBeNull();
     }
 
     [Theory(DisplayName = "Should fail on Local Decode when Token's Footer is not valid")]
@@ -417,8 +416,8 @@ public class PasetoBuilderTests
             .AddFooter(footer)
             .Decode(token);
 
-        result.IsValid.Should().BeFalse();
-        result.Exception.Should().NotBeNull();
+        result.IsValid.ShouldBe(false);
+        result.Exception.ShouldNotBeNull();
     }
 
     // TODO: Public Decode fails tests, include invalid header v1.remote.
@@ -433,10 +432,10 @@ public class PasetoBuilderTests
         var header = new PasetoBuilder().DecodeHeader(token);
         var footer = new PasetoBuilder().DecodeFooter(token);
 
-        header.Should().NotBeNullOrEmpty();
-        header.Should().Be($"v{(int)version}.local");
-        footer.Should().NotBeNullOrEmpty();
-        footer.Should().Be(expectedFooter);
+        header.ShouldNotBeNullOrEmpty();
+        header.ShouldBe($"v{(int)version}.local");
+        footer.ShouldNotBeNullOrEmpty();
+        footer.ShouldBe(expectedFooter);
     }
 
     [Theory(DisplayName = "Should throw exception on Decode when Token is missing")]
@@ -447,7 +446,9 @@ public class PasetoBuilderTests
     {
         Action act = () => new PasetoBuilder().Decode(token);
 
-        act.Should().Throw<ArgumentNullException>().WithParameterName("token");
+        // https://github.com/shouldly/shouldly/issues/392
+        var ex = act.ShouldThrow<ArgumentNullException>();
+        ex.ParamName.ShouldBe("token");
     }
 
     [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Local Purpose and Symmetric Key")]
@@ -458,8 +459,8 @@ public class PasetoBuilderTests
             .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
             .GenerateSerializedKey(PaserkType.Local);
 
-        parsek.Should().StartWith($"k{(int)version}.local");
-        parsek.Split('.').Should().HaveCount(3);
+        parsek.ShouldStartWith($"k{(int)version}.local");
+        parsek.Split('.').Length.ShouldBe(3);
     }
 
     [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Local Purpose and Shared Key")]
@@ -470,8 +471,8 @@ public class PasetoBuilderTests
             .WithSharedKey(CryptoBytes.FromHexString(LocalKey))
             .GenerateSerializedKey(PaserkType.Local);
 
-        parsek.Should().StartWith($"k{(int)version}.local");
-        parsek.Split('.').Should().HaveCount(3);
+        parsek.ShouldStartWith($"k{(int)version}.local");
+        parsek.Split('.').Length.ShouldBe(3);
     }
 
     [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Public Purpose and Public Asymmetric Key")]
@@ -494,8 +495,8 @@ public class PasetoBuilderTests
             .WithKey(key, Encryption.AsymmetricPublicKey)
             .GenerateSerializedKey(PaserkType.Public);
 
-        parsek.Should().StartWith($"k{(int)version}.public");
-        parsek.Split('.').Should().HaveCount(3);
+        parsek.ShouldStartWith($"k{(int)version}.public");
+        parsek.Split('.').Length.ShouldBe(3);
     }
 
     [Theory(DisplayName = "Should succeed on Encode to PARSEK when is Public Purpose and Secret Asymmetric Key")]
@@ -518,8 +519,8 @@ public class PasetoBuilderTests
             .WithKey(key, Encryption.AsymmetricSecretKey)
             .GenerateSerializedKey(PaserkType.Secret);
 
-        parsek.Should().StartWith($"k{(int)version}.secret");
-        parsek.Split('.').Should().HaveCount(3);
+        parsek.ShouldStartWith($"k{(int)version}.secret");
+        parsek.Split('.').Length.ShouldBe(3);
     }
 
     [Theory(DisplayName = "Should succeed on Decoding with Date Validations")]
@@ -563,7 +564,7 @@ public class PasetoBuilderTests
             .WithPublicKey([.. keyPair.PublicKey.Key.Span])
             .Decode(encoded, validationParameters);
 
-        decoded.IsValid.Should().BeTrue();
+        decoded.IsValid.ShouldBe(true);
     }
 
     public static TheoryData<ProtocolVersion, byte[]> VersionsAndInvalidKeyData()

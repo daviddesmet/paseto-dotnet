@@ -2,7 +2,7 @@
 
 using System;
 using System.Linq;
-using FluentAssertions;
+using Shouldly;
 using Paseto.Extensions;
 using Paseto.Tests.Crypto;
 using Xunit;
@@ -16,7 +16,7 @@ public class CryptoBytesExtensionsTests
     {
         var bytes = (byte[])_bytes.Clone();
         CryptoBytesExtensions.Wipe(bytes);
-        bytes.All(b => b == 0).Should().BeTrue();
+        bytes.All(b => b == 0).ShouldBeTrue();
     }
 
     [Fact]

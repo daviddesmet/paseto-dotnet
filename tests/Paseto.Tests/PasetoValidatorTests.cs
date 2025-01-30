@@ -1,7 +1,7 @@
 namespace Paseto.Tests;
 
 using System;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 using Builder;
 using Paseto.Extensions;
@@ -18,7 +18,7 @@ public class PasetoValidatorTests
         var iat = new Validators.IssuedAtValidator(CreateDateValidatorPayload(RegisteredClaims.IssuedAt, when));
 
         Action act = () => iat.Validate(compareTo);
-        act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token is not yet valid");
+        act.ShouldThrow<PasetoTokenValidationException>("Token is not yet valid");
     }
 
     [Theory]
@@ -28,7 +28,7 @@ public class PasetoValidatorTests
         var iat = new Validators.IssuedAtValidator(CreateDateValidatorPayload(RegisteredClaims.IssuedAt, when));
 
         Action act = () => iat.Validate(compareTo);
-        act.Should().NotThrow();
+        act.ShouldNotThrow();
     }
 
     [Theory]
@@ -38,7 +38,7 @@ public class PasetoValidatorTests
         var iat = new Validators.IssuedAtValidator(CreateDateValidatorPayload(RegisteredClaims.IssuedAt, when));
 
         Action act = () => iat.Validate(when);
-        act.Should().NotThrow();
+        act.ShouldNotThrow();
     }
 
     [Theory]
@@ -48,7 +48,7 @@ public class PasetoValidatorTests
         var nbf = new Validators.NotBeforeValidator(CreateDateValidatorPayload(RegisteredClaims.NotBefore, when));
 
         Action act = () => nbf.Validate(compareTo);
-        act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token is not yet valid");
+        act.ShouldThrow<PasetoTokenValidationException>("Token is not yet valid");
     }
 
     [Theory]
@@ -58,7 +58,7 @@ public class PasetoValidatorTests
         var nbf = new Validators.NotBeforeValidator(CreateDateValidatorPayload(RegisteredClaims.NotBefore, when));
 
         Action act = () => nbf.Validate(compareTo);
-        act.Should().NotThrow();
+        act.ShouldNotThrow();
     }
 
     [Theory]
@@ -67,7 +67,7 @@ public class PasetoValidatorTests
     {
         var exp = new Validators.ExpirationTimeValidator(CreateDateValidatorPayload(RegisteredClaims.ExpirationTime, when));
         Action act = () => exp.Validate(compareTo);
-        act.Should().Throw<PasetoTokenValidationException>().WithMessage("Token has expired");
+        act.ShouldThrow<PasetoTokenValidationException>("Token has expired");
     }
 
     [Theory]
@@ -77,7 +77,7 @@ public class PasetoValidatorTests
         var exp = new Validators.ExpirationTimeValidator(CreateDateValidatorPayload(RegisteredClaims.ExpirationTime, when));
 
         Action act = () => exp.Validate(compareTo);
-        act.Should().NotThrow();
+        act.ShouldNotThrow();
     }
 
     [Fact]
@@ -89,7 +89,7 @@ public class PasetoValidatorTests
         }, RegisteredClaims.Issuer.GetRegisteredClaimName());
 
         Action act = () => val.Validate(IssuedBy + ".");
-        act.Should().Throw<PasetoTokenValidationException>();
+        act.ShouldThrow<PasetoTokenValidationException>();
     }
 
     [Fact]
@@ -101,7 +101,7 @@ public class PasetoValidatorTests
         }, RegisteredClaims.Issuer.GetRegisteredClaimName());
 
         Action act = () => val.Validate(IssuedBy);
-        act.Should().NotThrow();
+        act.ShouldNotThrow();
     }
 
     [Fact]
@@ -113,7 +113,7 @@ public class PasetoValidatorTests
         }, "example");
 
         Action act = () => val.Validate(HelloPaseto + "!");
-        act.Should().Throw<PasetoTokenValidationException>();
+        act.ShouldThrow<PasetoTokenValidationException>();
     }
 
     [Fact]
@@ -125,7 +125,7 @@ public class PasetoValidatorTests
         }, "example");
 
         Action act = () => val.Validate(HelloPaseto);
-        act.Should().NotThrow();
+        act.ShouldNotThrow();
     }
 
     public static TheoryData<IComparable, IComparable> FutureTimes => new()

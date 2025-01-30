@@ -3,7 +3,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 using static Paseto.Utils.EncodingHelper;
@@ -23,7 +23,7 @@ public class EncodingTests
 
         // Assert
         //Assert.AreEqual(expected, pae1);
-        pae2.Should().BeEquivalentTo(Encoding.ASCII.GetBytes(expected));
+        pae2.ShouldBeEquivalentTo(Encoding.ASCII.GetBytes(expected));
     }
 
     [Fact]
@@ -39,7 +39,7 @@ public class EncodingTests
 
         // Assert
         //Assert.AreEqual(expected, pae1);
-        pae2.Should().BeEquivalentTo(Encoding.ASCII.GetBytes(expected));
+        pae2.ShouldBeEquivalentTo(Encoding.ASCII.GetBytes(expected));
     }
 
     [Fact]
@@ -55,6 +55,6 @@ public class EncodingTests
 
         // Assert
         //Assert.AreEqual(expected, pae1);
-        pae2.Should().BeEquivalentTo(Encoding.ASCII.GetBytes(expected));
+        pae2.ShouldBeEquivalentTo(Encoding.ASCII.GetBytes(expected));
     }
 }

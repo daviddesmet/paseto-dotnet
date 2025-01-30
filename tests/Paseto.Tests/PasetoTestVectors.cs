@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 
-using FluentAssertions;
+using Shouldly;
 using NaCl.Core.Internal;
 using Newtonsoft.Json;
 using Xunit;
@@ -58,10 +58,10 @@ public class PasetoTestVectors
                     {
                         // We assert the seed since we want them to fail in case it changes
                         var secretKey = CryptoBytes.ToHexStringLower(Ed25519.ExpandedPrivateKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
-                        secretKey.Should().Be(test.SecretKey);
+                        secretKey.ShouldBe(test.SecretKey);
 
                         var publicKey = CryptoBytes.ToHexStringLower(Ed25519.PublicKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
-                        publicKey.Should().Be(test.PublicKey);
+                        publicKey.ShouldBe(test.PublicKey);
                     }
 
                     builder = builder.Use(version, Purpose.Public)
@@ -98,11 +98,11 @@ public class PasetoTestVectors
 
                         var result = builder.Decode(token);
 
-                        result.Paseto.RawPayload.Should().Be(test.Payload);
+                        result.Paseto.RawPayload.ShouldBe(test.Payload);
                     }
                     else
                     {
-                        token.Should().Be(test.Token);
+                        token.ShouldBe(test.Token);
                     }
                 }
                 catch (PasetoNotSupportedException)
@@ -162,12 +162,12 @@ public class PasetoTestVectors
             {
                 var result = builder.Decode(test.Token);
 
-                result.IsValid.Should().Be(!test.ExpectFail);
+                result.IsValid.ShouldBe(!test.ExpectFail);
 
                 if (test.ExpectFail)
                     errors++;
                 else
-                    result.Paseto.RawPayload.Should().Be(test.Payload);
+                    result.Paseto.RawPayload.ShouldBe(test.Payload);
             }
             catch (PasetoNotSupportedException)
             {
@@ -194,7 +194,7 @@ public class PasetoTestVectors
             }
         }
 
-        errors.Should().Be(vector.Tests.Count(t => t.ExpectFail));
+        errors.ShouldBe(vector.Tests.Count(t => t.ExpectFail));
     }
 
     private static string GetPasetoTestVector(string version)

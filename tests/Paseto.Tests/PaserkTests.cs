@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using FluentAssertions;
+
+using Shouldly;
 using NaCl.Core.Internal;
 using Newtonsoft.Json;
 using Paseto.Cryptography.Key;
@@ -87,7 +88,7 @@ public class PaserkTests
                 };
             }
 
-            act.Should().Throw<Exception>();
+            act.ShouldThrow<Exception>();
             return;
         }
 
@@ -95,12 +96,12 @@ public class PaserkTests
         var pasetoKey = ParseKey(version, type, test.Key);
 
         var paserk = Paserk.Encode(pasetoKey, type);
-        paserk.Should().Be(test.Paserk);
+        paserk.ShouldBe(test.Paserk);
 
         var decodedPasetoKey = Paserk.Decode(test.Paserk);
-        decodedPasetoKey.Should().NotBeNull();
-        decodedPasetoKey.Key.IsEmpty.Should().BeFalse();
-        decodedPasetoKey.Key.Span.ToArray().Should().BeEquivalentTo(TestHelper.ReadKey(test.Key));
+        decodedPasetoKey.ShouldNotBeNull();
+        decodedPasetoKey.Key.IsEmpty.ShouldBe(false);
+        decodedPasetoKey.Key.Span.ToArray().ShouldBeEquivalentTo(TestHelper.ReadKey(test.Key));
     }
 
     public static IEnumerable<object[]> IdGenerator => TestItemGenerator(ValidProtocols, PaserkIdTypes);
@@ -123,7 +124,7 @@ public class PaserkTests
                 Paserk.Encode(key, type);
             };
 
-            act.Should().Throw<Exception>();
+            act.ShouldThrow<Exception>();
             return;
         }
 
@@ -131,7 +132,7 @@ public class PaserkTests
         var pasetoKey = ParseKey(version, type, test.Key);
 
         var paserk = Paserk.Encode(pasetoKey, type);
-        paserk.Should().Be(test.Paserk);
+        paserk.ShouldBe(test.Paserk);
     }
 
     [Theory]
@@ -159,7 +160,7 @@ public class PaserkTests
         foreach (var incompatibleType in SupportedPaserkTypes.Where(t => t != type))
         {
             var act = () => Paserk.Encode(pasetoKey, incompatibleType);
-            act.Should().Throw<Exception>();
+            act.ShouldThrow<Exception>();
         }
     }
 

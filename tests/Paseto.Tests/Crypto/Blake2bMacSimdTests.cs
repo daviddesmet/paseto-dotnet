@@ -1,7 +1,7 @@
 ﻿namespace Paseto.Tests.Crypto;
 
 using System;
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 using Xunit.Abstractions;
 using Paseto.Cryptography;
@@ -79,7 +79,7 @@ public class Blake2bMacSimdTests
 
         //output.WriteLine($"Slow path took {slowTime} micros, Normal path took {normalTime} micros, 3rd Party path took {b2CoreTime} micros");
         output.WriteLine($"Slow path took {slowTime} micros, Normal path took {normalTime} micros");
-        slowHash.Should().BeEquivalentTo(normalHash);
+        slowHash.ShouldBeEquivalentTo(normalHash);
         //Assert.Equal(b2CoreHash, normalHash);
     }
 }
