@@ -10,7 +10,7 @@
     <Authors>David De Smet</Authors>
     <Company />
     <Description>A Paseto (Platform-Agnostic Security Tokens) implementation for .NET</Description>
-    <Copyright>Copyright © 2018-2024 David De Smet</Copyright>
+    <Copyright>Copyright © 2018-2025 David De Smet</Copyright>
     <PackageId>Paseto.Core</PackageId>
     <PackageTags>paseto paserk tokens cryptography dotnet dotnet-core netstandard</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -44,7 +44,7 @@
 
   <ItemGroup Label="Package References">
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" Version="8.0.0" />
-    <PackageReference Include="MinVer" Version="5.0.0">
+    <PackageReference Include="MinVer" Version="6.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
