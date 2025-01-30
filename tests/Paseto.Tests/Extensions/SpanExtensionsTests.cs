@@ -1,7 +1,7 @@
 ﻿namespace Paseto.Tests.Extensions;
 
 using System;
-using FluentAssertions;
+using Shouldly;
 using Paseto.Extensions;
 using Xunit;
 
@@ -25,7 +25,7 @@ public class SpanExtensionsTests
         SpanExtensions.Copy(source, sourceIndex, destination, destinationIndex, length);
 
         // Assert
-        destination.Should().BeEquivalentTo(expected);
+        destination.ShouldBeEquivalentTo(expected);
     }
 
     [Theory]

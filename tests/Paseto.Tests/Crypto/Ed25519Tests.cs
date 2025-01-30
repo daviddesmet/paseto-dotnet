@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
-using FluentAssertions;
+using Shouldly;
 using Xunit;
 
 using Paseto.Cryptography;
@@ -47,7 +47,7 @@ public class Ed25519Tests : IClassFixture<Ed25519TestFixture>
         foreach (var testCase in Ed25519TestVectors.TestCases)
         {
             var sig = Ed25519.Sign(testCase.Message, testCase.PrivateKey);
-            sig.Length.Should().Be(64);
+            sig.Length.ShouldBe(64);
             TestHelpers.AssertEqualBytes(testCase.Signature, sig);
         }
     }
@@ -58,7 +58,7 @@ public class Ed25519Tests : IClassFixture<Ed25519TestFixture>
         foreach (var testCase in Ed25519TestVectors.TestCases)
         {
             var success = Ed25519.Verify(testCase.Signature, testCase.Message, testCase.PublicKey);
-            success.Should().BeTrue();
+            success.ShouldBe(true);
         }
     }
 
@@ -68,14 +68,14 @@ public class Ed25519Tests : IClassFixture<Ed25519TestFixture>
         var message = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
         Ed25519.KeyPairFromSeed(out var pk, out var sk, new byte[32]);
         var signature = Ed25519.Sign(message, sk);
-        Ed25519.Verify(signature, message, pk).Should().BeTrue();
+        Ed25519.Verify(signature, message, pk).ShouldBe(true);
         foreach (var modifiedMessage in message.WithChangedBit())
         {
-            Ed25519.Verify(signature, modifiedMessage, pk).Should().BeFalse();
+            Ed25519.Verify(signature, modifiedMessage, pk).ShouldBe(false);
         }
         foreach (var modifiedSignature in signature.WithChangedBit())
         {
-            Ed25519.Verify(modifiedSignature, message, pk).Should().BeFalse();
+            Ed25519.Verify(modifiedSignature, message, pk).ShouldBe(false);
         }
     }
 
@@ -105,11 +105,11 @@ public class Ed25519Tests : IClassFixture<Ed25519TestFixture>
         var message = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
         Ed25519.KeyPairFromSeed(out var pk, out var sk, new byte[32]);
         var signature = Ed25519.Sign(message, sk);
-        Ed25519.Verify(signature, message, pk).Should().BeTrue();
+        Ed25519.Verify(signature, message, pk).ShouldBe(true);
         var modifiedSignature = AddLToSignature(signature);
-        Ed25519.Verify(modifiedSignature, message, pk).Should().BeTrue();
+        Ed25519.Verify(modifiedSignature, message, pk).ShouldBe(true);
         var modifiedSignature2 = AddLToSignature(modifiedSignature);
-        Ed25519.Verify(modifiedSignature2, message, pk).Should().BeFalse();
+        Ed25519.Verify(modifiedSignature2, message, pk).ShouldBe(false);
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public class Ed25519Tests : IClassFixture<Ed25519TestFixture>
         foreach (var testCase in Ed25519TestVectors.TestCases)
         {
             var success = Ed25519.Verify(testCase.Signature.Pad(), testCase.Message.Pad(), testCase.PublicKey.Pad());
-            success.Should().BeTrue();
+            success.ShouldBe(true);
         }
     }
 
@@ -128,14 +128,14 @@ public class Ed25519Tests : IClassFixture<Ed25519TestFixture>
         var message = Enumerable.Range(0, 100).Select(i => (byte)i).ToArray();
         Ed25519.KeyPairFromSeed(out var pk, out var sk, new byte[32]);
         var signature = Ed25519.Sign(message, sk);
-        Ed25519.Verify(signature.Pad(), message.Pad(), pk.Pad()).Should().BeTrue();
+        Ed25519.Verify(signature.Pad(), message.Pad(), pk.Pad()).ShouldBe(true);
         foreach (var modifiedMessage in message.WithChangedBit())
         {
-            Ed25519.Verify(signature.Pad(), modifiedMessage.Pad(), pk.Pad()).Should().BeFalse();
+            Ed25519.Verify(signature.Pad(), modifiedMessage.Pad(), pk.Pad()).ShouldBe(false);
         }
         foreach (var modifiedSignature in signature.WithChangedBit())
         {
-            Ed25519.Verify(modifiedSignature.Pad(), message.Pad(), pk.Pad()).Should().BeFalse();
+            Ed25519.Verify(modifiedSignature.Pad(), message.Pad(), pk.Pad()).ShouldBe(false);
         }
     }
 }

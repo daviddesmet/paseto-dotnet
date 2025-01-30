@@ -2,7 +2,8 @@
 
 using System.ComponentModel;
 using System.Linq;
-using FluentAssertions;
+
+using Shouldly;
 using Builder;
 using Cryptography.Key;
 using Xunit;
@@ -25,7 +26,7 @@ public sealed class PasetoValidationTest
             .WithKey(decodeKey)
             .Decode(token, validationParameters);
 
-        decoded.IsValid.Should().BeTrue();
+        decoded.IsValid.ShouldBe(true);
     }
 
     [Theory(DisplayName = "Should fail on token with invalid audience")]
@@ -44,7 +45,7 @@ public sealed class PasetoValidationTest
             .WithKey(decodeKey)
             .Decode(token, validationParameters);
 
-        decoded.IsValid.Should().BeFalse();
+        decoded.IsValid.ShouldBe(false);
     }
 
     [Theory(DisplayName = "Should succeed on token with valid issuer")]
@@ -63,7 +64,7 @@ public sealed class PasetoValidationTest
             .WithKey(decodeKey)
             .Decode(token, validationParameters);
 
-        decoded.IsValid.Should().BeTrue();
+        decoded.IsValid.ShouldBe(true);
     }
 
     [Theory(DisplayName = "Should fail on token with invalid issuer")]
@@ -82,7 +83,7 @@ public sealed class PasetoValidationTest
             .WithKey(decodeKey)
             .Decode(token, validationParameters);
 
-        decoded.IsValid.Should().BeFalse();
+        decoded.IsValid.ShouldBe(false);
     }
 
     [Theory(DisplayName = "Should succeed on token with valid subject")]
@@ -101,7 +102,7 @@ public sealed class PasetoValidationTest
             .WithKey(decodeKey)
             .Decode(token, validationParameters);
 
-        decoded.IsValid.Should().BeTrue();
+        decoded.IsValid.ShouldBe(true);
     }
 
     [Theory(DisplayName = "Should fail on token with invalid subject")]
@@ -120,7 +121,7 @@ public sealed class PasetoValidationTest
             .WithKey(decodeKey)
             .Decode(token, validationParameters);
 
-        decoded.IsValid.Should().BeFalse();
+        decoded.IsValid.ShouldBe(false);
     }
 
     private static (string token, PasetoKey decodeKey) GenerateToken(ProtocolVersion version, Purpose purpose, string claimName, string claimValue)
