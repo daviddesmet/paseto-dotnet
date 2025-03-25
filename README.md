@@ -156,6 +156,7 @@ var key = Paserk.Decode(paserk);
 ## Learn More
 
 [![License](https://img.shields.io/github/license/daviddesmet/paseto-dotnet.svg)](https://github.com/daviddesmet/paseto-dotnet/blob/master/LICENSE)
+[![libs.tech recommends](https://libs.tech/project/125129269/badge.svg)](https://libs.tech/project/125129269/paseto-dotnet)
 
 * [PASETO (Platform-Agnostic SEcurity TOkens)](https://github.com/paseto-standard/paseto-spec) is a specification and reference implementation for secure stateless tokens.
 * [PASERK (Platform-Agnostic SERialized Keys)](https://github.com/paseto-standard/paserk) is an extension to PASETO that provides key-wrapping and serialization.
