@@ -27,9 +27,6 @@ public class Sha512
 
     public void Update(ReadOnlySpan<byte> data, int offset, int count)
     {
-        if (data == default)
-            throw new ArgumentNullException(nameof(data));
-
         if (offset < 0)
             throw new ArgumentOutOfRangeException(nameof(offset));
 
@@ -44,9 +41,6 @@ public class Sha512
 
     public void Update(ReadOnlySpan<byte> data)
     {
-        if (data == default)
-            throw new ArgumentNullException(nameof(data));
-
         var count = data.Length;
         var offset = 0;
 
@@ -90,9 +84,6 @@ public class Sha512
 
     public void Finish(Span<byte> output)
     {
-        if (output == default)
-            throw new ArgumentNullException(nameof(output));
-
         if (output.Length != 64)
             throw new ArgumentException("output.Length must be 64");
 

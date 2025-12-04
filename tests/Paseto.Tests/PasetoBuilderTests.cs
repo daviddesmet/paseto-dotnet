@@ -6,10 +6,10 @@ using System.Linq;
 using System.Security.Cryptography;
 
 using Shouldly;
-using NaCl.Core.Internal;
 using Xunit;
 
 using Paseto.Builder;
+using Paseto.Internal;
 using static Paseto.Tests.TestHelper;
 
 public class PasetoBuilderTests
@@ -177,7 +177,7 @@ public class PasetoBuilderTests
     public void ShouldSucceedOnLocalEncodeWithByteArrayKeyAndOptionalFooterWhenDependenciesAreProvided(ProtocolVersion version)
     {
         var token = new PasetoBuilder().Use(version, Purpose.Local)
-                                                   .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+                                                   .WithKey(FromHexString(LocalKey), Encryption.SymmetricKey)
                                                    .AddClaim("data", "this is a secret message")
                                                    .Issuer("https://github.com/daviddesmet/paseto-dotnet")
                                                    .Subject(Guid.NewGuid().ToString())
@@ -199,7 +199,7 @@ public class PasetoBuilderTests
     public void ShouldSucceedOnLocalEncodeWithByteArrayKeyAndOptionalFooterPayloadWhenDependenciesAreProvided(ProtocolVersion version)
     {
         var token = new PasetoBuilder().Use(version, Purpose.Local)
-            .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+            .WithKey(FromHexString(LocalKey), Encryption.SymmetricKey)
             .AddClaim("data", "this is a secret message")
             .Issuer("https://github.com/daviddesmet/paseto-dotnet")
             .Subject(Guid.NewGuid().ToString())
@@ -221,7 +221,7 @@ public class PasetoBuilderTests
     public void ShouldSucceedOnLocalEncodeWithByteArrayKeyWhenDependenciesAreProvided(ProtocolVersion version)
     {
         var token = new PasetoBuilder().Use(version, Purpose.Local)
-            .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+            .WithKey(FromHexString(LocalKey), Encryption.SymmetricKey)
             .AddClaim("data", "this is a secret message")
             .Issuer("https://github.com/daviddesmet/paseto-dotnet")
             .Subject(Guid.NewGuid().ToString())
@@ -357,7 +357,7 @@ public class PasetoBuilderTests
     public void ShouldSucceedOnLocalDecodeWithByteArrayKeyAndOptionalFooterWhenDependenciesAreProvided(ProtocolVersion version, string sharedKey, string token, string footer)
     {
         var result = new PasetoBuilder().Use(version, Purpose.Local)
-            .WithKey(CryptoBytes.FromHexString(sharedKey), Encryption.SymmetricKey)
+            .WithKey(FromHexString(sharedKey), Encryption.SymmetricKey)
             .AddFooter(footer)
             .Decode(token);
 
@@ -397,7 +397,7 @@ public class PasetoBuilderTests
     public void ShouldFailOnLocalDecodeWhenTokenIsInvalid(ProtocolVersion version, string token)
     {
         var result = new PasetoBuilder().Use(version, Purpose.Local)
-            .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+            .WithKey(FromHexString(LocalKey), Encryption.SymmetricKey)
             .Decode(token);
 
         result.IsValid.ShouldBe(false);
@@ -412,7 +412,7 @@ public class PasetoBuilderTests
     public void ShouldFailOnLocalDecodeWhenTokenFooterIsInvalid(ProtocolVersion version, string token, string footer)
     {
         var result = new PasetoBuilder().Use(version, Purpose.Local)
-            .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+            .WithKey(FromHexString(LocalKey), Encryption.SymmetricKey)
             .AddFooter(footer)
             .Decode(token);
 
@@ -456,7 +456,7 @@ public class PasetoBuilderTests
     public void ShouldSucceedOnEncodeToParsekWhenIsLocalPurposeAndSymmetricKey(ProtocolVersion version)
     {
         var parsek = new PasetoBuilder().Use(version, Purpose.Local)
-            .WithKey(CryptoBytes.FromHexString(LocalKey), Encryption.SymmetricKey)
+            .WithKey(FromHexString(LocalKey), Encryption.SymmetricKey)
             .GenerateSerializedKey(PaserkType.Local);
 
         parsek.ShouldStartWith($"k{(int)version}.local");
@@ -468,7 +468,7 @@ public class PasetoBuilderTests
     public void ShouldSucceedOnEncodeToParsekWhenIsLocalPurposeAndSharedKey(ProtocolVersion version)
     {
         var parsek = new PasetoBuilder().Use(version, Purpose.Local)
-            .WithSharedKey(CryptoBytes.FromHexString(LocalKey))
+            .WithSharedKey(FromHexString(LocalKey))
             .GenerateSerializedKey(PaserkType.Local);
 
         parsek.ShouldStartWith($"k{(int)version}.local");

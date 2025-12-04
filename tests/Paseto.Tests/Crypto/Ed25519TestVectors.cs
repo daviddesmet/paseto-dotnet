@@ -5,8 +5,6 @@ using System.Collections.ObjectModel;
 using System.Diagnostics.Contracts;
 using System.Linq;
 
-using NaCl.Core.Internal;
-
 public class Ed25519TestVectors
 {
     public class TestTuple
@@ -20,7 +18,7 @@ public class Ed25519TestVectors
 
         public TestTuple(string line)
         {
-            var testCase = line.Split(':').Select(CryptoBytes.FromHexString).ToArray();
+            var testCase = line.Split(':').Select(TestHelper.FromHexString).ToArray();
             Contract.Assert(5 == testCase.Length);
             PrivateKey = testCase[0];
             Seed = PrivateKey.Take(32).ToArray();

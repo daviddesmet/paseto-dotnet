@@ -2,10 +2,10 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
-using NaCl.Core.Internal;
 using Paseto;
 using Paseto.Builder;
 using Paseto.Cryptography.Key;
+using Paseto.Tests;
 using Xunit;
 
 BenchmarkRunner.Run<Benchmarks>();
@@ -18,7 +18,7 @@ BenchmarkRunner.Run<Benchmarks>();
 public class Benchmarks
 {
     private readonly byte[] _seed = new byte[32];
-    private readonly byte[] _symmetricKey = CryptoBytes.FromHexString("707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f");
+    private readonly byte[] _symmetricKey = TestHelper.FromHexString("707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f");
     private PasetoAsymmetricKeyPair _asymmetricKeyPair = null!;
 
     private string _expectedLocalToken = null!;

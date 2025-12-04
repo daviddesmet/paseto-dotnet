@@ -1,7 +1,7 @@
 ﻿namespace Paseto.Protocol;
 
 using System.Security.Cryptography;
-using NaCl.Core.Internal;
+using Paseto.Internal;
 using static Paseto.Utils.EncodingHelper;
 
 public abstract class PasetoProtocolVersion
