@@ -5,7 +5,6 @@ using System.Linq;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
-using NaCl.Core.Internal;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Pkcs;
 using Org.BouncyCastle.Asn1.X509;
@@ -18,6 +17,41 @@ public static class TestHelper
     private static readonly Regex ECDsaPrivateKeyRegex = new(@"-----(BEGIN|END) EC PRIVATE KEY-----[\W]*", RegexOptions.Compiled);
     private static readonly Regex RsaPrivateKeyRegex = new(@"-----(BEGIN|END) (RSA|OPENSSH|ENCRYPTED) PRIVATE KEY-----[\W]*", RegexOptions.Compiled);
     private static readonly Regex RsaPublicKeyRegex = new(@"-----(BEGIN|END) PUBLIC KEY-----[\W]*", RegexOptions.Compiled);
+
+    public static byte[] FromHexString(string hexString)
+    {
+        if (hexString is null)
+            return null;
+
+        if (hexString.Length % 2 != 0)
+            throw new FormatException("The hex string is invalid because it has an odd length");
+
+        var result = new byte[hexString.Length / 2];
+        for (var i = 0; i < result.Length; i++)
+            result[i] = Convert.ToByte(hexString.Substring(i * 2, 2), 16);
+
+        return result;
+    }
+
+    // Explanation is similar to ToHexStringUpper
+    // constant 55 -> 87 and -7 -> -39 to compensate for the offset 32 between lowercase and uppercase letters
+    public static string ToHexStringLower(byte[] data)
+    {
+        if (data is null)
+            return null;
+
+        var c = new char[data.Length * 2];
+        int b;
+        for (var i = 0; i < data.Length; i++)
+        {
+            b = data[i] >> 4;
+            c[i * 2] = (char)(87 + b + (((b - 10) >> 31) & -39));
+            b = data[i] & 0xF;
+            c[i * 2 + 1] = (char)(87 + b + (((b - 10) >> 31) & -39));
+        }
+
+        return new string(c);
+    }
 
     public static byte[] ReadKey(string key)
     {
@@ -98,7 +132,7 @@ public static class TestHelper
             return rsaPublicKey.ExportRSAPublicKey();
         }
 
-        return CryptoBytes.FromHexString(key);
+        return FromHexString(key);
     }
 
     public static TheoryData<ProtocolVersion, Purpose> AllVersionsAndPurposesData()

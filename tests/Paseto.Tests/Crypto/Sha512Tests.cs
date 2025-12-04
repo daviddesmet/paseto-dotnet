@@ -126,23 +126,9 @@ public class Sha512Tests
     }
 
     [Fact]
-    public void Sha512OutputSegmentsNull()
-    {
-        var sha512 = new Sha512();
-        Assert.Throws<ArgumentNullException>(() => sha512.Finish(default));
-    }
-
-    [Fact]
     public void Sha512OutputSegmentsIncorretOutputSize()
     {
         var sha512 = new Sha512();
         Assert.Throws<ArgumentException>(() => sha512.Finish(new byte[32].Pad()));
-    }
-
-    [Fact]
-    public void Sha512UpdateNull()
-    {
-        var sha512 = new Sha512();
-        Assert.Throws<ArgumentNullException>(() => sha512.Update(default,0,0));
     }
 }

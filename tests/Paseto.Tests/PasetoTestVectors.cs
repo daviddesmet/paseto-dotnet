@@ -6,7 +6,6 @@ using System.Linq;
 using System.Net.Http;
 
 using Shouldly;
-using NaCl.Core.Internal;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
@@ -14,6 +13,7 @@ using Xunit.Categories;
 
 using Builder;
 using Cryptography;
+using Internal;
 using Vectors;
 
 using static TestHelper;
@@ -49,18 +49,18 @@ public class PasetoTestVectors
                 if (test.IsLocal)
                 {
                     builder = builder.Use(version, Purpose.Local)
-                                     .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey)
-                                     .WithNonce(CryptoBytes.FromHexString(test.Nonce));
+                                     .WithKey(FromHexString(test.Key), Encryption.SymmetricKey)
+                                     .WithNonce(FromHexString(test.Nonce));
                 }
                 else
                 {
                     if (version == "v2" || version == "v4")
                     {
                         // We assert the seed since we want them to fail in case it changes
-                        var secretKey = CryptoBytes.ToHexStringLower(Ed25519.ExpandedPrivateKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
+                        var secretKey = ToHexStringLower(Ed25519.ExpandedPrivateKeyFromSeed(FromHexString(test.SecretKeySeed)));
                         secretKey.ShouldBe(test.SecretKey);
 
-                        var publicKey = CryptoBytes.ToHexStringLower(Ed25519.PublicKeyFromSeed(CryptoBytes.FromHexString(test.SecretKeySeed)));
+                        var publicKey = ToHexStringLower(Ed25519.PublicKeyFromSeed(FromHexString(test.SecretKeySeed)));
                         publicKey.ShouldBe(test.PublicKey);
                     }
 
@@ -129,7 +129,7 @@ public class PasetoTestVectors
                 {
                     // Using Symmetric Key
                     builder = builder.Use(version, Purpose.Local)
-                                     .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey);
+                                     .WithKey(FromHexString(test.Key), Encryption.SymmetricKey);
                 }
                 else
                 {
@@ -143,7 +143,7 @@ public class PasetoTestVectors
                 if (test.IsLocal)
                 {
                     builder = builder.Use(version, Purpose.Local)
-                                     .WithKey(CryptoBytes.FromHexString(test.Key), Encryption.SymmetricKey);
+                                     .WithKey(FromHexString(test.Key), Encryption.SymmetricKey);
                 }
                 else
                 {

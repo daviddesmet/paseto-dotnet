@@ -5,11 +5,11 @@ using System.Linq;
 using System.Security.Cryptography;
 
 using NaCl.Core;
-using NaCl.Core.Internal;
 
 using Paseto.Cryptography;
 using Paseto.Cryptography.Key;
 using Paseto.Extensions;
+using Paseto.Internal;
 using static Paseto.Utils.EncodingHelper;
 
 /// <summary>

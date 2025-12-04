@@ -7,7 +7,6 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 
-using NaCl.Core.Internal;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Asn1.Nist;
 using Org.BouncyCastle.Crypto.Digests;
@@ -18,6 +17,7 @@ using Org.BouncyCastle.Security;
 
 using Paseto.Cryptography.Key;
 using Paseto.Extensions;
+using Paseto.Internal;
 using static Paseto.Utils.EncodingHelper;
 
 /// <summary>

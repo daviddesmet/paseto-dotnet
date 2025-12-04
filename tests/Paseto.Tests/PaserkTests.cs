@@ -7,14 +7,17 @@ using System.Linq;
 using System.Net.Http;
 
 using Shouldly;
-using NaCl.Core.Internal;
 using Newtonsoft.Json;
-using Paseto.Cryptography.Key;
 using Paseto.Extensions;
-using Paseto.Tests.Vectors;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Categories;
+
+using Paseto.Cryptography.Key;
+using Paseto.Tests.Vectors;
+using Paseto.Internal;
+
+using static Paseto.Tests.TestHelper;
 
 [Category("CI")]
 public class PaserkTests
@@ -169,7 +172,7 @@ public class PaserkTests
         switch (type)
         {
             case PaserkType.Local or PaserkType.Lid:
-                return new PasetoSymmetricKey(CryptoBytes.FromHexString(key), PaserkHelpers.CreateProtocolVersion(version));
+                return new PasetoSymmetricKey(FromHexString(key), PaserkHelpers.CreateProtocolVersion(version));
             case PaserkType.LocalWrap:
             case PaserkType.LocalPassword:
             case PaserkType.Seal:

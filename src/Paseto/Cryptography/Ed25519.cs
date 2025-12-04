@@ -1,8 +1,8 @@
 ﻿namespace Paseto.Cryptography;
 
 using System;
-using NaCl.Core.Internal;
-using Paseto.Cryptography.Internal.Ed25519Ref10;
+using Paseto.Internal;
+using Internal.Ed25519Ref10;
 
 public static class Ed25519
 {
@@ -14,15 +14,6 @@ public static class Ed25519
 
     public static bool Verify(ReadOnlySpan<byte> signature, ReadOnlySpan<byte> message, ReadOnlySpan<byte> publicKey)
     {
-        if (signature == default)
-            throw new ArgumentNullException(nameof(signature));
-
-        if (message == default)
-            throw new ArgumentNullException(nameof(message));
-
-        if (publicKey == default)
-            throw new ArgumentNullException(nameof(publicKey));
-
         if (signature.Length != SignatureSizeInBytes)
             throw new ArgumentException($"Signature size must be {SignatureSizeInBytes}", nameof(signature));
 
@@ -34,20 +25,11 @@ public static class Ed25519
 
     public static void Sign(Span<byte> signature, ReadOnlySpan<byte> message, ReadOnlySpan<byte> expandedPrivateKey)
     {
-        if (signature == default)
-            throw new ArgumentNullException(nameof(signature));
-
         if (signature.Length != SignatureSizeInBytes)
             throw new ArgumentException($"The signature length must be {SignatureSizeInBytes} bytes.");
 
-        if (expandedPrivateKey == default)
-            throw new ArgumentNullException(nameof(expandedPrivateKey));
-
         if (expandedPrivateKey.Length != ExpandedPrivateKeySizeInBytes)
             throw new ArgumentException($"The expanded private key length must be {ExpandedPrivateKeySizeInBytes} bytes.");
-
-        if (message == default)
-            throw new ArgumentNullException(nameof(message));
 
         Ed25519Operations.crypto_sign2(signature, message, expandedPrivateKey);
     }
@@ -75,9 +57,6 @@ public static class Ed25519
 
     public static void KeyPairFromSeed(out byte[] publicKey, out byte[] expandedPrivateKey, ReadOnlySpan<byte> privateKeySeed)
     {
-        if (privateKeySeed == null)
-            throw new ArgumentNullException(nameof(privateKeySeed));
-
         if (privateKeySeed.Length != PrivateKeySeedSizeInBytes)
             throw new ArgumentException("Seed size is invalid", nameof(privateKeySeed));
 
