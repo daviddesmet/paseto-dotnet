@@ -1,7 +1,7 @@
 # Paseto.NET, a [Paseto](https://github.com/paragonie/paseto) (Platform-Agnostic Security Tokens) implementation for .NET
 
 [![CI](https://github.com/daviddesmet/paseto-dotnet/actions/workflows/ci.yml/badge.svg)](https://github.com/daviddesmet/paseto-dotnet/actions/workflows/ci.yml)
-[![Maintenance](https://img.shields.io/maintenance/yes/2025.svg)](https://github.com/daviddesmet/paseto-dotnet)
+[![Maintenance](https://img.shields.io/maintenance/yes/2026.svg)](https://github.com/daviddesmet/paseto-dotnet)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/daviddesmet/paseto-dotnet/issues)
 
 ## Features
@@ -152,6 +152,16 @@ var key = Paserk.Decode(paserk);
 * Uses Blake2b cryptographic hash function from [Konscious.Security.Cryptography](https://github.com/kmaragon/Konscious.Security.Cryptography) repository.
 * Uses AES-256-CTR, ECDSA over P-384 algorithms from [Bouncy Castle](https://github.com/novotnyllc/bc-csharp) cryptography library.
 * Uses XChaCha20-Poly1305 AEAD from [NaCl.Core](https://github.com/daviddesmet/NaCl.Core) repository.
+
+## Dependency Lock Files
+
+The repository uses [NuGet lock files](https://learn.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#locking-dependencies) (`packages.lock.json`, committed per project) to pin the full dependency graph, including transitive packages. CI restores with locked mode enabled, so a build fails if the resolved packages differ from the lock files — protecting against floating transitive versions and dependency-confusion attacks.
+
+Upgrading packages therefore changes slightly:
+
+- Edit the package version in the `.csproj` (or let Dependabot do it), then run `dotnet restore --force-evaluate` from the repository root and commit the updated `packages.lock.json` files together with the `.csproj` change.
+- Dependabot PRs update the lock files automatically.
+- A plain `dotnet restore` locally never floats versions; it follows the lock files. If it reports `NU1004`, the lock files are out of date — run `dotnet restore --force-evaluate`.
 
 ## Learn More
 
