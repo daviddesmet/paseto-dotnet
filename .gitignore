@@ -310,3 +310,5 @@ ASALocalRun/
 
 # .NET Tools
 tools/
+
+benchmarks/Paseto.Benchmark/BenchmarkDotNet.Artifacts/results
