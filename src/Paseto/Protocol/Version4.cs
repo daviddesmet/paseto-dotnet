@@ -151,23 +151,34 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var ak = new Blake2bMac(pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES * 8).ComputeHash(CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n));
 
-        var header = $"{Version}.{Purpose.Local.ToDescription()}.";
-        var m = GetBytes(payload);
-        var ciphertext = new byte[m.Length];
+        try
+        {
+            var header = $"{Version}.{Purpose.Local.ToDescription()}.";
+            var m = GetBytes(payload);
+            var ciphertext = new byte[m.Length];
 
-        // Encrypt
-        var algo = new XChaCha20(ek, 0);
-        algo.Encrypt(m, n2, ciphertext);
+            // Encrypt
+            using var algo = new XChaCha20(ek, 0);
+            algo.Encrypt(m, n2, ciphertext);
 
-        var pack = PreAuthEncode(GetBytes(header), n, ciphertext, GetBytes(footer), GetBytes(assertion));
+            var pack = PreAuthEncode(GetBytes(header), n, ciphertext, GetBytes(footer), GetBytes(assertion));
 
-        // Calculate MAC
-        var mac = new Blake2bMac(ak, NONCE_SIZE_IN_BYTES * 8).ComputeHash(pack);
+            // Calculate MAC
+            var mac = new Blake2bMac(ak, NONCE_SIZE_IN_BYTES * 8).ComputeHash(pack);
 
-        if (!string.IsNullOrEmpty(footer))
-            footer = $".{ToBase64Url(footer)}";
+            if (!string.IsNullOrEmpty(footer))
+                footer = $".{ToBase64Url(footer)}";
 
-        return $"{header}{ToBase64Url(n.Concat(ciphertext).Concat(mac).ToArray())}{footer}";
+            return $"{header}{ToBase64Url(n.Concat(ciphertext).Concat(mac).ToArray())}{footer}";
+        }
+        finally
+        {
+            // Zeroize the derived secrets
+            CryptoBytes.Wipe(tmp);
+            CryptoBytes.Wipe(ek);
+            CryptoBytes.Wipe(n2);
+            CryptoBytes.Wipe(ak);
+        }
     }
 
     /// <summary>
@@ -269,27 +280,41 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
 
             var ak = new Blake2bMac(pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES * 8).ComputeHash(CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n.ToArray()));
 
-            var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), f, GetBytes(assertion));
+            try
+            {
+                var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), f, GetBytes(assertion));
 
-            // Calculate MAC
-            var mac = new Blake2bMac(ak, NONCE_SIZE_IN_BYTES * 8);
-            var t2 = mac.ComputeHash(pack);
+                // Calculate MAC
+                var mac = new Blake2bMac(ak, NONCE_SIZE_IN_BYTES * 8);
+                var t2 = mac.ComputeHash(pack);
 
-            if (!CryptoBytes.ConstantTimeEquals(t, t2))
-                throw new PasetoInvalidException("Hash is not valid");
+                if (!CryptoBytes.ConstantTimeEquals(t, t2))
+                    throw new PasetoInvalidException("Hash is not valid");
 
-            // Decrypt
-            var plaintext = new byte[c.Length];
+                // Decrypt
+                var plaintext = new byte[c.Length];
 
-            // Encrypt
-            var algo = new XChaCha20(ek, 0);
-            algo.Encrypt(c, n2, plaintext);
+                using var algo = new XChaCha20(ek, 0);
+                algo.Encrypt(c, n2, plaintext);
 
-            return GetString(plaintext);
+                return GetString(plaintext);
+            }
+            finally
+            {
+                // Zeroize the derived secrets
+                CryptoBytes.Wipe(tmp);
+                CryptoBytes.Wipe(ek);
+                CryptoBytes.Wipe(n2);
+                CryptoBytes.Wipe(ak);
+            }
+        }
+        catch (PasetoInvalidException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            throw new PasetoInvalidException(ex.Message, ex);
+            throw new PasetoInvalidException("The token could not be decrypted.", ex);
         }
     }
 

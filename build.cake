@@ -1,4 +1,4 @@
-#tool nuget:?package=ReportGenerator&version=5.3.0
+#tool nuget:?package=ReportGenerator&version=5.5.10
 
 var target = Argument("Target", "Default");
 var configuration =

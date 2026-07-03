@@ -84,7 +84,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The symmetric key.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
-    /// <param name="assertion">The optional implicit assertion.</param>
+    /// <param name="assertion">The optional implicit assertion. NOT SUPPORTED by this protocol version: the value is ignored (implicit assertions require v3 or v4).</param>
     /// <returns>System.String.</returns>
     /// <exception cref="PasetoNotSupportedException"></exception>
     public virtual string Encrypt(PasetoSymmetricKey pasetoKey, string payload, string footer = "", string assertion = "")
@@ -163,21 +163,30 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_DOMAIN_SEPARATION), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
         var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_DOMAIN_SEPARATION), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
 
-        // Encrypt using AES CTR (counter) mode cipher
-        var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
-        cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce[SYM_NONCE_SPLIT_SIZE_IN_BYTES..]));
-        var c = cipher.DoFinal(GetBytes(payload));
+        try
+        {
+            // Encrypt using AES CTR (counter) mode cipher
+            var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
+            cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), nonce[SYM_NONCE_SPLIT_SIZE_IN_BYTES..]));
+            var c = cipher.DoFinal(GetBytes(payload));
 
-        var pack = PreAuthEncode(GetBytes(header), nonce, c, f);
+            var pack = PreAuthEncode(GetBytes(header), nonce, c, f);
 
-        // Calculate MAC
-        using var hmac = new HMACSHA384(ak);
-        var t = hmac.ComputeHash(pack);
+            // Calculate MAC
+            using var hmac = new HMACSHA384(ak);
+            var t = hmac.ComputeHash(pack);
 
-        if (!string.IsNullOrEmpty(footer))
-            footer = $".{ToBase64Url(footer)}";
+            if (!string.IsNullOrEmpty(footer))
+                footer = $".{ToBase64Url(footer)}";
 
-        return $"{header}{ToBase64Url(CryptoBytes.Combine(nonce, c, t))}{footer}";
+            return $"{header}{ToBase64Url(CryptoBytes.Combine(nonce, c, t))}{footer}";
+        }
+        finally
+        {
+            // Zeroize the derived secrets
+            CryptoBytes.Wipe(ek);
+            CryptoBytes.Wipe(ak);
+        }
     }
 
     /// <summary>
@@ -186,7 +195,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The symmetric key.</param>
     /// <param name="token">The token.</param>
     /// <param name="footer">The optional footer.</param>
-    /// <param name="assertion">The optional implicit assertion.</param>
+    /// <param name="assertion">The optional implicit assertion. NOT SUPPORTED by this protocol version: the value is ignored (implicit assertions require v3 or v4).</param>
     /// <returns>System.String.</returns>
     /// <exception cref="PasetoNotSupportedException"></exception>
     public virtual string Decrypt(PasetoSymmetricKey pasetoKey, string token, string footer = "", string assertion = "")
@@ -272,25 +281,38 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
             var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_DOMAIN_SEPARATION), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
             var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_DOMAIN_SEPARATION), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
 
-            var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), f);
+            try
+            {
+                var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), f);
 
-            // Recalculate MAC
-            using var hmac = new HMACSHA384(ak);
-            var t2 = hmac.ComputeHash(pack);
+                // Recalculate MAC
+                using var hmac = new HMACSHA384(ak);
+                var t2 = hmac.ComputeHash(pack);
 
-            if (!CryptoBytes.ConstantTimeEquals(t, t2))
-                throw new PasetoInvalidException("Hash is not valid");
+                if (!CryptoBytes.ConstantTimeEquals(t, t2))
+                    throw new PasetoInvalidException("Hash is not valid");
 
-            // Decrypt
-            var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
-            cipher.Init(false, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), n[SYM_NONCE_SPLIT_SIZE_IN_BYTES..].ToArray()));
-            var plaintext = cipher.DoFinal(c.ToArray());
+                // Decrypt
+                var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
+                cipher.Init(false, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), n[SYM_NONCE_SPLIT_SIZE_IN_BYTES..].ToArray()));
+                var plaintext = cipher.DoFinal(c.ToArray());
 
-            return GetString(plaintext);
+                return GetString(plaintext);
+            }
+            finally
+            {
+                // Zeroize the derived secrets
+                CryptoBytes.Wipe(ek);
+                CryptoBytes.Wipe(ak);
+            }
+        }
+        catch (PasetoInvalidException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            throw new PasetoInvalidException(ex.Message, ex);
+            throw new PasetoInvalidException("The token could not be decrypted.", ex);
         }
     }
 
@@ -300,7 +322,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The asymmetric secret key.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
-    /// <param name="assertion">The optional implicit assertion.</param>
+    /// <param name="assertion">The optional implicit assertion. NOT SUPPORTED by this protocol version: the value is ignored (implicit assertions require v3 or v4).</param>
     /// <returns>System.String.</returns>
     /// <exception cref="System.ArgumentException">Secret Key is missing</exception>
     /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
@@ -401,7 +423,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The asymmetric public key.</param>
     /// <param name="token">The token.</param>
     /// <param name="footer">The optional footer.</param>
-    /// <param name="assertion">The optional implicit assertion.</param>
+    /// <param name="assertion">The optional implicit assertion. NOT SUPPORTED by this protocol version: the value is ignored (implicit assertions require v3 or v4).</param>
     /// <returns>a <see cref="PasetoVerifyResult"/> that represents a PASETO token verify operation.</returns>
     /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>

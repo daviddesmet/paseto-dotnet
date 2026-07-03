@@ -181,32 +181,43 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n));
 
-        // Initialize AES CTR (counter) mode cipher
-        var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
+        try
+        {
+            // Initialize AES CTR (counter) mode cipher
+            var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
 
-        // Set cipher parameters to use the encryption key we defined above for encryption
-        // Since we are encrypting using the CTR mode / algorithm, the cipher is operating as a stream cipher.
-        // For perfect secrecy with a stream cipher, we should be generating a stream of pseudorandom characters called a keystream,
-        // then XOR'ing that with the plaintext. Instead, for convenience we are just XOR'ing the first [blocksize] bytes of null values.
-        // While convenient, as we only need a single key for two way encryption/decryption, this method is vulnerable to a simple known-plaintext attack
-        // As such, it should not be relied upon for true secrecy, only for security through obscurity.
-        cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), n2)); // new byte[16]
+            // Set cipher parameters to use the encryption key we defined above for encryption
+            // Since we are encrypting using the CTR mode / algorithm, the cipher is operating as a stream cipher.
+            // For perfect secrecy with a stream cipher, we should be generating a stream of pseudorandom characters called a keystream,
+            // then XOR'ing that with the plaintext. Instead, for convenience we are just XOR'ing the first [blocksize] bytes of null values.
+            // While convenient, as we only need a single key for two way encryption/decryption, this method is vulnerable to a simple known-plaintext attack
+            // As such, it should not be relied upon for true secrecy, only for security through obscurity.
+            cipher.Init(true, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), n2)); // new byte[16]
 
-        // As this is a stream cipher, you can process bytes chunk by chunk until complete, then close with DoFinal.
-        // In our case we don't need a stream, so we simply call DoFinal() to encrypt the entire input at once.
-        var c = cipher.DoFinal(GetBytes(payload));
+            // As this is a stream cipher, you can process bytes chunk by chunk until complete, then close with DoFinal.
+            // In our case we don't need a stream, so we simply call DoFinal() to encrypt the entire input at once.
+            var c = cipher.DoFinal(GetBytes(payload));
 
-        var header = $"{Version}.{Purpose.Local.ToDescription()}.";
-        var pack = PreAuthEncode(GetBytes(header), n, c, GetBytes(footer), GetBytes(assertion));
+            var header = $"{Version}.{Purpose.Local.ToDescription()}.";
+            var pack = PreAuthEncode(GetBytes(header), n, c, GetBytes(footer), GetBytes(assertion));
 
-        // Calculate MAC
-        using var hmac = new HMACSHA384(ak);
-        var t = hmac.ComputeHash(pack);
+            // Calculate MAC
+            using var hmac = new HMACSHA384(ak);
+            var t = hmac.ComputeHash(pack);
 
-        if (!string.IsNullOrEmpty(footer))
-            footer = $".{ToBase64Url(footer)}";
+            if (!string.IsNullOrEmpty(footer))
+                footer = $".{ToBase64Url(footer)}";
 
-        return $"{header}{ToBase64Url(CryptoBytes.Combine(n, c, t))}{footer}";
+            return $"{header}{ToBase64Url(CryptoBytes.Combine(n, c, t))}{footer}";
+        }
+        finally
+        {
+            // Zeroize the derived secrets
+            CryptoBytes.Wipe(tmp);
+            CryptoBytes.Wipe(ek);
+            CryptoBytes.Wipe(n2);
+            CryptoBytes.Wipe(ak);
+        }
     }
 
     /// <summary>
@@ -311,25 +322,40 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
 
             var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n.ToArray()));
 
-            var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), f, GetBytes(assertion));
+            try
+            {
+                var pack = PreAuthEncode(GetBytes(header), n.ToArray(), c.ToArray(), f, GetBytes(assertion));
 
-            // Recalculate MAC
-            using var hmac = new HMACSHA384(ak);
-            var t2 = hmac.ComputeHash(pack);
+                // Recalculate MAC
+                using var hmac = new HMACSHA384(ak);
+                var t2 = hmac.ComputeHash(pack);
 
-            if (!CryptoBytes.ConstantTimeEquals(t, t2))
-                throw new PasetoInvalidException("Hash is not valid");
+                if (!CryptoBytes.ConstantTimeEquals(t, t2))
+                    throw new PasetoInvalidException("Hash is not valid");
 
-            // Decrypt
-            var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
-            cipher.Init(false, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), n2));
-            var plaintext = cipher.DoFinal(c.ToArray());
+                // Decrypt
+                var cipher = CipherUtilities.GetCipher("AES/CTR/NoPadding");
+                cipher.Init(false, new ParametersWithIV(ParameterUtilities.CreateKeyParameter("AES", ek), n2));
+                var plaintext = cipher.DoFinal(c.ToArray());
 
-            return GetString(plaintext);
+                return GetString(plaintext);
+            }
+            finally
+            {
+                // Zeroize the derived secrets
+                CryptoBytes.Wipe(tmp);
+                CryptoBytes.Wipe(ek);
+                CryptoBytes.Wipe(n2);
+                CryptoBytes.Wipe(ak);
+            }
+        }
+        catch (PasetoInvalidException)
+        {
+            throw;
         }
         catch (Exception ex)
         {
-            throw new PasetoInvalidException(ex.Message, ex);
+            throw new PasetoInvalidException("The token could not be decrypted.", ex);
         }
     }
 
@@ -564,7 +590,7 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
             throw new ArgumentException($"The key length must be {PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES} bytes for compressed public keys");
 
         if (mark == ECDSA_POINT_COMPRESSION_POINTS[2] && pasetoKey.Key.Length != PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES)
-            throw new ArgumentException($"The key length must be {PUBLIC_KEY_COMPRESSED_SIZE_IN_BYTES} bytes for uncompressed public keys");
+            throw new ArgumentException($"The key length must be {PUBLIC_KEY_UNCOMPRESSED_SIZE_IN_BYTES} bytes for uncompressed public keys");
 
         var header = $"{Version}.{Purpose.Public.ToDescription()}.";
 

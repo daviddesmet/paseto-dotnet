@@ -22,6 +22,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
     internal const int KEY_SIZE_IN_INTS = 8;
     internal const int KEY_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 4; // 32
     internal const int NONCE_SIZE_IN_BYTES = KEY_SIZE_IN_INTS * 3; // 24 crypto_aead_xchacha20poly1305_ietf_NPUBBYTES
+    internal const int TAG_SIZE_IN_BYTES = 16; // crypto_aead_xchacha20poly1305_ietf_ABYTES
 
     internal const string VERSION = "v2";
 
@@ -78,7 +79,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The symmetric key.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
-    /// <param name="assertion">The optional implicit assertion.</param>
+    /// <param name="assertion">The optional implicit assertion. NOT SUPPORTED by this protocol version: the value is ignored (implicit assertions require v3 or v4).</param>
     /// <returns>System.String.</returns>
     /// <exception cref="System.ArgumentException">Shared Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
@@ -138,10 +139,10 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
         /*
          * NaCl.Core
          */
-        var algo = new XChaCha20Poly1305(pasetoKey.Key);
+        using var algo = new XChaCha20Poly1305(pasetoKey.Key);
 
         var ciphertext = new byte[m.Length];
-        var tag = new byte[16];
+        var tag = new byte[TAG_SIZE_IN_BYTES];
 
         algo.Encrypt(nonce, m, ciphertext, tag, pack);
         var c = CryptoBytes.Combine(ciphertext, tag);
@@ -174,7 +175,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The symmetric key.</param>
     /// <param name="token">The token.</param>
     /// <param name="footer">The optional footer.</param>
-    /// <param name="assertion">The optional implicit assertion.</param>
+    /// <param name="assertion">The optional implicit assertion. NOT SUPPORTED by this protocol version: the value is ignored (implicit assertions require v3 or v4).</param>
     /// <returns>System.String.</returns>
     /// <exception cref="System.ArgumentException">Shared Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
@@ -224,48 +225,56 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var parts = token.Split('.');
         var f = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
+        VerifyFooter(f, footer);
 
         var bytes = FromBase64Url(parts[2]).AsSpan();
 
-        if (bytes.Length < NONCE_SIZE_IN_BYTES)
+        if (bytes.Length < NONCE_SIZE_IN_BYTES + TAG_SIZE_IN_BYTES)
             throw new PasetoInvalidException("Payload is not valid");
 
-        // Decode the payload
-        var nonce = bytes[..NONCE_SIZE_IN_BYTES];
-        var payload = bytes[NONCE_SIZE_IN_BYTES..];
+        try
+        {
+            // Decode the payload
+            var nonce = bytes[..NONCE_SIZE_IN_BYTES];
+            var payload = bytes[NONCE_SIZE_IN_BYTES..];
 
-        var pack = PreAuthEncode(GetBytes(header), nonce.ToArray(), f);
+            var pack = PreAuthEncode(GetBytes(header), nonce.ToArray(), f);
 
-        // Decrypt
+            // Decrypt
 
-        /*
-         * NaCl.Core
-         */
-        var algo = new XChaCha20Poly1305(pasetoKey.Key);
+            /*
+             * NaCl.Core
+             */
+            using var algo = new XChaCha20Poly1305(pasetoKey.Key);
 
-        var len = payload.Length - 16;
-        var plainText = new byte[len];
-        var tag = payload[len..];
+            var len = payload.Length - TAG_SIZE_IN_BYTES;
+            var plainText = new byte[len];
+            var tag = payload[len..];
 
-        algo.Decrypt(nonce, payload[..len], tag, plainText, pack);
+            algo.Decrypt(nonce, payload[..len], tag, plainText, pack);
 
-        /*
-         * Sodium
-         * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
-         *
-        return GetString(SecretAead.Decrypt(payload, nonce, key, associatedData));
-        */
+            /*
+             * Sodium
+             * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
+             *
+            return GetString(SecretAead.Decrypt(payload, nonce, key, associatedData));
+            */
 
-        /*
-         * NSec
-         * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
-         *
-        var algo = new XChaCha20Poly1305();
-        using (var k = Key.Import(algo, key, KeyBlobFormat.RawSymmetricKey))
-            return GetString(algo.Decrypt(k, new Nonce(nonce, 0), aad, payload));
-        */
+            /*
+             * NSec
+             * Note: Something around the below lines, just XChaCha20Poly1305 is not supported atm.
+             *
+            var algo = new XChaCha20Poly1305();
+            using (var k = Key.Import(algo, key, KeyBlobFormat.RawSymmetricKey))
+                return GetString(algo.Decrypt(k, new Nonce(nonce, 0), aad, payload));
+            */
 
-        return GetString(plainText);
+            return GetString(plainText);
+        }
+        catch (Exception ex) when (ex is CryptographicException or FormatException or ArgumentException)
+        {
+            throw new PasetoInvalidException("The token could not be decrypted.", ex);
+        }
     }
 
     /// <summary>
@@ -274,7 +283,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The asymmetric secret key.</param>
     /// <param name="payload">The payload.</param>
     /// <param name="footer">The optional footer.</param>
-    /// <param name="assertion">The optional implicit assertion.</param>
+    /// <param name="assertion">The optional implicit assertion. NOT SUPPORTED by this protocol version: the value is ignored (implicit assertions require v3 or v4).</param>
     /// <returns>System.String.</returns>
     /// <exception cref="System.ArgumentException">Secret Key is missing</exception>
     /// <exception cref="System.ArgumentNullException">payload or pasetoKey</exception>
@@ -331,7 +340,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <param name="pasetoKey">The asymmetric public key.</param>
     /// <param name="token">The token.</param>
     /// <param name="footer">The optional footer.</param>
-    /// <param name="assertion">The optional implicit assertion.</param>
+    /// <param name="assertion">The optional implicit assertion. NOT SUPPORTED by this protocol version: the value is ignored (implicit assertions require v3 or v4).</param>
     /// <returns>a <see cref="PasetoVerifyResult"/> that represents a PASETO token verify operation.</returns>
     /// <exception cref="System.ArgumentException">Public Key is missing or invalid</exception>
     /// <exception cref="System.ArgumentNullException">token or pasetoKey</exception>
@@ -383,8 +392,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
 
         var parts = token.Split('.');
         var f = FromBase64Url(parts.Length > 3 ? parts[3] : string.Empty);
-
-        var what = GetString(f);
+        VerifyFooter(f, footer);
 
         var body = FromBase64Url(parts[2]);
 

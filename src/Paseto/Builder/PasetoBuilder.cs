@@ -282,6 +282,10 @@ public sealed class PasetoBuilder
     /// <summary>
     /// Adds a raw implicit assertion to the Paseto.
     /// </summary>
+    /// <remarks>
+    /// Implicit assertions are only supported by protocol versions v3 and v4.
+    /// For v1 and v2 tokens the assertion is IGNORED (the PASETO spec provides no way to bind it) — do not rely on it for those versions.
+    /// </remarks>
     /// <param name="assertion">The raw implicit assertion.</param>
     /// <returns>PasetoBuilder&lt;TProtocol&gt;.</returns>
     public PasetoBuilder AddImplicitAssertion(string assertion)
@@ -293,6 +297,10 @@ public sealed class PasetoBuilder
     /// <summary>
     /// Adds a implicit assertion payload to the Paseto.
     /// </summary>
+    /// <remarks>
+    /// Implicit assertions are only supported by protocol versions v3 and v4.
+    /// For v1 and v2 tokens the assertion is IGNORED (the PASETO spec provides no way to bind it) — do not rely on it for those versions.
+    /// </remarks>
     /// <param name="assertion">The implicit assertion payload.</param>
     /// <returns>PasetoBuilder&lt;TProtocol&gt;.</returns>
     public PasetoBuilder AddImplicitAssertion(PasetoPayload assertion)
