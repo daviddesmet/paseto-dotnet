@@ -175,7 +175,7 @@ jobs:
       id: nuget-login
       uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
       with:
-        user: daviddesmet
+        user: idaviddesmet # nuget.org username of the trust policy creator (not the GitHub username)
     - name: 'NuGet Push'
       run: |
         Get-ChildItem . -Filter *.nupkg |
