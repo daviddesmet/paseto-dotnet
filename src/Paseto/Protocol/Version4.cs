@@ -158,7 +158,7 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
             var ciphertext = new byte[m.Length];
 
             // Encrypt
-            var algo = new XChaCha20(ek, 0);
+            using var algo = new XChaCha20(ek, 0);
             algo.Encrypt(m, n2, ciphertext);
 
             var pack = PreAuthEncode(GetBytes(header), n, ciphertext, GetBytes(footer), GetBytes(assertion));
@@ -294,7 +294,7 @@ public class Version4 : PasetoProtocolVersion, IPasetoProtocolVersion
                 // Decrypt
                 var plaintext = new byte[c.Length];
 
-                var algo = new XChaCha20(ek, 0);
+                using var algo = new XChaCha20(ek, 0);
                 algo.Encrypt(c, n2, plaintext);
 
                 return GetString(plaintext);

@@ -139,7 +139,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
         /*
          * NaCl.Core
          */
-        var algo = new XChaCha20Poly1305(pasetoKey.Key);
+        using var algo = new XChaCha20Poly1305(pasetoKey.Key);
 
         var ciphertext = new byte[m.Length];
         var tag = new byte[TAG_SIZE_IN_BYTES];
@@ -245,7 +245,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
             /*
              * NaCl.Core
              */
-            var algo = new XChaCha20Poly1305(pasetoKey.Key);
+            using var algo = new XChaCha20Poly1305(pasetoKey.Key);
 
             var len = payload.Length - TAG_SIZE_IN_BYTES;
             var plainText = new byte[len];
@@ -271,11 +271,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
 
             return GetString(plainText);
         }
-        catch (PasetoInvalidException)
-        {
-            throw;
-        }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is CryptographicException or FormatException or ArgumentException)
         {
             throw new PasetoInvalidException("The token could not be decrypted.", ex);
         }
