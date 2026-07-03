@@ -19,6 +19,7 @@ on:
     branches:
     - master
     paths:
+     - '.github/**'
      - 'src/**'
      - build.cake
      - CodeCoverage.runsettings
@@ -34,6 +35,8 @@ permissions:
   contents: read
 
 env:
+  # Enforce locked-mode NuGet restore (RestoreLockedMode in the csproj files keys off this)
+  ContinuousIntegrationBuild: true
   # Disable the .NET logo in the console output.
   DOTNET_NOLOGO: true
   # Set the DOTNET_SKIP_FIRST_TIME_EXPERIENCE environment variable to stop wasting time caching packages
@@ -110,7 +113,7 @@ jobs:
       with:
         name: 'ubuntu-latest'
     - name: 'Install ReportGenerator'
-      run: dotnet tool install -g dotnet-reportgenerator-globaltool
+      run: dotnet tool install -g dotnet-reportgenerator-globaltool --version 5.5.10
     - name: 'Generate Coverage Report'
       run: reportgenerator -reports:./TestResults/**/coverage.cobertura.xml -targetdir:${{env.BUILD_ARTIFACT_PATH}}/TestResults/Coverage/Reports "-reporttypes:HtmlInline;HTMLChart;Cobertura"
     - name: 'Upload Coverage'
@@ -134,17 +137,6 @@ jobs:
       uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
     - name: 'Run Benchmarks'
       run: cd benchmarks/Paseto.Benchmark && dotnet run -c Release --exporters json --filter '*'
-    - name: 'Store Benchmark Result'
-      uses: rhysd/github-action-benchmark@52576c92bccf6ac60c8223ec7eb2565637cae9ba # v1.22.1
-      with:
-        name: Benchmark.Net Benchmark
-        tool: 'benchmarkdotnet'
-        output-file-path: benchmarks/Paseto.Benchmark/BenchmarkDotNet.Artifacts/results/Benchmarks-report-full-compressed.json
-        auto-push: false
-      if: ${{ false }} # always skip for now
-    - name: 'Push Benchmark Result'
-      run: git push 'https://daviddesmet:${{ secrets.GITHUB_TOKEN }}@github.com/daviddesmet/paseto-dotnet.git' gh-pages:gh-pages
-      if: ${{ false }} # always skip for now
 
   push-to-github-packages:
     name: 'Push GitHub Packages'

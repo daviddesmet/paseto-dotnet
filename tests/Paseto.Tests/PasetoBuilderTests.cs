@@ -567,6 +567,63 @@ public class PasetoBuilderTests
         decoded.IsValid.ShouldBe(true);
     }
 
+    [Theory(DisplayName = "Should fail on Local Decode when the expected footer does not match")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldFailOnLocalDecodeWhenExpectedFooterDoesNotMatch(ProtocolVersion version)
+    {
+        var token = new PasetoBuilder().Use(version, Purpose.Local)
+                                       .WithKey(FromHexString(LocalKey), Encryption.SymmetricKey)
+                                       .AddClaim("data", "this is a secret message")
+                                       .AddFooter("some footer")
+                                       .Encode();
+
+        var decoded = new PasetoBuilder().Use(version, Purpose.Local)
+                                         .WithKey(FromHexString(LocalKey), Encryption.SymmetricKey)
+                                         .AddFooter("a different footer")
+                                         .Decode(token);
+
+        decoded.IsValid.ShouldBe(false);
+        decoded.Exception.ShouldBeOfType<PasetoInvalidException>();
+    }
+
+    [Theory(DisplayName = "Should fail on Local Decode with PasetoInvalidException when the payload is truncated")]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V4)]
+    public void ShouldFailOnLocalDecodeWhenPayloadIsTruncated(ProtocolVersion version)
+    {
+        var token = new PasetoBuilder().Use(version, Purpose.Local)
+                                       .WithKey(FromHexString(LocalKey), Encryption.SymmetricKey)
+                                       .AddClaim("data", "this is a secret message")
+                                       .Encode();
+
+        // Truncate the payload segment so it is shorter than nonce + tag
+        var parts = token.Split('.');
+        var truncated = $"{parts[0]}.{parts[1]}.{parts[2][..8]}";
+
+        var decoded = new PasetoBuilder().Use(version, Purpose.Local)
+                                         .WithKey(FromHexString(LocalKey), Encryption.SymmetricKey)
+                                         .Decode(truncated);
+
+        decoded.IsValid.ShouldBe(false);
+        decoded.Exception.ShouldBeOfType<PasetoInvalidException>();
+    }
+
+    [Theory(DisplayName = "Should reject base64url input containing spec-invalid characters")]
+    [InlineData("abc+def")]
+    [InlineData("abc/def")]
+    [InlineData("abc=def")]
+    public void ShouldRejectNonCanonicalBase64UrlInput(string input)
+    {
+        Action act = () => new Utils.Base64UrlEncoder().Decode(input);
+
+        act.ShouldThrow<FormatException>();
+    }
+
     public static TheoryData<ProtocolVersion, byte[]> VersionsAndInvalidKeyData()
     {
         var bytes = new List<byte[]>

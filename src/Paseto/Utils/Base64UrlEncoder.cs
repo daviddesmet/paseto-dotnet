@@ -18,6 +18,7 @@ public class Base64UrlEncoder : IBase64UrlEncoder
     private const char UrlChar63 = '_';
 
     private static readonly char[] OnePads = { OnePadChar };
+    private static readonly char[] InvalidUrlChars = { Char62, Char63, OnePadChar };
 
     /// <summary>
     /// The following functions perform base64url encoding which differs from regular base64 encoding as follows
@@ -54,6 +55,11 @@ public class Base64UrlEncoder : IBase64UrlEncoder
     /// <returns>UTF8 bytes.</returns>
     public byte[] Decode(string input)
     {
+        // Reject characters that are not part of the base64url alphabet ('+', '/' and the '=' pad),
+        // otherwise multiple encodings could map to the same bytes (encoding malleability).
+        if (input.IndexOfAny(InvalidUrlChars) != -1)
+            throw new FormatException("The input is not a valid base64url encoded string.");
+
         switch (input.Length % 4)
         {
             case 2:

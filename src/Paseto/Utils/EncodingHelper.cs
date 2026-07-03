@@ -55,7 +55,7 @@ internal static class EncodingHelper
     /// </summary>
     /// <param name="pieces">The pieces.</param>
     /// <returns>System.Byte[].</returns>
-    internal static byte[] PreAuthEncode(IReadOnlyList<byte[]> pieces) => BitConverter.GetBytes((long)pieces.Count).Concat(pieces.SelectMany(piece => BitConverter.GetBytes((long)piece.Length).Concat(piece))).ToArray();
+    internal static byte[] PreAuthEncode(IReadOnlyList<byte[]> pieces) => PreAuthEncode(pieces as byte[][] ?? pieces.ToArray());
 
     /// <summary>
     /// Pre-Authentication Padding.
@@ -92,37 +92,11 @@ internal static class EncodingHelper
     /// </summary>
     /// <param name="n">The input.</param>
     /// <returns>System.Byte[].</returns>
-    private static byte[] LE64(int n)
+    private static byte[] LE64(long n)
     {
-        var up = ~~(n / 0xffffffff);
-        var dn = (n % 0xffffffff) - up;
-
-        Span<byte> buf = stackalloc byte[8];
-        BinaryPrimitives.WriteUInt32LittleEndian(buf[4..], (uint)up);
-        BinaryPrimitives.WriteUInt32LittleEndian(buf, (uint)dn);
-
-        return buf.ToArray();
-    }
-
-    /// <summary>
-    /// Encodes a 64-bit unsigned integer into a little-endian binary string.
-    /// The most significant bit MUST be cleared for interoperability with programming languages that do not have unsigned integer support.
-    /// </summary>
-    /// <param name="input">The input.</param>
-    /// <returns>System.Byte[].</returns>
-    private static byte[] LE64Alt(int input)
-    {
-        var result = new byte[0];
-        for (var i = 0; i < 8; i++)
-        {
-            //if (i == 7)
-            //    input &= 127; // Clear the MSB for interoperability
-
-            result = result.Concat(new[] { (byte)(input & 255) }).ToArray();
-            input = input >> 8;
-        }
-
-        return result;
+        var buf = new byte[8];
+        BinaryPrimitives.WriteInt64LittleEndian(buf, n & long.MaxValue); // Clear the MSB for interoperability
+        return buf;
     }
 
     #endregion

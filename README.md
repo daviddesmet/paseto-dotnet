@@ -51,6 +51,9 @@ Install-Package Paseto.Core
 
 The library exposes a Fluent API with several method overloads found in `Use()`, `WithKey()`, `AddClaim()`, `AddFooter()` and so on to provide the flexibility needed for encoding and decoding PASETO tokens and also for generating the required symmetric or asymmetric key pairs. However, you can use the Protocols and Handlers directly if you like.
 
+> [!NOTE]
+> Implicit assertions (`AddImplicitAssertion()`) are only supported by protocol versions **v3** and **v4**. For v1 and v2 tokens the assertion is ignored, as the PASETO spec provides no way to bind it — do not rely on it for those versions.
+
 Below are a couple of examples for the most common use cases:
 
 #### Generating a crypto random Symmetric Key

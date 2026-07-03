@@ -19,6 +19,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # Enforce locked-mode NuGet restore (RestoreLockedMode in the csproj files keys off this)
+  ContinuousIntegrationBuild: true
+
 jobs:
   analyze:
     name: Analyze C#

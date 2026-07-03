@@ -40,12 +40,20 @@ public abstract class PasetoProtocolVersion
     /// <summary>
     /// Get a random sequence of bytes using a cryptographically secure pseudorandom number generator (CSPRNG)
     /// </summary>
+    /// <remarks>
+    /// A test nonce, when set, is consumed on first use (one-shot) so a deterministic nonce can never
+    /// silently persist across operations and cause nonce reuse.
+    /// </remarks>
     /// <param name="size">The size of the array of bytes.</param>
     /// <returns></returns>
     protected byte[] GetRandomBytes(int size)
     {
         if (TestNonce != null && TestNonce.Length == size)
-            return TestNonce;
+        {
+            var testNonce = TestNonce;
+            TestNonce = null;
+            return testNonce;
+        }
 
         var n = new byte[size];
         RandomNumberGenerator.Fill(n);
@@ -58,7 +66,7 @@ public abstract class PasetoProtocolVersion
             return;
 
         var f2 = GetBytes(footer);
-        if (!CryptoBytes.ConstantTimeEquals(f1, f2))
+        if (f1.Length != f2.Length || !CryptoBytes.ConstantTimeEquals(f1, f2))
             throw new PasetoInvalidException("Footer is not valid");
     }
 }

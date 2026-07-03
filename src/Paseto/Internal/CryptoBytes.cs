@@ -45,9 +45,7 @@ internal static class CryptoBytes
     //   Perhaps this can be avoided by using unmanaged memory or by fixing the position of the array in memory
     // * Swap files and error dumps can contain secret information
     //   It seems possible to lock memory in RAM, no idea about error dumps
-    // * Compiler could optimize out the wiping if it knows that data won't be read back
-    //   I hope this is enough, suppressing inlining
-    //   but perhaps `RtlSecureZeroMemory` is needed
+    // CryptographicOperations.ZeroMemory guarantees the write is not elided by the JIT.
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static void InternalWipe(byte[] data, int offset, int count) => Array.Clear(data, offset, count);
+    private static void InternalWipe(byte[] data, int offset, int count) => CryptographicOperations.ZeroMemory(data.AsSpan(offset, count));
 }
