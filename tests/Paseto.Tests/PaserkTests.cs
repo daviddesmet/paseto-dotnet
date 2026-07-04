@@ -300,6 +300,94 @@ public class PaserkTests
         }
     }
 
+    private const string WrapKeyHex = "707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f";
+
+    private static PasetoSymmetricKey Sym(ProtocolVersion v) => new(FromHexString(WrapKeyHex), PaserkHelpers.CreateProtocolVersion(v));
+
+    [Fact]
+    public void WrapEncodeThrowsOnNullKey() =>
+        Should.Throw<ArgumentNullException>(() => Paserk.Encode(null, PaserkType.LocalWrap, Sym(ProtocolVersion.V4)));
+
+    [Fact]
+    public void WrapEncodeThrowsOnNullWrappingKey() =>
+        Should.Throw<ArgumentNullException>(() => Paserk.Encode(Sym(ProtocolVersion.V4), PaserkType.LocalWrap, (PasetoSymmetricKey)null));
+
+    [Fact]
+    public void WrapEncodeThrowsOnNonWrapType() =>
+        Should.Throw<PaserkNotSupportedException>(() => Paserk.Encode(Sym(ProtocolVersion.V4), PaserkType.Local, Sym(ProtocolVersion.V4)));
+
+    [Fact]
+    public void WrapEncodeThrowsOnIncompatibleKey()
+    {
+        var publicKey = new PasetoAsymmetricPublicKey(FromHexString(WrapKeyHex), PaserkHelpers.CreateProtocolVersion(ProtocolVersion.V4));
+        Should.Throw<PaserkNotSupportedException>(() => Paserk.Encode(publicKey, PaserkType.LocalWrap, Sym(ProtocolVersion.V4)));
+    }
+
+    [Fact]
+    public void WrapEncodeThrowsOnVersionMismatch() =>
+        Should.Throw<PaserkNotSupportedException>(() => Paserk.Encode(Sym(ProtocolVersion.V4), PaserkType.LocalWrap, Sym(ProtocolVersion.V3)));
+
+    [Fact]
+    public void WrapDecodeThrowsOnNullWrappingKey()
+    {
+        var paserk = Paserk.Encode(Sym(ProtocolVersion.V4), PaserkType.LocalWrap, Sym(ProtocolVersion.V4));
+        Should.Throw<ArgumentNullException>(() => Paserk.Decode(paserk, (PasetoSymmetricKey)null));
+    }
+
+    [Fact]
+    public void WrapDecodeThrowsOnNonWrapType()
+    {
+        var localPaserk = Paserk.Encode(Sym(ProtocolVersion.V4), PaserkType.Local);
+        Should.Throw<PaserkNotSupportedException>(() => Paserk.Decode(localPaserk, Sym(ProtocolVersion.V4)));
+    }
+
+    [Fact]
+    public void WrapDecodeThrowsOnVersionMismatch()
+    {
+        var paserk = Paserk.Encode(Sym(ProtocolVersion.V4), PaserkType.LocalWrap, Sym(ProtocolVersion.V4));
+        Should.Throw<PaserkNotSupportedException>(() => Paserk.Decode(paserk, Sym(ProtocolVersion.V3)));
+    }
+
+    [Fact]
+    public void PwEncodeThrowsOnNullKey() =>
+        Should.Throw<ArgumentNullException>(() => Paserk.Encode(null, PaserkType.LocalPassword, "pw"u8.ToArray()));
+
+    [Fact]
+    public void PwEncodeThrowsOnNonPwType() =>
+        Should.Throw<PaserkNotSupportedException>(() => Paserk.Encode(Sym(ProtocolVersion.V4), PaserkType.Local, "pw"u8.ToArray()));
+
+    [Fact]
+    public void PwEncodeThrowsOnIncompatibleKey()
+    {
+        var publicKey = new PasetoAsymmetricPublicKey(FromHexString(WrapKeyHex), PaserkHelpers.CreateProtocolVersion(ProtocolVersion.V4));
+        Should.Throw<PaserkNotSupportedException>(() => Paserk.Encode(publicKey, PaserkType.LocalPassword, "pw"u8.ToArray()));
+    }
+
+    [Fact]
+    public void PwDecodeThrowsOnNonPwType()
+    {
+        var localPaserk = Paserk.Encode(Sym(ProtocolVersion.V4), PaserkType.Local);
+        Should.Throw<PaserkNotSupportedException>(() => Paserk.Decode(localPaserk, "pw"u8.ToArray()));
+    }
+
+    [Fact]
+    public void WrapDecodeRejectsPasswordType()
+    {
+        var paserk = Paserk.Encode(Sym(ProtocolVersion.V4), PaserkType.LocalWrap, Sym(ProtocolVersion.V4));
+        Should.Throw<PaserkNotSupportedException>(() => Paserk.Decode(paserk, "pw"u8.ToArray()));
+    }
+
+    [Theory]
+    [InlineData("   ", typeof(ArgumentNullException))]
+    [InlineData("invalid", typeof(PaserkInvalidException))]
+    [InlineData("k4.local", typeof(PaserkInvalidException))]
+    [InlineData("k9.local-wrap.pie.AAAA", typeof(PaserkInvalidException))]
+    public void DecodeThrowsOnInvalidHeader(string serialized, Type expected)
+    {
+        var act = () => Paserk.Decode(serialized, Sym(ProtocolVersion.V4));
+        act.ShouldThrow(expected);
+    }
+
     private static PasetoKey ParseKey(ProtocolVersion version, PaserkType type, string key)
     {
         switch (type)

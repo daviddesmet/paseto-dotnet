@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
+using System.Text;
 
 using Shouldly;
 using Xunit;
@@ -521,6 +522,65 @@ public class PasetoBuilderTests
 
         parsek.ShouldStartWith($"k{(int)version}.secret");
         parsek.Split('.').Length.ShouldBe(3);
+    }
+
+    [Theory(DisplayName = "Should succeed on Encode to PASERK when wrapping a Local key with a wrapping key")]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
+    public void ShouldSucceedOnGenerateSerializedKeyWithWrappingKey(ProtocolVersion version)
+    {
+        var wrappingKey = new PasetoBuilder().Use(version, Purpose.Local).GenerateSymmetricKey();
+
+        var parsek = new PasetoBuilder().Use(version, Purpose.Local)
+            .WithSharedKey(FromHexString(LocalKey))
+            .GenerateSerializedKey(PaserkType.LocalWrap, wrappingKey);
+
+        parsek.ShouldStartWith($"k{(int)version}.local-wrap.pie.");
+    }
+
+    [Theory(DisplayName = "Should succeed on Encode to PASERK when wrapping a Local key with a password")]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
+    public void ShouldSucceedOnGenerateSerializedKeyWithPassword(ProtocolVersion version)
+    {
+        // Small work factors keep the test fast.
+        var options = new PbkwOptions { MemoryLimitBytes = 8192, OpsLimit = 1, Iterations = 1000 };
+
+        var parsek = new PasetoBuilder().Use(version, Purpose.Local)
+            .WithSharedKey(FromHexString(LocalKey))
+            .GenerateSerializedKey(PaserkType.LocalPassword, Encoding.UTF8.GetBytes("correct horse battery staple"), options);
+
+        parsek.ShouldStartWith($"k{(int)version}.local-pw.");
+    }
+
+    [Fact(DisplayName = "Should fail on Generate wrapped PASERK when the 'Use' method was not called")]
+    public void ShouldFailOnGenerateSerializedKeyWithWrappingKeyWithoutUse()
+    {
+        var wrappingKey = new PasetoBuilder().Use(ProtocolVersion.V4, Purpose.Local).GenerateSymmetricKey();
+
+        var act = () => new PasetoBuilder().GenerateSerializedKey(PaserkType.LocalWrap, wrappingKey);
+        act.ShouldThrow<PasetoBuilderException>();
+    }
+
+    [Fact(DisplayName = "Should fail on Generate wrapped PASERK when the 'WithKey' method was not called")]
+    public void ShouldFailOnGenerateSerializedKeyWithWrappingKeyWithoutKey()
+    {
+        var wrappingKey = new PasetoBuilder().Use(ProtocolVersion.V4, Purpose.Local).GenerateSymmetricKey();
+
+        var act = () => new PasetoBuilder().Use(ProtocolVersion.V4, Purpose.Local).GenerateSerializedKey(PaserkType.LocalWrap, wrappingKey);
+        act.ShouldThrow<PasetoBuilderException>();
+    }
+
+    [Fact(DisplayName = "Should fail on Generate password-wrapped PASERK when the 'Use' method was not called")]
+    public void ShouldFailOnGenerateSerializedKeyWithPasswordWithoutUse()
+    {
+        var act = () => new PasetoBuilder().GenerateSerializedKey(PaserkType.LocalPassword, Encoding.UTF8.GetBytes("pw"));
+        act.ShouldThrow<PasetoBuilderException>();
+    }
+
+    [Fact(DisplayName = "Should fail on Generate password-wrapped PASERK when the 'WithKey' method was not called")]
+    public void ShouldFailOnGenerateSerializedKeyWithPasswordWithoutKey()
+    {
+        var act = () => new PasetoBuilder().Use(ProtocolVersion.V4, Purpose.Local).GenerateSerializedKey(PaserkType.LocalPassword, Encoding.UTF8.GetBytes("pw"));
+        act.ShouldThrow<PasetoBuilderException>();
     }
 
     [Theory(DisplayName = "Should succeed on Decoding with Date Validations")]
