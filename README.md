@@ -20,14 +20,14 @@ PASERK extension
 | lid | ✅ |
 | local | ✅ |
 | seal | ❌ |
-| local-wrap | ❌ |
-| local-pw | ❌ |
+| local-wrap | ✅ |
+| local-pw | ✅ |
 | sid | ✅ |
 | public | ✅ |
 | pid | ✅ |
 | secret | ✅ |
-| secret-wrap | ❌ |
-| secret-pw | ❌ |
+| secret-wrap | ✅ |
+| secret-pw | ✅ |
 
 ## Installation
 
@@ -134,6 +134,38 @@ var paserk = Paserk.Encode(pasetoKey, type);
 
 ```csharp
 var key = Paserk.Decode(paserk);
+```
+
+#### Key wrapping (`local-wrap` / `secret-wrap`)
+
+Wraps a key with another symmetric wrapping key using the ["pie" key-wrapping protocol](https://github.com/paseto-standard/paserk/blob/master/operations/Wrap/pie.md) (AES-256-CTR + HMAC-SHA384 for v1/v3, XChaCha20 + BLAKE2b for v2/v4):
+
+```csharp
+// wk is a PasetoSymmetricKey used to wrap/unwrap
+var paserk = Paserk.Encode(localKey, PaserkType.LocalWrap, wrappingKey);
+var key = Paserk.Decode(paserk, wrappingKey);
+
+// or via the builder
+var paserk = new PasetoBuilder().Use(ProtocolVersion.V4, Purpose.Local)
+                                .WithKey(localKey)
+                                .GenerateSerializedKey(PaserkType.LocalWrap, wrappingKey);
+```
+
+#### Password-based key wrapping (`local-pw` / `secret-pw`)
+
+Wraps a key with a password using [PBKW](https://github.com/paseto-standard/paserk/blob/master/operations/PBKW.md) (PBKDF2-SHA384 + AES-256-CTR for v1/v3, Argon2id + XChaCha20 for v2/v4). Tune the work factors via `PbkwOptions`:
+
+```csharp
+var password = Encoding.UTF8.GetBytes("correct horse battery staple");
+var options = new PbkwOptions
+{
+    MemoryLimitBytes = 67_108_864, // Argon2id (v2/v4)
+    OpsLimit = 2,
+    Iterations = 100_000,          // PBKDF2 (v1/v3)
+};
+
+var paserk = Paserk.Encode(localKey, PaserkType.LocalPassword, password, options);
+var key = Paserk.Decode(paserk, password);
 ```
 
 ## Roadmap
