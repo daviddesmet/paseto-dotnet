@@ -4,6 +4,19 @@
 [![Maintenance](https://img.shields.io/maintenance/yes/2026.svg)](https://github.com/daviddesmet/paseto-dotnet)
 [![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/daviddesmet/paseto-dotnet/issues)
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [PASETO](#paseto)
+  - [PASERK](#paserk)
+- [Roadmap](#roadmap)
+- [Test Coverage](#test-coverage)
+- [Cryptography](#cryptography)
+- [Dependency Lock Files](#dependency-lock-files)
+- [Learn More](#learn-more)
+
 ## Features
 
 PASETO protocols
@@ -15,23 +28,25 @@ PASETO protocols
 
 PASERK extension
 
-| type | support |
-| -- | -- |
-| lid | ✅ |
-| local | ✅ |
-| seal | ❌ |
-| local-wrap | ✅ |
-| local-pw | ✅ |
-| sid | ✅ |
-| public | ✅ |
-| pid | ✅ |
-| secret | ✅ |
-| secret-wrap | ✅ |
-| secret-pw | ✅ |
+| purpose | type | support |
+| -- | -- | -- |
+| local | local | ✅ |
+| local | lid | ✅ |
+| local | local-wrap | ✅ |
+| local | local-pw | ✅ |
+| local | seal | ❌ |
+| public | public | ✅ |
+| public | pid | ✅ |
+| public | secret | ✅ |
+| public | sid | ✅ |
+| public | secret-wrap | ✅ |
+| public | secret-pw | ✅ |
 
 ## Installation
 
 [![NuGet Version](https://img.shields.io/nuget/v/Paseto.Core)](https://www.nuget.org/packages/Paseto.Core/)
+
+Targets `net8.0` and `net10.0`.
 
 Install the Paseto.Core NuGet package from the .NET CLI using:
 ```
@@ -127,13 +142,21 @@ k[version].[type].[data]
 #### Encoding a Key
 
 ```csharp
-var paserk = Paserk.Encode(pasetoKey, type);
+var paserk = Paserk.Encode(pasetoKey, PaserkType.Local);
 ```
 
 #### Decoding a Key
 
 ```csharp
 var key = Paserk.Decode(paserk);
+```
+
+#### Key identifiers (`lid` / `sid` / `pid`)
+
+Identifier types produce a stable, one-way fingerprint of a key. They can only be encoded — `Paserk.Decode` intentionally throws for them, since an identifier is used to look up a key you already hold, not to recover one.
+
+```csharp
+var kid = Paserk.Encode(pasetoKey, PaserkType.Lid); // sid for secret keys, pid for public keys
 ```
 
 #### Key wrapping (`local-wrap` / `secret-wrap`)
@@ -168,10 +191,13 @@ var paserk = Paserk.Encode(localKey, PaserkType.LocalPassword, password, options
 var key = Paserk.Decode(paserk, password);
 ```
 
+> [!NOTE]
+> The `PbkwOptions` defaults are interactive-grade. For keys stored at rest, raise the work factors (higher `MemoryLimitBytes`/`OpsLimit` for Argon2id, more `Iterations` for PBKDF2) to match your threat model and hardware.
+
 ## Roadmap
 
-- [ ] Add support for remaining PASERK types and its [operations](https://github.com/paseto-standard/paserk/blob/master/operations).
-- [ ] Add support for version detection when decoding.
+- [ ] Add support for the `seal` PASERK type (the only remaining [operation](https://github.com/paseto-standard/paserk/blob/master/operations)).
+- [ ] Add support for version/purpose detection when decoding a PASETO token (currently required via `Use()`; PASERK already detects the version from the header).
 - [ ] Add support for custom payload [validation rules](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/02-Validators.md).
 - [ ] Improve documentation.
 
@@ -183,10 +209,11 @@ var key = Paserk.Decode(paserk, password);
 
 ## Cryptography
 
-* Uses Ed25519 (EdDSA over Curve25519) algorithm from CodesInChaos [Chaos.NaCl](https://github.com/CodesInChaos/Chaos.NaCl) cryptography library.
-* Uses Blake2b cryptographic hash function from [Konscious.Security.Cryptography](https://github.com/kmaragon/Konscious.Security.Cryptography) repository.
-* Uses AES-256-CTR, ECDSA over P-384 algorithms from [Bouncy Castle](https://github.com/novotnyllc/bc-csharp) cryptography library.
-* Uses XChaCha20-Poly1305 AEAD from [NaCl.Core](https://github.com/daviddesmet/NaCl.Core) repository.
+* **Ed25519** (EdDSA over Curve25519) — bundled managed implementation (originally derived from CodesInChaos [Chaos.NaCl](https://github.com/CodesInChaos/Chaos.NaCl)).
+* **BLAKE2b** — bundled managed implementation, plus [Bouncy Castle](https://github.com/novotnyllc/bc-csharp) for key identifiers.
+* **AES-256-CTR**, **ECDSA over P-384**, **Argon2id** — [Bouncy Castle](https://github.com/novotnyllc/bc-csharp).
+* **XChaCha20** — [NaCl.Core](https://github.com/daviddesmet/NaCl.Core).
+* **HMAC-SHA384**, **HKDF-SHA384**, **PBKDF2-SHA384**, **SHA-384** — .NET base class library.
 
 ## Dependency Lock Files
 
