@@ -122,6 +122,16 @@ internal static class PaserkHelpers
         _ => throw new InvalidOperationException(),
     };
 
+    // Maps a wrapping / password PASERK type to the underlying key type it wraps.
+    internal static PaserkType MapWrappedType(PaserkType type) => type switch
+    {
+        PaserkType.LocalWrap or PaserkType.LocalPassword => PaserkType.Local,
+        PaserkType.SecretWrap or PaserkType.SecretPassword => PaserkType.Secret,
+        _ => throw new InvalidOperationException(),
+    };
+
+    internal static ProtocolVersion GetProtocolVersion(PasetoKey key) => StringVersionToProtocolVersion(key.Protocol.Version);
+
     // TODO: Check Public V3 has valid point compression.
     // TODO: Verify ASN1 encoding for V1
     //  +--------+---------+----+----+----+
@@ -132,7 +142,7 @@ internal static class PaserkHelpers
     //  | Secret | 1190<=? | 64 | 48 | 64 |
     //  +--------+---------+----+----+----+
 
-    private static bool IsKeyTypeCompatible(PaserkType type, PasetoKey key) => key switch
+    internal static bool IsKeyTypeCompatible(PaserkType type, PasetoKey key) => key switch
     {
         PasetoSymmetricKey => type is PaserkType.Local or PaserkType.Lid or PaserkType.LocalPassword or PaserkType.LocalWrap,
         PasetoAsymmetricPublicKey => type is PaserkType.Public or PaserkType.Pid,
@@ -140,7 +150,7 @@ internal static class PaserkHelpers
         _ => false,
     };
 
-    private static void ValidateKeyLength(PaserkType type, ProtocolVersion version, int length) => _ = (type, version, length) switch
+    internal static void ValidateKeyLength(PaserkType type, ProtocolVersion version, int length) => _ = (type, version, length) switch
     {
         (PaserkType.Local, _, not SYM_KEY_SIZE_IN_BYTES) => throw new ArgumentException($"The key length in bytes must be {SYM_KEY_SIZE_IN_BYTES}."),
 
@@ -154,7 +164,7 @@ internal static class PaserkHelpers
         _ => 0,
     };
 
-    private static ProtocolVersion StringVersionToProtocolVersion(string version) => version switch
+    internal static ProtocolVersion StringVersionToProtocolVersion(string version) => version switch
     {
 #pragma warning disable CS0618 // Type or member is obsolete
         Version1.VERSION => ProtocolVersion.V1,

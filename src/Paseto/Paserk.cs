@@ -81,6 +81,136 @@ public static class Paserk
         };
     }
 
+    /// <summary>
+    /// Wraps a PASETO key with a symmetric wrapping key using the PASERK "pie" protocol
+    /// (<see cref="PaserkType.LocalWrap"/> or <see cref="PaserkType.SecretWrap"/>).
+    /// </summary>
+    /// <param name="pasetoKey">The key to wrap.</param>
+    /// <param name="type">The PASERK type (<c>local-wrap</c> or <c>secret-wrap</c>).</param>
+    /// <param name="wrappingKey">The symmetric key used to wrap <paramref name="pasetoKey"/>.</param>
+    /// <returns>The encoded serialized key in PASERK format.</returns>
+    public static string Encode(PasetoKey pasetoKey, PaserkType type, PasetoSymmetricKey wrappingKey)
+    {
+        ArgumentNullException.ThrowIfNull(pasetoKey);
+        ArgumentNullException.ThrowIfNull(wrappingKey);
+
+        if (type is not (PaserkType.LocalWrap or PaserkType.SecretWrap))
+            throw new PaserkNotSupportedException($"The PASERK type {type} does not support key wrapping.");
+
+        if (!PaserkHelpers.IsKeyTypeCompatible(type, pasetoKey))
+            throw new PaserkNotSupportedException($"The PASERK {type} is not compatible with the PASETO key.");
+
+        var version = PaserkHelpers.GetProtocolVersion(pasetoKey);
+        if (PaserkHelpers.GetProtocolVersion(wrappingKey) != version)
+            throw new PaserkNotSupportedException("The wrapping key must use the same protocol version as the key being wrapped.");
+
+        var header = $"{PARSEK_HEADER_K}{pasetoKey.Protocol.VersionNumber}.{type.ToDescription()}.pie.";
+        return PaserkPie.Wrap(header, version, wrappingKey.Key.ToArray(), pasetoKey.Key.ToArray());
+    }
+
+    /// <summary>
+    /// Unwraps a PASERK "pie" serialized key (<c>local-wrap</c> / <c>secret-wrap</c>) using the
+    /// symmetric wrapping key.
+    /// </summary>
+    /// <param name="serializedKey">The PASERK string.</param>
+    /// <param name="wrappingKey">The symmetric key used to unwrap the serialized key.</param>
+    public static PasetoKey Decode(string serializedKey, PasetoSymmetricKey wrappingKey)
+    {
+        ArgumentNullException.ThrowIfNull(wrappingKey);
+
+        var (type, version, header, encodedKey) = ParseHeader(serializedKey);
+
+        if (type is not (PaserkType.LocalWrap or PaserkType.SecretWrap))
+            throw new PaserkNotSupportedException($"The PASERK type {type} does not support key unwrapping.");
+
+        if (PaserkHelpers.GetProtocolVersion(wrappingKey) != version)
+            throw new PaserkNotSupportedException("The wrapping key must use the same protocol version as the serialized key.");
+
+        var ptk = PaserkPie.Unwrap(header, version, wrappingKey.Key.ToArray(), encodedKey);
+        return BuildKey(type, version, ptk);
+    }
+
+    /// <summary>
+    /// Wraps a PASETO key with a password using the PASERK PBKW protocol
+    /// (<see cref="PaserkType.LocalPassword"/> or <see cref="PaserkType.SecretPassword"/>).
+    /// </summary>
+    /// <param name="pasetoKey">The key to wrap.</param>
+    /// <param name="type">The PASERK type (<c>local-pw</c> or <c>secret-pw</c>).</param>
+    /// <param name="password">The password used to derive the wrapping key.</param>
+    /// <param name="options">The PBKW parameters. When <c>null</c>, sensible defaults are used.</param>
+    /// <returns>The encoded serialized key in PASERK format.</returns>
+    public static string Encode(PasetoKey pasetoKey, PaserkType type, ReadOnlySpan<byte> password, PbkwOptions options = null)
+    {
+        ArgumentNullException.ThrowIfNull(pasetoKey);
+
+        if (type is not (PaserkType.LocalPassword or PaserkType.SecretPassword))
+            throw new PaserkNotSupportedException($"The PASERK type {type} does not support password-based wrapping.");
+
+        if (!PaserkHelpers.IsKeyTypeCompatible(type, pasetoKey))
+            throw new PaserkNotSupportedException($"The PASERK {type} is not compatible with the PASETO key.");
+
+        var version = PaserkHelpers.GetProtocolVersion(pasetoKey);
+        var header = $"{PARSEK_HEADER_K}{pasetoKey.Protocol.VersionNumber}.{type.ToDescription()}.";
+        return PaserkPbkw.Encrypt(header, version, password.ToArray(), options, pasetoKey.Key.ToArray());
+    }
+
+    /// <summary>
+    /// Unwraps a PASERK PBKW serialized key (<c>local-pw</c> / <c>secret-pw</c>) using the password.
+    /// </summary>
+    /// <param name="serializedKey">The PASERK string.</param>
+    /// <param name="password">The password used to derive the wrapping key.</param>
+    public static PasetoKey Decode(string serializedKey, ReadOnlySpan<byte> password)
+    {
+        var (type, version, header, encodedKey) = ParseHeader(serializedKey);
+
+        if (type is not (PaserkType.LocalPassword or PaserkType.SecretPassword))
+            throw new PaserkNotSupportedException($"The PASERK type {type} does not support password-based unwrapping.");
+
+        var ptk = PaserkPbkw.Decrypt(header, version, password.ToArray(), encodedKey);
+        return BuildKey(type, version, ptk);
+    }
+
+    private static (PaserkType type, ProtocolVersion version, string header, string encodedKey) ParseHeader(string serializedKey)
+    {
+        if (string.IsNullOrWhiteSpace(serializedKey))
+            throw new ArgumentNullException(nameof(serializedKey));
+
+        if (!HeaderRegex.IsMatch(serializedKey))
+            throw new PaserkInvalidException("Serialized key is not valid.");
+
+        var parts = serializedKey.Split('.');
+        if (parts.Length is < 3 or > 4)
+            throw new PaserkInvalidException("Serialized key is not valid.");
+
+        if (!int.TryParse(parts[0][1..], out var version))
+            throw new PaserkInvalidException("Serialized key has an undefined version.");
+
+        if (!Enum.IsDefined(typeof(ProtocolVersion), version))
+            throw new PaserkInvalidException("Serialized key has an unsupported version.");
+
+        var type = parts[1].FromDescription<PaserkType>();
+        var encodedKey = parts.Length > 3 ? parts[3] : parts[2];
+        var header = serializedKey[..(serializedKey.Length - encodedKey.Length)];
+
+        return (type, (ProtocolVersion)version, header, encodedKey);
+    }
+
+    private static PasetoKey BuildKey(PaserkType type, ProtocolVersion version, byte[] key)
+    {
+        var baseType = PaserkHelpers.MapWrappedType(type);
+        var protocol = PaserkHelpers.CreateProtocolVersion(version);
+
+        // No length validation here: the authentication tag already guarantees the unwrapped
+        // payload is exactly what the producer wrapped, and encodings (e.g. RSA/EC secret keys)
+        // vary in length across versions.
+        return baseType switch
+        {
+            PaserkType.Local => new PasetoSymmetricKey(key, protocol),
+            PaserkType.Secret => new PasetoAsymmetricSecretKey(key, protocol),
+            _ => throw new PaserkInvalidException($"Unable to build a key for the PASERK type {type}."),
+        };
+    }
+
     public static Purpose GetPurpose(PaserkType type) => type switch
     {
         PaserkType.Lid => Purpose.Local,

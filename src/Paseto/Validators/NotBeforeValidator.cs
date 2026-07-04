@@ -24,7 +24,7 @@ public sealed class NotBeforeValidator : DateValidator
     /// <inheritdoc />
     public override void ValidateDate(IComparable value, IComparable expected = null)
     {
-        if (Comparer.GetComparisonResult(value, expected) >= 0) // expected <= nbf
+        if (Comparer.GetComparisonResult(value, expected) > 0) // expected < nbf
             throw new PasetoTokenValidationException("Token is not yet valid");
     }
 }

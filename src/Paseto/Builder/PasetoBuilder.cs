@@ -357,13 +357,43 @@ public sealed class PasetoBuilder
     /// <exception cref="PasetoBuilderException">Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.</exception>
     public string GenerateSerializedKey(PaserkType type)
     {
-        if (_protocol is null)
-            throw new PasetoBuilderException("Can't generate PASERK serialized key. Check if you have call the 'Use' method.");
-
-        if (_pasetoKey is null)
-            throw new PasetoBuilderException("Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.");
+        PasetoBuilderException.ThrowIfNull(_protocol, "Can't generate PASERK serialized key. Check if you have call the 'Use' method.");
+        PasetoBuilderException.ThrowIfNull(_pasetoKey, "Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.");
 
         return Paserk.Encode(_pasetoKey, type);
+    }
+
+    /// <summary>
+    /// Generates a wrapped serialized key in PASERK format (<c>local-wrap</c> / <c>secret-wrap</c>).
+    /// </summary>
+    /// <param name="type">The PASERK type.</param>
+    /// <param name="wrappingKey">The symmetric key used to wrap the key.</param>
+    /// <returns>The encoded serialized key in PASERK format.</returns>
+    /// <exception cref="PasetoBuilderException">Can't generate PASERK serialized key. Check if you have call the 'Use' method.</exception>
+    /// <exception cref="PasetoBuilderException">Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.</exception>
+    public string GenerateSerializedKey(PaserkType type, PasetoSymmetricKey wrappingKey)
+    {
+        PasetoBuilderException.ThrowIfNull(_protocol, "Can't generate PASERK serialized key. Check if you have call the 'Use' method.");
+        PasetoBuilderException.ThrowIfNull(_pasetoKey, "Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.");
+
+        return Paserk.Encode(_pasetoKey, type, wrappingKey);
+    }
+
+    /// <summary>
+    /// Generates a password-wrapped serialized key in PASERK format (<c>local-pw</c> / <c>secret-pw</c>).
+    /// </summary>
+    /// <param name="type">The PASERK type.</param>
+    /// <param name="password">The password used to derive the wrapping key.</param>
+    /// <param name="options">The PBKW parameters. When <c>null</c>, sensible defaults are used.</param>
+    /// <returns>The encoded serialized key in PASERK format.</returns>
+    /// <exception cref="PasetoBuilderException">Can't generate PASERK serialized key. Check if you have call the 'Use' method.</exception>
+    /// <exception cref="PasetoBuilderException">Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.</exception>
+    public string GenerateSerializedKey(PaserkType type, ReadOnlySpan<byte> password, PbkwOptions options = null)
+    {
+        PasetoBuilderException.ThrowIfNull(_protocol, "Can't generate PASERK serialized key. Check if you have call the 'Use' method.");
+        PasetoBuilderException.ThrowIfNull(_pasetoKey, "Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.");
+
+        return Paserk.Encode(_pasetoKey, type, password, options);
     }
 
     /// <summary>
