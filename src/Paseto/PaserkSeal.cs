@@ -75,7 +75,7 @@ internal static class PaserkSeal
         var xpk = Ed25519PublicKeyToX25519(edPublicKey);
 
         // Ephemeral X25519 keypair.
-        var esk = RandomNumberGenerator.GetBytes(X25519_KEY_SIZE);
+        var esk = Rng.GetBytes(X25519_KEY_SIZE);
         var epk = new byte[X25519_KEY_SIZE];
         X25519.ScalarMultBase(esk, 0, epk, 0);
 
@@ -323,7 +323,12 @@ internal static class PaserkSeal
     /// </summary>
     private static byte[] Ed25519SeedToX25519(byte[] seed)
     {
+#if NETFRAMEWORK
+        using var sha512 = SHA512.Create();
+        var h = sha512.ComputeHash(seed);
+#else
         var h = SHA512.HashData(seed);
+#endif
         var xsk = h[..X25519_KEY_SIZE];
         xsk[0] &= 248;
         xsk[31] &= 127;

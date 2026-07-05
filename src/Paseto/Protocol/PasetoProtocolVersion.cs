@@ -56,7 +56,7 @@ public abstract class PasetoProtocolVersion
         }
 
         var n = new byte[size];
-        RandomNumberGenerator.Fill(n);
+        Rng.Fill(n);
         return n;
     }
 

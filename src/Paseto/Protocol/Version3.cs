@@ -67,7 +67,7 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
     public virtual PasetoSymmetricKey GenerateSymmetricKey()
     {
         var n = new byte[KEY_SIZE_IN_BYTES];
-        RandomNumberGenerator.Fill(n);
+        Rng.Fill(n);
 
         return new PasetoSymmetricKey(n, this);
     }
@@ -175,11 +175,11 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         var n = GetRandomBytes(NONCE_SIZE_IN_BYTES);
 
         // Split the key into an Encryption key and Authentication key
-        var tmp = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(EK_DOMAIN_SEPARATION), n));
+        var tmp = Hkdf.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(EK_DOMAIN_SEPARATION), n));
         var ek = tmp[..32];
         var n2 = tmp[32..];
 
-        var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n));
+        var ak = Hkdf.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n));
 
         try
         {
@@ -316,11 +316,11 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
             var t = bytes[tlen..];
 
             // Split the key into an Encryption key and Authentication key
-            var tmp = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(EK_DOMAIN_SEPARATION), n.ToArray()));
+            var tmp = Hkdf.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(EK_DOMAIN_SEPARATION), n.ToArray()));
             var ek = tmp[..32];
             var n2 = tmp[32..];
 
-            var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n.ToArray()));
+            var ak = Hkdf.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), KEYDERIVATION_SIZE_IN_BYTES, info: CryptoBytes.Combine(GetBytes(AK_DOMAIN_SEPARATION), n.ToArray()));
 
             try
             {

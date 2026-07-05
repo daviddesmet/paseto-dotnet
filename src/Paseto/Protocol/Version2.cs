@@ -50,7 +50,7 @@ public class Version2 : PasetoProtocolVersion, IPasetoProtocolVersion
     public virtual PasetoSymmetricKey GenerateSymmetricKey()
     {
         var n = new byte[KEY_SIZE_IN_BYTES];
-        RandomNumberGenerator.Fill(n);
+        Rng.Fill(n);
 
         return new PasetoSymmetricKey(n, this);
     }

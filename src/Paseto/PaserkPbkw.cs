@@ -69,8 +69,8 @@ internal static class PaserkPbkw
     private static string EncryptArgon(string header, byte[] password, PbkwOptions options, byte[] ptk)
     {
         var h = GetBytes(header);
-        var s = RandomNumberGenerator.GetBytes(ARGON_SALT_SIZE);
-        var n = RandomNumberGenerator.GetBytes(XCHACHA_NONCE_SIZE);
+        var s = Rng.GetBytes(ARGON_SALT_SIZE);
+        var n = Rng.GetBytes(XCHACHA_NONCE_SIZE);
 
         var k = Argon2id(password, s, options.MemoryLimitBytes, options.OpsLimit, options.Parallelism);
         try
@@ -144,11 +144,11 @@ internal static class PaserkPbkw
     private static string EncryptPbkdf2(string header, byte[] password, PbkwOptions options, byte[] ptk)
     {
         var h = GetBytes(header);
-        var s = RandomNumberGenerator.GetBytes(PBKDF2_SALT_SIZE);
-        var n = RandomNumberGenerator.GetBytes(AES_NONCE_SIZE);
+        var s = Rng.GetBytes(PBKDF2_SALT_SIZE);
+        var n = Rng.GetBytes(AES_NONCE_SIZE);
         var i = options.Iterations;
 
-        var k = Rfc2898DeriveBytes.Pbkdf2(password, s, i, HashAlgorithmName.SHA384, PREKEY_SIZE);
+        var k = Pbkdf2.DeriveBytes(password, s, i, HashAlgorithmName.SHA384, PREKEY_SIZE);
         try
         {
             var ek = Sha384(DOMAIN_ENCRYPTION, k)[..32];
@@ -186,7 +186,7 @@ internal static class PaserkPbkw
         var n = body[nOffset..(nOffset + AES_NONCE_SIZE)];
         var edk = body[(nOffset + AES_NONCE_SIZE)..];
 
-        var k = Rfc2898DeriveBytes.Pbkdf2(password, s, i, HashAlgorithmName.SHA384, PREKEY_SIZE);
+        var k = Pbkdf2.DeriveBytes(password, s, i, HashAlgorithmName.SHA384, PREKEY_SIZE);
         try
         {
             var ak = Sha384(DOMAIN_AUTHENTICATION, k);
