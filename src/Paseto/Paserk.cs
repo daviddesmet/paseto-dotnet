@@ -72,11 +72,7 @@ public static class Paserk
         {
             PaserkType.Local or PaserkType.Secret or PaserkType.Public => PaserkHelpers.SimpleDecode(type, (ProtocolVersion)version, encodedKey),
             PaserkType.Lid or PaserkType.Sid or PaserkType.Pid => throw new PaserkInvalidException($"Decode is not supported for type {type}. Id should be used to determine which key should be used."),
-            // PaserkType.LocalWrap => throw new NotImplementedException(),
-            // PaserkType.LocalPassword => throw new NotImplementedException(),
-            // PaserkType.Seal => throw new NotImplementedException(),
-            // PaserkType.SecretWrap => throw new NotImplementedException(),
-            // PaserkType.SecretPassword => throw new NotImplementedException(),
+            PaserkType.Seal => throw new PaserkNotSupportedException($"The PASERK type {type} requires a secret key to decode. Use the Decode overload that accepts a {nameof(PasetoAsymmetricSecretKey)}."),
             _ => throw new PaserkNotSupportedException($"The PASERK type {type} is currently not supported."),
         };
     }
@@ -168,6 +164,55 @@ public static class Paserk
 
         var ptk = PaserkPbkw.Decrypt(header, version, password.ToArray(), encodedKey);
         return BuildKey(type, version, ptk);
+    }
+
+    /// <summary>
+    /// Seals a symmetric (local) key to a recipient's asymmetric public key using the PASERK
+    /// <see cref="PaserkType.Seal"/> public-key encryption protocol
+    /// (P-384 ECDH for v3, X25519 for v4). Only the holder of the matching secret key can recover it.
+    /// </summary>
+    /// <param name="pasetoKey">The symmetric key to seal.</param>
+    /// <param name="type">The PASERK type (<c>seal</c>).</param>
+    /// <param name="sealingKey">The recipient's asymmetric public key.</param>
+    /// <returns>The encoded serialized key in PASERK format.</returns>
+    public static string Encode(PasetoKey pasetoKey, PaserkType type, PasetoAsymmetricPublicKey sealingKey)
+    {
+        ArgumentNullException.ThrowIfNull(pasetoKey);
+        ArgumentNullException.ThrowIfNull(sealingKey);
+
+        if (type is not PaserkType.Seal)
+            throw new PaserkNotSupportedException($"The PASERK type {type} does not support sealing.");
+
+        if (pasetoKey is not PasetoSymmetricKey)
+            throw new PaserkNotSupportedException("Only a symmetric (local) key can be sealed.");
+
+        var version = PaserkHelpers.GetProtocolVersion(pasetoKey);
+        if (PaserkHelpers.GetProtocolVersion(sealingKey) != version)
+            throw new PaserkNotSupportedException("The sealing key must use the same protocol version as the key being sealed.");
+
+        var header = $"{PARSEK_HEADER_K}{pasetoKey.Protocol.VersionNumber}.{type.ToDescription()}.";
+        return PaserkSeal.Seal(header, version, sealingKey.Key.ToArray(), pasetoKey.Key.ToArray());
+    }
+
+    /// <summary>
+    /// Unseals a PASERK <c>seal</c> serialized key using the recipient's asymmetric secret key.
+    /// </summary>
+    /// <param name="serializedKey">The PASERK string.</param>
+    /// <param name="sealingKey">The recipient's asymmetric secret key.</param>
+    public static PasetoKey Decode(string serializedKey, PasetoAsymmetricSecretKey sealingKey)
+    {
+        ArgumentNullException.ThrowIfNull(sealingKey);
+
+        var (type, version, header, encodedKey) = ParseHeader(serializedKey);
+
+        if (type is not PaserkType.Seal)
+            throw new PaserkNotSupportedException($"The PASERK type {type} does not support unsealing.");
+
+        if (PaserkHelpers.GetProtocolVersion(sealingKey) != version)
+            throw new PaserkNotSupportedException("The sealing key must use the same protocol version as the serialized key.");
+
+        var ptk = PaserkSeal.Unseal(header, version, sealingKey.Key.ToArray(), encodedKey);
+        return new PasetoSymmetricKey(ptk, PaserkHelpers.CreateProtocolVersion(version));
     }
 
     private static (PaserkType type, ProtocolVersion version, string header, string encodedKey) ParseHeader(string serializedKey)

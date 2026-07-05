@@ -34,7 +34,7 @@ PASERK extension
 | local | lid | ✅ |
 | local | local-wrap | ✅ |
 | local | local-pw | ✅ |
-| local | seal | ❌ |
+| local | seal | ✅ (v3/v4) |
 | public | public | ✅ |
 | public | pid | ✅ |
 | public | secret | ✅ |
@@ -194,9 +194,26 @@ var key = Paserk.Decode(paserk, password);
 > [!NOTE]
 > The `PbkwOptions` defaults are interactive-grade. For keys stored at rest, raise the work factors (higher `MemoryLimitBytes`/`OpsLimit` for Argon2id, more `Iterations` for PBKDF2) to match your threat model and hardware.
 
+#### Public-key sealing (`seal`)
+
+Encrypts a symmetric (local) key to a recipient's asymmetric public key using [PKE](https://github.com/paseto-standard/paserk/blob/master/operations/PKE.md) (P-384 ECDH + AES-256-CTR + HMAC-SHA384 for v3, X25519 + XChaCha20 + BLAKE2b for v4). Only the holder of the matching secret key can unseal it:
+
+```csharp
+// sealingKeyPair is a PasetoAsymmetricKeyPair (the recipient's key pair)
+var paserk = Paserk.Encode(localKey, PaserkType.Seal, sealingKeyPair.PublicKey);
+var key = Paserk.Decode(paserk, sealingKeyPair.SecretKey);
+
+// or via the builder
+var paserk = new PasetoBuilder().Use(ProtocolVersion.V4, Purpose.Local)
+                                .WithKey(localKey)
+                                .GenerateSerializedKey(PaserkType.Seal, sealingKeyPair.PublicKey);
+```
+
+> [!NOTE]
+> Sealing is supported for v3 (P-384) and v4 (X25519). v1/v2 are not implemented.
+
 ## Roadmap
 
-- [ ] Add support for the `seal` PASERK type (the only remaining [operation](https://github.com/paseto-standard/paserk/blob/master/operations)).
 - [ ] Add support for version/purpose detection when decoding a PASETO token (currently required via `Use()`; PASERK already detects the version from the header).
 - [ ] Add support for custom payload [validation rules](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/02-Validators.md).
 - [ ] Improve documentation.

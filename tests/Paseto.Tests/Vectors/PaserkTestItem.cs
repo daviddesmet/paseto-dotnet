@@ -30,6 +30,15 @@ public class PaserkTestItem
     // *-wrap vectors.
     [JsonProperty("wrapping-key")]
     public string WrappingKey { get; set; }
+
+    // seal vectors: the recipient key pair and the expected unsealed (local) key in hex.
+    [JsonProperty("sealing-secret-key")]
+    public string SealingSecretKey { get; set; }
+
+    [JsonProperty("sealing-public-key")]
+    public string SealingPublicKey { get; set; }
+
+    public string Unsealed { get; set; }
 }
 
 public class PaserkTestOptions
