@@ -29,7 +29,7 @@ public class PaserkTests
 
     public PaserkTests(ITestOutputHelper output) => _output = output;
 
-    private static readonly ProtocolVersion[] ValidProtocols = Enum.GetValues<ProtocolVersion>();
+    private static readonly ProtocolVersion[] ValidProtocols = ((ProtocolVersion[])Enum.GetValues(typeof(ProtocolVersion)));
 
     private static readonly PaserkType[] SupportedPaserkTypes =
     [

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup Label="Build">
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFrameworks>net48;net8.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
@@ -57,9 +57,12 @@
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
   </ItemGroup>
 
-  <ItemGroup Label="Package References for Windows" Condition=" '$(TargetFramework)' == 'net48' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
+  <!-- Lets the net48 target compile on non-Windows machines (macOS/Linux CI). -->
+  <ItemGroup Label="Package References" Condition=" '$(TargetFramework)' == 'net48' ">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <PackageReference Include="IndexRange" Version="1.1.1" />
+    <PackageReference Include="System.Text.Json" Version="9.0.9" />
   </ItemGroup>
 
   <Target Name="Versioning" BeforeTargets="MinVer">

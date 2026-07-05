@@ -127,32 +127,32 @@ public static class RSAKeyExtensions
 
         public string Exponent { get; set; }
 
-#if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER || NETFRAMEWORK
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string P { get; set; }
 
-#if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER || NETFRAMEWORK
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string Q { get; set; }
 
-#if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER || NETFRAMEWORK
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string DP { get; set; }
 
-#if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER || NETFRAMEWORK
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string DQ { get; set; }
 
-#if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER || NETFRAMEWORK
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string InverseQ { get; set; }
 
-#if NET5_0_OR_GREATER
+#if NET5_0_OR_GREATER || NETFRAMEWORK
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 #endif
         public string D { get; set; }
