@@ -43,7 +43,7 @@ internal static class PaserkPie
     internal static string Wrap(string header, ProtocolVersion version, byte[] wk, byte[] ptk)
     {
         var h = GetBytes(header);
-        var n = RandomNumberGenerator.GetBytes(NONCE_SIZE);
+        var n = Rng.GetBytes(NONCE_SIZE);
 
         return version switch
         {

@@ -63,6 +63,28 @@ Task("Test")
                 ResultsDirectory = $"{artifactsDirectory}/TestResults",
                 Settings = "CodeCoverage.runsettings"
             });
+
+        // The net48 target can only be executed on Windows (there is no .NET Framework
+        // runtime on Linux/macOS). This is the security gate for the net48 code paths.
+        if (IsRunningOnWindows())
+        {
+            DotNetTest(
+                project.ToString(),
+                new DotNetTestSettings()
+                {
+                    Blame = true,
+                    Configuration = configuration,
+                    Framework = "net48",
+                    Loggers = new string[]
+                    {
+                        $"trx;LogFileName={project.GetFilenameWithoutExtension()}.net48.trx",
+                        $"html;LogFileName={project.GetFilenameWithoutExtension()}.net48.html",
+                    },
+                    NoBuild = true,
+                    NoRestore = true,
+                    ResultsDirectory = $"{artifactsDirectory}/TestResults",
+                });
+        }
     });
 
 Task("CoverageReport")

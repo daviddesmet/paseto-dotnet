@@ -4,6 +4,7 @@ using System;
 using System.Text.RegularExpressions;
 using Paseto.Cryptography.Key;
 using Paseto.Extensions;
+using Paseto.Internal;
 
 /// <summary>
 /// PASERK (Platform-Agnostic Serialized Keys) extension.
@@ -87,8 +88,8 @@ public static class Paserk
     /// <returns>The encoded serialized key in PASERK format.</returns>
     public static string Encode(PasetoKey pasetoKey, PaserkType type, PasetoSymmetricKey wrappingKey)
     {
-        ArgumentNullException.ThrowIfNull(pasetoKey);
-        ArgumentNullException.ThrowIfNull(wrappingKey);
+        Guard.NotNull(pasetoKey, nameof(pasetoKey));
+        Guard.NotNull(wrappingKey, nameof(wrappingKey));
 
         if (type is not (PaserkType.LocalWrap or PaserkType.SecretWrap))
             throw new PaserkNotSupportedException($"The PASERK type {type} does not support key wrapping.");
@@ -112,7 +113,7 @@ public static class Paserk
     /// <param name="wrappingKey">The symmetric key used to unwrap the serialized key.</param>
     public static PasetoKey Decode(string serializedKey, PasetoSymmetricKey wrappingKey)
     {
-        ArgumentNullException.ThrowIfNull(wrappingKey);
+        Guard.NotNull(wrappingKey, nameof(wrappingKey));
 
         var (type, version, header, encodedKey) = ParseHeader(serializedKey);
 
@@ -137,7 +138,7 @@ public static class Paserk
     /// <returns>The encoded serialized key in PASERK format.</returns>
     public static string Encode(PasetoKey pasetoKey, PaserkType type, ReadOnlySpan<byte> password, PbkwOptions options = null)
     {
-        ArgumentNullException.ThrowIfNull(pasetoKey);
+        Guard.NotNull(pasetoKey, nameof(pasetoKey));
 
         if (type is not (PaserkType.LocalPassword or PaserkType.SecretPassword))
             throw new PaserkNotSupportedException($"The PASERK type {type} does not support password-based wrapping.");
@@ -177,8 +178,8 @@ public static class Paserk
     /// <returns>The encoded serialized key in PASERK format.</returns>
     public static string Encode(PasetoKey pasetoKey, PaserkType type, PasetoAsymmetricPublicKey sealingKey)
     {
-        ArgumentNullException.ThrowIfNull(pasetoKey);
-        ArgumentNullException.ThrowIfNull(sealingKey);
+        Guard.NotNull(pasetoKey, nameof(pasetoKey));
+        Guard.NotNull(sealingKey, nameof(sealingKey));
 
         if (type is not PaserkType.Seal)
             throw new PaserkNotSupportedException($"The PASERK type {type} does not support sealing.");
@@ -201,7 +202,7 @@ public static class Paserk
     /// <param name="sealingKey">The recipient's asymmetric secret key.</param>
     public static PasetoKey Decode(string serializedKey, PasetoAsymmetricSecretKey sealingKey)
     {
-        ArgumentNullException.ThrowIfNull(sealingKey);
+        Guard.NotNull(sealingKey, nameof(sealingKey));
 
         var (type, version, header, encodedKey) = ParseHeader(serializedKey);
 

@@ -303,6 +303,7 @@
         "dependencies": {
           "BouncyCastle.Cryptography": "[2.6.2, )",
           "Microsoft.NET.Test.Sdk": "[18.7.0, )",
+          "Newtonsoft.Json": "[13.0.3, )",
           "Paseto.Core": "[1.0.0, )",
           "Shouldly": "[4.3.0, )",
           "xunit": "[2.9.3, )",

@@ -42,7 +42,12 @@ public class Base64UrlEncoder : IBase64UrlEncoder
     /// <returns>Base64Url encoding of the UTF8 bytes.</returns>
     public string Encode(ReadOnlySpan<byte> input, PaddingPolicy policy = PaddingPolicy.Discard)
     {
+#if NETFRAMEWORK
+        // .NET Framework has no ReadOnlySpan<byte> overload of Convert.ToBase64String.
+        var encoded = Convert.ToBase64String(input.ToArray()).Replace(Char62, UrlChar62).Replace(Char63, UrlChar63);
+#else
         var encoded = Convert.ToBase64String(input).Replace(Char62, UrlChar62).Replace(Char63, UrlChar63);
+#endif
         if (policy == PaddingPolicy.Discard)
             encoded = encoded.TrimEnd(OnePads);
 
