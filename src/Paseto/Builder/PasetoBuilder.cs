@@ -397,6 +397,23 @@ public sealed class PasetoBuilder
     }
 
     /// <summary>
+    /// Generates a sealed serialized key in PASERK format (<c>seal</c>): the symmetric key set via
+    /// <c>WithKey</c> is encrypted to a recipient's asymmetric public key.
+    /// </summary>
+    /// <param name="type">The PASERK type (<c>seal</c>).</param>
+    /// <param name="sealingKey">The recipient's asymmetric public key.</param>
+    /// <returns>The encoded serialized key in PASERK format.</returns>
+    /// <exception cref="PasetoBuilderException">Can't generate PASERK serialized key. Check if you have call the 'Use' method.</exception>
+    /// <exception cref="PasetoBuilderException">Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.</exception>
+    public string GenerateSerializedKey(PaserkType type, PasetoAsymmetricPublicKey sealingKey)
+    {
+        PasetoBuilderException.ThrowIfNull(_protocol, "Can't generate PASERK serialized key. Check if you have call the 'Use' method.");
+        PasetoBuilderException.ThrowIfNull(_pasetoKey, "Can't generate PASERK serialized key. Check if you have call the 'WithKey' method.");
+
+        return Paserk.Encode(_pasetoKey, type, sealingKey);
+    }
+
+    /// <summary>
     /// Builds a token using the supplied dependencies.
     /// </summary>
     /// <returns>The generated Paseto token.</returns>

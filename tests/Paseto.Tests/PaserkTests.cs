@@ -14,6 +14,8 @@ using Xunit;
 using Xunit.Abstractions;
 using Xunit.Categories;
 
+using Org.BouncyCastle.Crypto.Parameters;
+
 using Paseto.Cryptography.Key;
 using Paseto.Tests.Vectors;
 using Paseto.Internal;
@@ -53,6 +55,18 @@ public class PaserkTests
     [
         PaserkType.LocalPassword,
         PaserkType.SecretPassword
+    ];
+
+    private static readonly PaserkType[] PaserkSealTypes =
+    [
+        PaserkType.Seal
+    ];
+
+    // Seal is only implemented for the actively-supported versions (v3 = P-384, v4 = X25519).
+    private static readonly ProtocolVersion[] SealProtocols =
+    [
+        ProtocolVersion.V3,
+        ProtocolVersion.V4
     ];
 
     // TODO: Construct dynamically when supporting all types
@@ -238,6 +252,75 @@ public class PaserkTests
             PaserkType.SecretWrap or PaserkType.SecretPassword => new PasetoAsymmetricSecretKey(bytes, protocol),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Type not supported"),
         };
+    }
+
+    public static IEnumerable<object[]> SealGenerator => WrapItemGenerator(SealProtocols, PaserkSealTypes);
+
+    [Theory]
+    [MemberData(nameof(SealGenerator))]
+    public void SealTestVectors(PaserkTestItem test, ProtocolVersion version, PaserkType type)
+    {
+        // The wrong-version fail vectors carry a key of a different version; the version guard in
+        // Paserk already rejects them, so skip (consistent with the other theories).
+        if (test is { ExpectFail: true, Comment: "Implementations MUST NOT accept a PASERK of the wrong version." })
+        {
+            return;
+        }
+
+        var (publicKey, secretKey) = BuildSealingKeys(version, test);
+
+        if (test.ExpectFail)
+        {
+            var act = () => Paserk.Decode(test.Paserk, secretKey);
+            act.ShouldThrow<Exception>();
+            return;
+        }
+
+        // Decode (unseal) the official vector, then compare against the expected local key.
+        var decoded = Paserk.Decode(test.Paserk, secretKey);
+        decoded.ShouldNotBeNull();
+        decoded.Key.Span.ToArray().ShouldBeEquivalentTo(FromHexString(test.Unsealed));
+
+        // Round-trip: re-seal the decoded key (fresh random ephemeral key) and ensure it unseals back.
+        var localKey = new PasetoSymmetricKey(decoded.Key.ToArray(), PaserkHelpers.CreateProtocolVersion(version));
+        var resealed = Paserk.Encode(localKey, type, publicKey);
+        var reDecoded = Paserk.Decode(resealed, secretKey);
+        reDecoded.Key.Span.ToArray().ShouldBeEquivalentTo(decoded.Key.ToArray());
+    }
+
+    private static (PasetoAsymmetricPublicKey publicKey, PasetoAsymmetricSecretKey secretKey) BuildSealingKeys(ProtocolVersion version, PaserkTestItem test)
+    {
+        var protocol = PaserkHelpers.CreateProtocolVersion(version);
+
+        // v4 keys are raw hex (Ed25519); v3 keys are PEM-encoded P-384 keys.
+        if (version == ProtocolVersion.V4)
+        {
+            return (new PasetoAsymmetricPublicKey(FromHexString(test.SealingPublicKey), protocol),
+                    new PasetoAsymmetricSecretKey(FromHexString(test.SealingSecretKey), protocol));
+        }
+
+        return (new PasetoAsymmetricPublicKey(ParseP384PublicKey(test.SealingPublicKey), protocol),
+                new PasetoAsymmetricSecretKey(ParseP384SecretKey(test.SealingSecretKey), protocol));
+    }
+
+    private static byte[] ParseP384PublicKey(string pem)
+    {
+        using var reader = new StringReader(pem);
+        var pub = (ECPublicKeyParameters)new Org.BouncyCastle.OpenSsl.PemReader(reader).ReadObject();
+        return pub.Q.GetEncoded(compressed: true); // 49-byte compressed point
+    }
+
+    private static byte[] ParseP384SecretKey(string pem)
+    {
+        using var reader = new StringReader(pem);
+        var obj = new Org.BouncyCastle.OpenSsl.PemReader(reader).ReadObject();
+        var priv = obj switch
+        {
+            Org.BouncyCastle.Crypto.AsymmetricCipherKeyPair kp => (ECPrivateKeyParameters)kp.Private,
+            ECPrivateKeyParameters p => p,
+            _ => throw new InvalidOperationException("Unexpected PEM object for a P-384 secret key."),
+        };
+        return Org.BouncyCastle.Utilities.BigIntegers.AsUnsignedByteArray(48, priv.D); // 48-byte raw scalar
     }
 
     public static IEnumerable<object[]> IdGenerator => TestItemGenerator(ValidProtocols, PaserkIdTypes);
