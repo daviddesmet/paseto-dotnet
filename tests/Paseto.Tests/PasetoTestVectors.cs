@@ -9,7 +9,6 @@ using Shouldly;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Categories;
 
 using Builder;
 using Cryptography;
@@ -18,7 +17,7 @@ using Vectors;
 
 using static TestHelper;
 
-[Category("CI")]
+[Trait("Category", "CI")]
 public class PasetoTestVectors
 {
     private readonly string[] SKIP_ASSERT_ENCODE = { "v1" };

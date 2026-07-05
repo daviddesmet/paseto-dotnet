@@ -12,7 +12,6 @@ using Newtonsoft.Json;
 using Paseto.Extensions;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Categories;
 
 using Org.BouncyCastle.Crypto.Parameters;
 
@@ -22,7 +21,7 @@ using Paseto.Internal;
 
 using static Paseto.Tests.TestHelper;
 
-[Category("CI")]
+[Trait("Category", "CI")]
 public class PaserkTests
 {
     private readonly ITestOutputHelper _output;
