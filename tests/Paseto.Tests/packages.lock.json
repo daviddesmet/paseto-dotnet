@@ -86,15 +86,6 @@
           "xunit.core": "[2.9.3]"
         }
       },
-      "xunit.categories": {
-        "type": "Direct",
-        "requested": "[3.0.1, )",
-        "resolved": "3.0.1",
-        "contentHash": "je4ogEoneIl21pqiGPPF1iWFUP1UKV+//clBmBpJikZXapcoUH6CjEu1YOVSGkmfrpg1wWxmlXew2wfAkqOuGQ==",
-        "dependencies": {
-          "xunit.core": "2.4.1"
-        }
-      },
       "xunit.runner.console": {
         "type": "Direct",
         "requested": "[2.9.3, )",
@@ -374,15 +365,6 @@
           "xunit.core": "[2.9.3]"
         }
       },
-      "xunit.categories": {
-        "type": "Direct",
-        "requested": "[3.0.1, )",
-        "resolved": "3.0.1",
-        "contentHash": "je4ogEoneIl21pqiGPPF1iWFUP1UKV+//clBmBpJikZXapcoUH6CjEu1YOVSGkmfrpg1wWxmlXew2wfAkqOuGQ==",
-        "dependencies": {
-          "xunit.core": "2.4.1"
-        }
-      },
       "xunit.runner.console": {
         "type": "Direct",
         "requested": "[2.9.3, )",
@@ -548,15 +530,6 @@
           "xunit.analyzers": "1.18.0",
           "xunit.assert": "2.9.3",
           "xunit.core": "[2.9.3]"
-        }
-      },
-      "xunit.categories": {
-        "type": "Direct",
-        "requested": "[3.0.1, )",
-        "resolved": "3.0.1",
-        "contentHash": "je4ogEoneIl21pqiGPPF1iWFUP1UKV+//clBmBpJikZXapcoUH6CjEu1YOVSGkmfrpg1wWxmlXew2wfAkqOuGQ==",
-        "dependencies": {
-          "xunit.core": "2.4.1"
         }
       },
       "xunit.runner.console": {
