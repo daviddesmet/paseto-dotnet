@@ -54,7 +54,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="NaCl.Core" Version="2.2.0" />
-    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
   </ItemGroup>
 
   <ItemGroup Label="Package References for Windows" Condition=" '$(TargetFramework)' == 'net48' ">
