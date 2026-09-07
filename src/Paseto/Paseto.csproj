@@ -49,7 +49,7 @@
 
   <ItemGroup Label="Package References">
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="All" Version="10.0.300" />
-    <PackageReference Include="MinVer" Version="7.0.0">
+    <PackageReference Include="MinVer" Version="8.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
