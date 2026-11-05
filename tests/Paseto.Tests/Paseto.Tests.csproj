@@ -1,12 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFrameworks>net48;net8.0;net10.0</TargetFrameworks>
     <LangVersion>latest</LangVersion>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <!-- Xunit.Categories 3.x is not strong-named; suppress the signed-reference warning -->
-    <NoWarn>$(NoWarn);CS8002</NoWarn>
     <Authors>David De Smet</Authors>
     <Copyright>Copyright © 2018-2024 David De Smet</Copyright>
     <PackageLicenseUrl>https://opensource.org/licenses/MIT</PackageLicenseUrl>
@@ -185,9 +183,10 @@
     </PackageReference>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+    <!-- Used by the test-vector models; transitive on modern TFMs but must be explicit for net48. -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="Shouldly" Version="4.3.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
-    <PackageReference Include="xunit.categories" Version="3.0.1" />
     <PackageReference Include="xunit.runner.console" Version="2.9.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -202,9 +201,12 @@
     <ProjectReference Include="..\..\src\Paseto\Paseto.csproj" />
   </ItemGroup>
 
+  <!-- Lets the net48 target compile on non-Windows machines (macOS/Linux CI). -->
   <ItemGroup Condition="'$(TargetFramework)' == 'net48' ">
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="All" />
+    <PackageReference Include="System.Memory" Version="4.6.3" />
+    <PackageReference Include="IndexRange" Version="1.1.1" />
+    <Reference Include="System.Net.Http" />
   </ItemGroup>
 
 </Project>

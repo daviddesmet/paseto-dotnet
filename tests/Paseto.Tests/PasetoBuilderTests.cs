@@ -126,7 +126,7 @@ public class PasetoBuilderTests
     public void ShouldSucceedOnGenerateAsymmetricKeyPairWhenSeedIsProvided(ProtocolVersion version, int secretKeyLength, int publicKeyLength)
     {
         var seed = new byte[32];
-        RandomNumberGenerator.Fill(seed);
+        using (var rng = RandomNumberGenerator.Create()) rng.GetBytes(seed);
 
         var pasetoKey = new PasetoBuilder().Use(version, Purpose.Public)
                                            .GenerateAsymmetricKeyPair(seed);
@@ -490,7 +490,7 @@ public class PasetoBuilderTests
         };
 
         var key = new byte[keyLength];
-        RandomNumberGenerator.Fill(key);
+        using (var rng = RandomNumberGenerator.Create()) rng.GetBytes(key);
 
         var parsek = new PasetoBuilder().Use(version, Purpose.Public)
             .WithKey(key, Encryption.AsymmetricPublicKey)
@@ -514,7 +514,7 @@ public class PasetoBuilderTests
         };
 
         var key = new byte[keyLength];
-        RandomNumberGenerator.Fill(key);
+        using (var rng = RandomNumberGenerator.Create()) rng.GetBytes(key);
 
         var parsek = new PasetoBuilder().Use(version, Purpose.Public)
             .WithKey(key, Encryption.AsymmetricSecretKey)
@@ -607,7 +607,8 @@ public class PasetoBuilderTests
                                            .AddClaim("i", i)
                                            .Encode();
 
-            var sig = Paseto.Utils.EncodingHelper.FromBase64Url(token["v3.public.".Length..])[^96..];
+            var raw = Paseto.Utils.EncodingHelper.FromBase64Url(token["v3.public.".Length..]);
+            var sig = raw.AsSpan(raw.Length - 96);
             if (sig[0] == 0 || sig[48] == 0)
                 shortSigCases++;
 
@@ -636,7 +637,7 @@ public class PasetoBuilderTests
         };
 
         var sharedKey = new byte[keyLength];
-        RandomNumberGenerator.Fill(sharedKey);
+        using (var rng = RandomNumberGenerator.Create()) rng.GetBytes(sharedKey);
 
         var keyPair = new PasetoBuilder()
             .Use(version, purpose)
@@ -733,7 +734,7 @@ public class PasetoBuilderTests
 
         var ret = new TheoryData<ProtocolVersion, byte[]>();
 
-        foreach (var version in Enum.GetValues<ProtocolVersion>())
+        foreach (var version in ((ProtocolVersion[])Enum.GetValues(typeof(ProtocolVersion))))
         foreach (var key in bytes)
             ret.Add(version, key);
 
@@ -752,7 +753,7 @@ public class PasetoBuilderTests
 
         var ret = new TheoryData<ProtocolVersion, byte[]>();
 
-        foreach (var version in Enum.GetValues<ProtocolVersion>().Where(x => x != ProtocolVersion.V1))
+        foreach (var version in ((ProtocolVersion[])Enum.GetValues(typeof(ProtocolVersion))).Where(x => x != ProtocolVersion.V1))
         foreach (var key in bytes)
             ret.Add(version, key);
 

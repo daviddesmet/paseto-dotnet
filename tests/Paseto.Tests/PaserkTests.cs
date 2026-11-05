@@ -12,7 +12,6 @@ using Newtonsoft.Json;
 using Paseto.Extensions;
 using Xunit;
 using Xunit.Abstractions;
-using Xunit.Categories;
 
 using Org.BouncyCastle.Crypto.Parameters;
 
@@ -22,14 +21,14 @@ using Paseto.Internal;
 
 using static Paseto.Tests.TestHelper;
 
-[Category("CI")]
+[Trait("Category", "CI")]
 public class PaserkTests
 {
     private readonly ITestOutputHelper _output;
 
     public PaserkTests(ITestOutputHelper output) => _output = output;
 
-    private static readonly ProtocolVersion[] ValidProtocols = Enum.GetValues<ProtocolVersion>();
+    private static readonly ProtocolVersion[] ValidProtocols = ((ProtocolVersion[])Enum.GetValues(typeof(ProtocolVersion)));
 
     private static readonly PaserkType[] SupportedPaserkTypes =
     [

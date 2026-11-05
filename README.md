@@ -46,7 +46,7 @@ PASERK extension
 
 [![NuGet Version](https://img.shields.io/nuget/v/Paseto.Core)](https://www.nuget.org/packages/Paseto.Core/)
 
-Targets `net8.0` and `net10.0`.
+Targets `net48`, `net8.0` and `net10.0`.
 
 Install the Paseto.Core NuGet package from the .NET CLI using:
 ```

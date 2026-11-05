@@ -120,7 +120,13 @@ internal static class EncodingHelper
     /// </summary>
     /// <param name="input">The input.</param>
     /// <returns>System.String.</returns>
-    internal static string GetString(ReadOnlySpan<byte> input) => Encoding.UTF8.GetString(input);
+    internal static string GetString(ReadOnlySpan<byte> input)
+#if NETFRAMEWORK
+        // .NET Framework has no ReadOnlySpan<byte> overload of Encoding.GetString.
+        => Encoding.UTF8.GetString(input.ToArray());
+#else
+        => Encoding.UTF8.GetString(input);
+#endif
 
     /// <summary>
     /// Base64 URL safe encoding.

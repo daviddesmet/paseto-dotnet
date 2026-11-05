@@ -11,6 +11,13 @@ using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.OpenSsl;
 using Paseto.Extensions;
 using Xunit;
+#if NETFRAMEWORK
+using System.IO;
+using Org.BouncyCastle.Asn1.Sec;
+using Org.BouncyCastle.Asn1.X9;
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Parameters;
+#endif
 
 public static class TestHelper
 {
@@ -65,10 +72,24 @@ public static class TestHelper
 
         if (ECDsaPrivateKeyRegex.IsMatch(key))
         {
+#if NETFRAMEWORK
+            // ECDsa.ImportFromPem/ExportECPrivateKey are .NET Core only. Reproduce the SEC1
+            // ECPrivateKey DER with BouncyCastle (verified byte-identical to ExportECPrivateKey).
+            var ecObj = new PemReader(new StringReader(key)).ReadObject();
+            var ecPriv = (ECPrivateKeyParameters)((AsymmetricCipherKeyPair)ecObj).Private;
+            var ecPub = (ECPublicKeyParameters)((AsymmetricCipherKeyPair)ecObj).Public;
+            var ecStruct = new ECPrivateKeyStructure(
+                ecPriv.Parameters.Curve.FieldSize,
+                ecPriv.D,
+                new DerBitString(ecPub.Q.GetEncoded(false)),
+                new X962Parameters(ecPriv.PublicKeyParamSet));
+            return ecStruct.ToAsn1Object().GetDerEncoded();
+#else
             var ecdsaSecretKey = ECDsa.Create();
             ecdsaSecretKey.ImportFromPem(key);
             var sk = ecdsaSecretKey.ExportECPrivateKey();
             return sk;
+#endif
 
             /*
             using var ms = new MemoryStream(GetBytes(key));
@@ -102,34 +123,37 @@ public static class TestHelper
 
         if (RsaPrivateKeyRegex.IsMatch(key))
         {
+#if NETFRAMEWORK
+            // Reproduce ExportRSAPrivateKey (PKCS#1 RSAPrivateKey DER) with BouncyCastle.
+            var rsaObj = new PemReader(new StringReader(key)).ReadObject();
+            var rsaPriv = (RsaPrivateCrtKeyParameters)((AsymmetricCipherKeyPair)rsaObj).Private;
+            return new RsaPrivateKeyStructure(rsaPriv.Modulus, rsaPriv.PublicExponent, rsaPriv.Exponent, rsaPriv.P, rsaPriv.Q, rsaPriv.DP, rsaPriv.DQ, rsaPriv.QInv)
+                .ToAsn1Object().GetDerEncoded();
+#else
             var rsaSecretKey = RSA.Create();
-#if NET5_0_OR_GREATER
             rsaSecretKey.ImportFromPem(key);
-#elif NETCOREAPP3_1
-            var privateKeyBase64 = RsaPrivateKeyRegex.Replace(key, "");
-            var privateKey = Convert.FromBase64String(privateKeyBase64);
-            rsaSecretKey.ImportRSAPrivateKey(new ReadOnlySpan<byte>(privateKey), out _);
-#endif
 
             //var sk = rsaSecretKey.ToCompatibleXmlString(true);
             //return GetBytes(sk);
             return rsaSecretKey.ExportRSAPrivateKey();
+#endif
         }
 
         if (RsaPublicKeyRegex.IsMatch(key))
         {
+#if NETFRAMEWORK
+            // Reproduce ExportRSAPublicKey (PKCS#1 RSAPublicKey DER) from the SPKI PEM with BouncyCastle.
+            var rsaPubObj = (RsaKeyParameters)new PemReader(new StringReader(key)).ReadObject();
+            return new RsaPublicKeyStructure(rsaPubObj.Modulus, rsaPubObj.Exponent)
+                .ToAsn1Object().GetDerEncoded();
+#else
             var rsaPublicKey = RSA.Create();
-#if NET5_0_OR_GREATER
             rsaPublicKey.ImportFromPem(key);
-#elif NETCOREAPP3_1
-            var publicKeyBase64 = RsaPublicKeyRegex.Replace(key, "");
-            var publicKey = Convert.FromBase64String(publicKeyBase64);
-            rsaPublicKey.ImportRSAPublicKey(new ReadOnlySpan<byte>(publicKey), out _);
-#endif
 
             //var pk = rsaPublicKey.ToCompatibleXmlString(false);
             //return GetBytes(pk);
             return rsaPublicKey.ExportRSAPublicKey();
+#endif
         }
 
         return FromHexString(key);
@@ -139,21 +163,21 @@ public static class TestHelper
     {
         var ret = new TheoryData<ProtocolVersion, Purpose>();
 
-        foreach (var version in Enum.GetValues<ProtocolVersion>())
-        foreach (var purpose in Enum.GetValues<Purpose>())
+        foreach (var version in ((ProtocolVersion[])Enum.GetValues(typeof(ProtocolVersion))))
+        foreach (var purpose in ((Purpose[])Enum.GetValues(typeof(Purpose))))
             ret.Add(version, purpose);
 
         return ret;
     }
 
-    public static TheoryData<ProtocolVersion> AllVersionsData() =>  Enum.GetValues<ProtocolVersion>()
+    public static TheoryData<ProtocolVersion> AllVersionsData() =>  ((ProtocolVersion[])Enum.GetValues(typeof(ProtocolVersion)))
         .Aggregate(new TheoryData<ProtocolVersion>(), (x, y) =>
         {
             x.Add(y);
             return x;
         });
 
-    public static TheoryData<string> VersionStringNameData() =>  Enum.GetValues<ProtocolVersion>()
+    public static TheoryData<string> VersionStringNameData() =>  ((ProtocolVersion[])Enum.GetValues(typeof(ProtocolVersion)))
         .Select(x => x.ToDescription())
         .Aggregate(new TheoryData<string>(), (x, y) =>
         {

@@ -9,6 +9,10 @@ using Org.BouncyCastle.Asn1.X509;
 using Org.BouncyCastle.Asn1;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Security;
+#if NETFRAMEWORK
+using Org.BouncyCastle.Crypto;
+using Org.BouncyCastle.Crypto.Generators;
+#endif
 
 using Paseto.Cryptography.Key;
 using Paseto.Extensions;
@@ -58,7 +62,7 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     public virtual PasetoSymmetricKey GenerateSymmetricKey()
     {
         var n = new byte[SYM_KEY_SIZE_IN_BYTES];
-        RandomNumberGenerator.Fill(n);
+        Rng.Fill(n);
 
         return new PasetoSymmetricKey(n, this);
     }
@@ -70,10 +74,26 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
     /// <returns><see cref="Paseto.Cryptography.Key.PasetoAsymmetricKeyPair" /></returns>
     public virtual PasetoAsymmetricKeyPair GenerateAsymmetricKeyPair(byte[] seed = null)
     {
+#if NETFRAMEWORK
+        // RSA.ExportRSAPrivateKey/ExportRSAPublicKey (PKCS#1 DER) are .NET Core 3.0+ only.
+        // Generate with BouncyCastle and emit the same PKCS#1 structures that Sign/Verify parse.
+        var generator = new RsaKeyPairGenerator();
+        generator.Init(new KeyGenerationParameters(new SecureRandom(), ASYM_KEY_SIZE_IN_BITS));
+        var keyPair = generator.GenerateKeyPair();
+
+        var priv = (RsaPrivateCrtKeyParameters)keyPair.Private;
+        var pub = (RsaKeyParameters)keyPair.Public;
+
+        var sk = new RsaPrivateKeyStructure(priv.Modulus, priv.PublicExponent, priv.Exponent, priv.P, priv.Q, priv.DP, priv.DQ, priv.QInv)
+            .ToAsn1Object().GetDerEncoded();
+        var pk = new RsaPublicKeyStructure(pub.Modulus, pub.Exponent)
+            .ToAsn1Object().GetDerEncoded();
+#else
         using var rsa = RSA.Create();
         rsa.KeySize = ASYM_KEY_SIZE_IN_BITS;
         var sk = rsa.ExportRSAPrivateKey();
         var pk = rsa.ExportRSAPublicKey();
+#endif
 
         return new PasetoAsymmetricKeyPair(sk, pk, this);
     }
@@ -160,8 +180,8 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
         var nonce = hmacn.ComputeHash(m)[..SYM_NONCE_SIZE_IN_BYTES];
 
         // Split the key into an Encryption key and Authentication key
-        var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_DOMAIN_SEPARATION), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
-        var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_DOMAIN_SEPARATION), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
+        var ek = Hkdf.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_DOMAIN_SEPARATION), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
+        var ak = Hkdf.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_DOMAIN_SEPARATION), salt: nonce[..SYM_NONCE_SPLIT_SIZE_IN_BYTES]);
 
         try
         {
@@ -278,8 +298,8 @@ public class Version1 : PasetoProtocolVersion, IPasetoProtocolVersion
             var t = bytes[tlen..];
 
             // Split the key into an Encryption key and Authentication key
-            var ek = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_DOMAIN_SEPARATION), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
-            var ak = HKDF.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_DOMAIN_SEPARATION), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
+            var ek = Hkdf.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(EK_DOMAIN_SEPARATION), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
+            var ak = Hkdf.DeriveKey(HashAlgorithmName.SHA384, pasetoKey.Key.ToArray(), SYM_KEYDERIVATION_SIZE_IN_BYTES, info: GetBytes(AK_DOMAIN_SEPARATION), salt: n[..SYM_NONCE_SPLIT_SIZE_IN_BYTES].ToArray());
 
             try
             {
