@@ -4,7 +4,7 @@ internal static partial class LookupTables
 {
     /* base[i][j] = (j+1)*256^i*B */
     //32*8
-    internal static GroupElementPreComp[][] Base = new GroupElementPreComp[][]
+    internal static readonly GroupElementPreComp[][] Base = new GroupElementPreComp[][]
     {
         new[]
         {

@@ -44,17 +44,11 @@ internal static class Comparer
         }
         catch (ArgumentException)
         {
-            // attempt to to value type comparison
-            if (value is decimal || valueToCompare is decimal || value is double || valueToCompare is double || value is float || valueToCompare is float)
-            {
-                // we are comparing a decimal/double/float, then compare using doubles
-                result = Convert.ToDouble(value).CompareTo(Convert.ToDouble(valueToCompare));
-            }
-            else
-            {
-                // use long integer
-                result = ((long)value).CompareTo((long)valueToCompare);
-            }
+            // attempt a value type comparison: fractional values compare as doubles, everything else as long integers
+            var isFractional = value is decimal || valueToCompare is decimal || value is double || valueToCompare is double || value is float || valueToCompare is float;
+            result = isFractional
+                ? Convert.ToDouble(value).CompareTo(Convert.ToDouble(valueToCompare))
+                : ((long)value).CompareTo((long)valueToCompare);
         }
     }
 
