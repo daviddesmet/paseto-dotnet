@@ -189,8 +189,8 @@
       },
       "NaCl.Core": {
         "type": "Transitive",
-        "resolved": "2.2.0",
-        "contentHash": "oDMMcIxu2INIz/GsHRmMEsua5DDFLSW2OIel9R/UsJZ2a8tD2TEdbtDsFp+GbD3w/VXQjc/P9Dubtoi0450SZQ=="
+        "resolved": "2.2.1",
+        "contentHash": "tPlKQvHDwTiwUINQGEHX5jT2oR23WlWWWAEL8SNoSaVFOOw2sXfKx+rGCpOcHLzvBKT9H5EQw7NgkgbJEhr9xw=="
       },
       "Newtonsoft.Json": {
         "type": "Transitive",
@@ -286,7 +286,7 @@
         "type": "Project",
         "dependencies": {
           "BouncyCastle.Cryptography": "[2.7.0, )",
-          "NaCl.Core": "[2.2.0, )"
+          "NaCl.Core": "[2.2.1, )"
         }
       },
       "paseto.tests": {
