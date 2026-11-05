@@ -31,9 +31,10 @@ internal static class Comparer
 
     /// <summary>
     /// Tries to do a proper comparison but may fail.
-    /// First it tries the default comparison, if this fails, it will see 
-    /// if the values are fractions. If they are, then it does a double 
-    /// comparison, otherwise it does a long comparison.
+    /// First it tries the default comparison, if this fails, it will see
+    /// if the values are fractions. If they are, then it does a double
+    /// comparison. If both values are integral types, it does an exact
+    /// integer comparison. Any other combination is not comparable.
     /// </summary>
     private static void Compare(IComparable value, IComparable valueToCompare, out int result)
     {
@@ -44,13 +45,28 @@ internal static class Comparer
         }
         catch (ArgumentException)
         {
-            // attempt a value type comparison: fractional values compare as doubles, everything else as long integers
-            var isFractional = value is decimal || valueToCompare is decimal || value is double || valueToCompare is double || value is float || valueToCompare is float;
-            result = isFractional
-                ? Convert.ToDouble(value).CompareTo(Convert.ToDouble(valueToCompare))
-                : ((long)value).CompareTo((long)valueToCompare);
+            // attempt a value type comparison
+            if (IsFractional(value) || IsFractional(valueToCompare))
+            {
+                // we are comparing a decimal/double/float, then compare using doubles
+                result = Convert.ToDouble(value).CompareTo(Convert.ToDouble(valueToCompare));
+            }
+            else if (IsIntegral(value) && IsIntegral(valueToCompare))
+            {
+                // mixed integral types (e.g. long vs int): decimal represents every integral value exactly, including ulong
+                result = Convert.ToDecimal(value).CompareTo(Convert.ToDecimal(valueToCompare));
+            }
+            else
+            {
+                // not comparable (e.g. a string vs a number): no implicit conversion
+                throw;
+            }
         }
     }
+
+    private static bool IsFractional(object value) => value is decimal or double or float;
+
+    private static bool IsIntegral(object value) => value is sbyte or byte or short or ushort or int or uint or long or ulong;
 
     /// <summary>
     /// Tries to compare the two objects, but will throw an exception if it fails.
