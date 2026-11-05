@@ -173,25 +173,25 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" Version="10.0.1">
+    <PackageReference Include="coverlet.collector" Version="10.1.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="coverlet.msbuild" Version="10.0.1">
+    <PackageReference Include="coverlet.msbuild" Version="10.1.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.7.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
     <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
-    <!-- Used by the test-vector models; transitive on modern TFMs but must be explicit for net48. -->
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <!-- Used by the test-vector models; must be explicit (not transitive via Microsoft.NET.Test.Sdk, and required for net48). -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Shouldly" Version="4.3.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.console" Version="2.9.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
