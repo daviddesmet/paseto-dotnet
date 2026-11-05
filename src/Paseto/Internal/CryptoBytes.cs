@@ -68,7 +68,11 @@ internal static class CryptoBytes
     // CryptographicOperations.ZeroMemory guarantees the write is not elided by the JIT.
     // On .NET Framework that API is unavailable, so we clear the array on a method flagged
     // NoInlining | NoOptimization so the JIT cannot drop the wipe as a dead store.
+#if NETFRAMEWORK
     [MethodImpl(MethodImplOptions.NoInlining | MethodImplOptions.NoOptimization)]
+#else
+    [MethodImpl(MethodImplOptions.NoInlining)]
+#endif
     private static void InternalWipe(byte[] data, int offset, int count)
     {
 #if NETFRAMEWORK
