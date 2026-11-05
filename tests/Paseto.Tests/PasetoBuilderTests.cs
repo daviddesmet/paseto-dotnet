@@ -10,6 +10,9 @@ using Shouldly;
 using Xunit;
 
 using Paseto.Builder;
+using Paseto.Protocol;
+using Paseto.Extensions;
+using Paseto.Cryptography.Key;
 using Paseto.Internal;
 using static Paseto.Tests.TestHelper;
 
@@ -620,6 +623,64 @@ public class PasetoBuilderTests
 
         shortKeyCases.ShouldBeGreaterThan(0);
         shortSigCases.ShouldBeGreaterThan(0);
+    }
+
+    [Theory(DisplayName = "Should infer version and purpose from a typed symmetric key")]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
+    public void ShouldInferProtocolFromSymmetricKey(ProtocolVersion version)
+    {
+        var key = new PasetoBuilder().Use(version, Purpose.Local).GenerateSymmetricKey();
+
+        var token = new PasetoBuilder().WithKey(key).AddClaim("data", "inferred").Encode();
+        token.ShouldStartWith($"{version.ToDescription()}.local.");
+
+        var result = new PasetoBuilder().WithKey(key).Decode(token);
+        result.IsValid.ShouldBeTrue();
+        result.Paseto.Payload["data"].ToString().ShouldBe("inferred");
+
+        new PasetoBuilder().WithKey(key).DecodePayload(token).ShouldContain("inferred");
+    }
+
+    [Theory(DisplayName = "Should infer version and purpose from typed asymmetric keys")]
+    [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
+    public void ShouldInferProtocolFromAsymmetricKeys(ProtocolVersion version)
+    {
+        var keyPair = new PasetoBuilder().Use(version, Purpose.Public).GenerateAsymmetricKeyPair(new byte[32]);
+
+        var token = new PasetoBuilder().WithKey(keyPair.SecretKey).AddClaim("data", "inferred").Encode();
+        token.ShouldStartWith($"{version.ToDescription()}.public.");
+
+        var result = new PasetoBuilder().WithKey(keyPair.PublicKey).Decode(token);
+        result.IsValid.ShouldBeTrue();
+        result.Paseto.Payload["data"].ToString().ShouldBe("inferred");
+    }
+
+    [Fact(DisplayName = "Should reject a token whose header does not match the inferred key version")]
+    public void ShouldRejectTokenForDifferentVersionWhenInferring()
+    {
+        var v4Key = new PasetoBuilder().Use(ProtocolVersion.V4, Purpose.Local).GenerateSymmetricKey();
+        var v2Key = new PasetoSymmetricKey(v4Key.Key.ToArray(), new Version2());
+
+        var v4Token = new PasetoBuilder().WithKey(v4Key).AddClaim("data", "x").Encode();
+
+        new PasetoBuilder().WithKey(v2Key).Decode(v4Token).IsValid.ShouldBeFalse();
+    }
+
+    [Fact(DisplayName = "Should reject a public token when inferring from a symmetric key")]
+    public void ShouldRejectPublicTokenForSymmetricKeyWhenInferring()
+    {
+        var keyPair = new PasetoBuilder().Use(ProtocolVersion.V4, Purpose.Public).GenerateAsymmetricKeyPair(new byte[32]);
+        var publicToken = new PasetoBuilder().WithKey(keyPair.SecretKey).AddClaim("data", "x").Encode();
+        var symmetricKey = new PasetoBuilder().Use(ProtocolVersion.V4, Purpose.Local).GenerateSymmetricKey();
+
+        new PasetoBuilder().WithKey(symmetricKey).Decode(publicToken).IsValid.ShouldBeFalse();
+    }
+
+    [Fact(DisplayName = "Should still require Use when the key is raw bytes")]
+    public void ShouldRequireUseForRawKeyBytes()
+    {
+        var act = () => new PasetoBuilder().WithKey(FromHexString(LocalKey), Encryption.SymmetricKey).Decode("v4.local.AAAA");
+        act.ShouldThrow<PasetoBuilderException>().Message.ShouldContain("'Use'");
     }
 
     [Theory(DisplayName = "Should succeed on Decoding with Date Validations")]

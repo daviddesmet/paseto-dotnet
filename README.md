@@ -129,6 +129,12 @@ var result = new PasetoBuilder().Use(version, purpose)
                                 .Decode(token, valParams);
 ```
 
+When the key is a typed `PasetoKey` (for example from `GenerateSymmetricKey`, `GenerateAsymmetricKeyPair` or `Paserk.Decode`), `Use` can be omitted: the version and purpose come from the key (`PasetoSymmetricKey` → `local`, asymmetric keys → `public`). The token header is never used to pick the algorithm, so a token for a different version or purpose is rejected ([Algorithm Lucidity](https://github.com/paseto-standard/paseto-spec/blob/master/docs/02-Implementation-Guide/03-Algorithm-Lucidity.md)). Raw key bytes still require `Use`.
+
+```csharp
+var result = new PasetoBuilder().WithKey(key).Decode(token);
+```
+
 ### PASERK
 
 The library also provides the PASERK extension for encoding and decoding a key.
