@@ -1,6 +1,7 @@
 ﻿namespace Paseto;
 
 using System;
+using System.Text.Json;
 using Paseto.Extensions;
 using static Utils.EncodingHelper;
 
@@ -61,4 +62,16 @@ public class PasetoToken
     public string RawPayload { get; }
 
     public string RawToken { get; }
+
+    /// <summary>
+    /// Deserializes the decoded JSON payload into <typeparamref name="T"/>.
+    /// </summary>
+    /// <remarks>
+    /// Property names are matched as configured by <paramref name="options"/>; by default matching is
+    /// case-sensitive, so use <c>[JsonPropertyName("exp")]</c> or <see cref="JsonSerializerOptions.PropertyNameCaseInsensitive"/>.
+    /// </remarks>
+    /// <typeparam name="T">The type to deserialize the payload to.</typeparam>
+    /// <param name="options">Optional serializer options.</param>
+    /// <returns>The payload as <typeparamref name="T"/>.</returns>
+    public T GetPayload<T>(JsonSerializerOptions options = null) => Payload.Deserialize<T>(RawPayload, options);
 }
