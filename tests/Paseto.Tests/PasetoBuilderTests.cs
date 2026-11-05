@@ -607,7 +607,8 @@ public class PasetoBuilderTests
                                            .AddClaim("i", i)
                                            .Encode();
 
-            var sig = Paseto.Utils.EncodingHelper.FromBase64Url(token["v3.public.".Length..])[^96..];
+            var raw = Paseto.Utils.EncodingHelper.FromBase64Url(token["v3.public.".Length..]);
+            var sig = raw.AsSpan(raw.Length - 96);
             if (sig[0] == 0 || sig[48] == 0)
                 shortSigCases++;
 
