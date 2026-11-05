@@ -1,0 +1,58 @@
+name: Benchmarks
+
+# Opt-in: run manually from the Actions tab (Run workflow).
+on:
+  workflow_dispatch:
+    inputs:
+      filter:
+        description: 'BenchmarkDotNet filter (glob), e.g. * or *Sign*'
+        required: true
+        default: '*'
+      job:
+        description: 'BenchmarkDotNet job (Dry = smoke test, Short = quick, Default = full)'
+        required: true
+        default: 'Default'
+        type: choice
+        options:
+        - Dry
+        - Short
+        - Medium
+        - Default
+
+permissions:
+  contents: read
+
+env:
+  # Enforce locked-mode NuGet restore (RestoreLockedMode in the csproj files keys off this)
+  ContinuousIntegrationBuild: true
+  DOTNET_NOLOGO: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  benchmark:
+    name: 'Execute Benchmarks'
+    runs-on: ubuntu-latest
+    steps:
+    - name: 'Checkout'
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - name: 'Setup .NET SDK'
+      uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+      with:
+        dotnet-version: 10.0.x
+    - name: 'Run Benchmarks'
+      working-directory: benchmarks/Paseto.Benchmark
+      env:
+        FILTER: ${{ inputs.filter }}
+        JOB: ${{ inputs.job }}
+      run: dotnet run -c Release -- --filter "$FILTER" --job "$JOB" --exporters github json
+    - name: 'Publish Summary'
+      if: always()
+      working-directory: benchmarks/Paseto.Benchmark
+      run: cat BenchmarkDotNet.Artifacts/results/*-report-github.md >> "$GITHUB_STEP_SUMMARY" || echo 'No benchmark report was produced.' >> "$GITHUB_STEP_SUMMARY"
+    - name: 'Upload Results'
+      if: always()
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: 'benchmark-results'
+        path: benchmarks/Paseto.Benchmark/BenchmarkDotNet.Artifacts/results
