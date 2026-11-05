@@ -1,6 +1,5 @@
 ﻿using System;
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Running;
 using Paseto;
 using Paseto.Builder;
@@ -8,11 +7,10 @@ using Paseto.Cryptography.Key;
 using Paseto.Tests;
 using Xunit;
 
-BenchmarkRunner.Run<Benchmarks>();
+// Honour command-line options (--filter, --job, --exporters, ...); runs on the host runtime.
+BenchmarkSwitcher.FromAssembly(typeof(Benchmarks).Assembly).Run(args);
 
 [MemoryDiagnoser]
-[SimpleJob(RuntimeMoniker.Net60)]
-[SimpleJob(RuntimeMoniker.Net80)]
 [JsonExporterAttribute.Full]
 [JsonExporterAttribute.FullCompressed]
 public class Benchmarks
