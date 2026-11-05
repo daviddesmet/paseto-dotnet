@@ -14,6 +14,7 @@ using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Math;
 using Org.BouncyCastle.Security;
+using Org.BouncyCastle.Utilities;
 
 using Paseto.Cryptography.Key;
 using Paseto.Extensions;
@@ -98,7 +99,8 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         var privKeyParams = (ECPrivateKeyParameters)keyPair.Private;
         var pubKeyParams = (ECPublicKeyParameters)keyPair.Public;
 
-        var sk = privKeyParams.D.ToByteArrayUnsigned();
+        // Fixed-width encoding: ToByteArrayUnsigned() drops leading zero bytes (~1/256 keys).
+        var sk = BigIntegers.AsUnsignedByteArray(SECRET_KEY_SIZE_IN_BYTES, privKeyParams.D);
         var pk = pubKeyParams.Q.GetEncoded(compressed: true);
 
         return new PasetoAsymmetricKeyPair(sk, pk, this);
@@ -524,7 +526,10 @@ public class Version3 : PasetoProtocolVersion, IPasetoProtocolVersion
         signer.Init(true, privKeyParams);
 
         var signature = signer.GenerateSignature(packHash);
-        var sig = signature[0].ToByteArrayUnsigned().Concat(signature[1].ToByteArrayUnsigned()).ToArray(); // must be 96 bytes
+        // r || s, each left-padded to 48 bytes (ToByteArrayUnsigned() would drop leading zeros).
+        var sig = CryptoBytes.Combine(
+            BigIntegers.AsUnsignedByteArray(SIG_SIZE_IN_BYTES / 2, signature[0]),
+            BigIntegers.AsUnsignedByteArray(SIG_SIZE_IN_BYTES / 2, signature[1]));
 
         if (!string.IsNullOrEmpty(footer))
             footer = $".{ToBase64Url(f)}";

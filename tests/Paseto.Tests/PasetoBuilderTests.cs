@@ -583,6 +583,44 @@ public class PasetoBuilderTests
         act.ShouldThrow<PasetoBuilderException>();
     }
 
+    [Fact(DisplayName = "Should always produce fixed-width V3 secret keys and signatures")]
+    public void ShouldProduceFixedWidthV3KeysAndSignatures()
+    {
+        // Regression: big-endian encoding without left-padding dropped leading zero bytes,
+        // yielding 47-byte secret keys (~1/256) and short signatures (~1/128).
+        // Deterministic seeds, so the leading-zero cases are always exercised.
+        var shortKeyCases = 0;
+        var shortSigCases = 0;
+
+        for (var i = 0; i < 1024; i++)
+        {
+            var seed = new byte[32];
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(seed, i);
+
+            var keyPair = new PasetoBuilder().Use(ProtocolVersion.V3, Purpose.Public).GenerateAsymmetricKeyPair(seed);
+            keyPair.SecretKey.Key.Length.ShouldBe(48);
+            if (keyPair.SecretKey.Key.Span[0] == 0)
+                shortKeyCases++;
+
+            var token = new PasetoBuilder().Use(ProtocolVersion.V3, Purpose.Public)
+                                           .WithSecretKey([.. keyPair.SecretKey.Key.Span])
+                                           .AddClaim("i", i)
+                                           .Encode();
+
+            var sig = Paseto.Utils.EncodingHelper.FromBase64Url(token["v3.public.".Length..])[^96..];
+            if (sig[0] == 0 || sig[48] == 0)
+                shortSigCases++;
+
+            new PasetoBuilder().Use(ProtocolVersion.V3, Purpose.Public)
+                               .WithPublicKey([.. keyPair.PublicKey.Key.Span])
+                               .Decode(token)
+                               .IsValid.ShouldBeTrue($"seed {i}");
+        }
+
+        shortKeyCases.ShouldBeGreaterThan(0);
+        shortSigCases.ShouldBeGreaterThan(0);
+    }
+
     [Theory(DisplayName = "Should succeed on Decoding with Date Validations")]
     [MemberData(nameof(AllVersionsData), MemberType = typeof(TestHelper))]
     public void ShouldSucceedOnDecodingWithDateValidations(ProtocolVersion version)
