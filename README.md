@@ -112,6 +112,17 @@ var result = new PasetoBuilder().Use(version, purpose)
                                 .Decode(token);
 ```
 
+Decoded claim values are `JsonElement`s. Read them as typed values, or deserialize the whole payload into your own type:
+
+```csharp
+var payload = result.Paseto.Payload;
+var subject = payload.GetClaim<string>("sub");
+var expires = payload.GetClaim<DateTime>("exp");
+if (payload.TryGetClaim<string[]>("roles", out var roles)) { /* ... */ }
+
+var claims = result.Paseto.GetPayload<MyClaims>(); // uses [JsonPropertyName] or the given JsonSerializerOptions
+```
+
 Or validate the token's payload while decoding (the header and signature is always validated):
 
 ```csharp
