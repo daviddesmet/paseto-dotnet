@@ -34,14 +34,35 @@ public class ComparerTests
         result.ShouldBeLessThan(0);
     }
 
-    [Fact]
-    public void MixedIntegralTypesFallBackToEquals()
+    [Theory]
+    [InlineData(5L, 5, 0)]
+    [InlineData(5, 7L, -1)]
+    [InlineData((byte)9, 3L, 1)]
+    [InlineData((short)-1, 0u, -1)]
+    [InlineData(ulong.MaxValue, long.MaxValue, 1)]
+    public void MixedIntegralTypesCompareExactly(object value, object valueToCompare, int expectedSign)
     {
-        // The long fallback unboxes both values, so mixed integral types (long vs int) cannot be
-        // compared and TryCompare reports failure; GetEqualsResult then falls back to Equals.
-        Comparer.TryCompare(5L, 5, out var result).ShouldBeFalse();
+        Comparer.TryCompare((IComparable)value, (IComparable)valueToCompare, out var result).ShouldBeTrue();
+        Math.Sign(result).ShouldBe(expectedSign);
+    }
+
+    [Fact]
+    public void MixedIntegralTypesAreEqualWhenValuesMatch()
+    {
+        Comparer.GetEqualsResult(5L, 5).ShouldBeTrue();
+        Comparer.GetEqualsResult(5L, 6).ShouldBeFalse();
+    }
+
+    [Theory]
+    [InlineData("5", 5)]
+    [InlineData(5L, "5")]
+    [InlineData(true, 1)]
+    public void NonNumericMixedTypesAreNotComparable(object value, object valueToCompare)
+    {
+        // No implicit conversion between strings/booleans and integral numbers.
+        Comparer.TryCompare((IComparable)value, (IComparable)valueToCompare, out var result).ShouldBeFalse();
         result.ShouldBe(0);
-        Comparer.GetEqualsResult(5L, 5).ShouldBeFalse();
+        Comparer.GetEqualsResult((IComparable)value, (IComparable)valueToCompare).ShouldBeFalse();
     }
 
     [Fact]
