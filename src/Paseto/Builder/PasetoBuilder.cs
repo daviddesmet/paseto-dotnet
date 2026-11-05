@@ -127,6 +127,20 @@ public sealed class PasetoBuilder
     }
 
     /// <summary>
+    /// When <c>Use</c> was not called, infers the protocol version and purpose from the typed key
+    /// (Algorithm Lucidity: the key, not the token header, determines the algorithm).
+    /// A <see cref="PasetoSymmetricKey"/> implies <see cref="Purpose.Local"/>; an asymmetric key implies <see cref="Purpose.Public"/>.
+    /// </summary>
+    private void InferProtocolFromKey()
+    {
+        if (_protocol is not null || _pasetoKey?.Protocol is null)
+            return;
+
+        _protocol = _pasetoKey.Protocol;
+        _purpose = _pasetoKey is PasetoSymmetricKey ? Purpose.Local : Purpose.Public;
+    }
+
+    /// <summary>
     /// Sets the custom JSON serializer to use.
     /// </summary>
     /// <param name="serializer">The custom JSON serializer to use.</param>
@@ -423,6 +437,8 @@ public sealed class PasetoBuilder
     /// <exception cref="PasetoNotSupportedException"></exception>
     public string Encode()
     {
+        InferProtocolFromKey();
+
         if (_protocol is null)
             throw new PasetoBuilderException("Can't build a token. Check if you have call the 'Use' method.");
 
@@ -454,6 +470,8 @@ public sealed class PasetoBuilder
     {
         if (string.IsNullOrWhiteSpace(token))
             throw new ArgumentNullException(nameof(token));
+
+        InferProtocolFromKey();
 
         if (_protocol is null)
             throw new PasetoBuilderException("Can't decode token. Check if you have call the 'Use' method.");
@@ -517,6 +535,8 @@ public sealed class PasetoBuilder
     {
         if (string.IsNullOrWhiteSpace(token))
             throw new ArgumentNullException(nameof(token));
+
+        InferProtocolFromKey();
 
         if (_protocol is null)
             throw new PasetoBuilderException("Can't decode token. Check if you have call the 'Use' method.");
