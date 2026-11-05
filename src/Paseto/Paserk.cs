@@ -155,14 +155,25 @@ public static class Paserk
     /// </summary>
     /// <param name="serializedKey">The PASERK string.</param>
     /// <param name="password">The password used to derive the wrapping key.</param>
+    /// <remarks>Work factors embedded in the PASERK are bounded by <see cref="PbkwLimits.Default"/>.</remarks>
     public static PasetoKey Decode(string serializedKey, ReadOnlySpan<byte> password)
+        => Decode(serializedKey, password, PbkwLimits.Default);
+
+    /// <summary>
+    /// Unwraps a PASERK PBKW serialized key (<c>local-pw</c> / <c>secret-pw</c>) using the password,
+    /// rejecting work factors above the given limits before running the KDF.
+    /// </summary>
+    /// <param name="serializedKey">The PASERK string.</param>
+    /// <param name="password">The password used to derive the wrapping key.</param>
+    /// <param name="limits">The maximum accepted work factors. When <c>null</c>, <see cref="PbkwLimits.Default"/> is used.</param>
+    public static PasetoKey Decode(string serializedKey, ReadOnlySpan<byte> password, PbkwLimits limits)
     {
         var (type, version, header, encodedKey) = ParseHeader(serializedKey);
 
         if (type is not (PaserkType.LocalPassword or PaserkType.SecretPassword))
             throw new PaserkNotSupportedException($"The PASERK type {type} does not support password-based unwrapping.");
 
-        var ptk = PaserkPbkw.Decrypt(header, version, password.ToArray(), encodedKey);
+        var ptk = PaserkPbkw.Decrypt(header, version, password.ToArray(), encodedKey, limits ?? PbkwLimits.Default);
         return BuildKey(type, version, ptk);
     }
 

@@ -194,6 +194,9 @@ var key = Paserk.Decode(paserk, password);
 > [!NOTE]
 > The `PbkwOptions` defaults are interactive-grade. For keys stored at rest, raise the work factors (higher `MemoryLimitBytes`/`OpsLimit` for Argon2id, more `Iterations` for PBKDF2) to match your threat model and hardware.
 
+> [!IMPORTANT]
+> The work factors are read from the PASERK itself and the KDF runs before the authentication tag can be checked, so `Decode` caps them via `PbkwLimits` (defaults: Argon2id memory 256 MiB, ops 4, parallelism 4; PBKDF2 1,000,000 iterations). Anything above is rejected with `PaserkInvalidException`. To unwrap keys made with higher costs, pass custom limits: `Paserk.Decode(paserk, password, new PbkwLimits { MaxMemoryLimitBytes = 1L << 30 })`.
+
 #### Public-key sealing (`seal`)
 
 Encrypts a symmetric (local) key to a recipient's asymmetric public key using [PKE](https://github.com/paseto-standard/paserk/blob/master/operations/PKE.md) (P-384 ECDH + AES-256-CTR + HMAC-SHA384 for v3, X25519 + XChaCha20 + BLAKE2b for v4). Only the holder of the matching secret key can unseal it:

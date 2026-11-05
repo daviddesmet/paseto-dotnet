@@ -51,15 +51,15 @@ internal static class PaserkPbkw
         };
     }
 
-    internal static byte[] Decrypt(string header, ProtocolVersion version, byte[] password, string dataB64)
+    internal static byte[] Decrypt(string header, ProtocolVersion version, byte[] password, string dataB64, PbkwLimits limits)
     {
         var data = FromBase64Url(dataB64);
         var h = GetBytes(header);
 
         return version switch
         {
-            ProtocolVersion.V2 or ProtocolVersion.V4 => DecryptArgon(h, password, data),
-            ProtocolVersion.V1 or ProtocolVersion.V3 => DecryptPbkdf2(h, password, data),
+            ProtocolVersion.V2 or ProtocolVersion.V4 => DecryptArgon(h, password, data, limits),
+            ProtocolVersion.V1 or ProtocolVersion.V3 => DecryptPbkdf2(h, password, data, limits),
             _ => throw new PaserkNotSupportedException($"The protocol version {version} is currently not supported."),
         };
     }
@@ -102,20 +102,32 @@ internal static class PaserkPbkw
         }
     }
 
-    private static byte[] DecryptArgon(byte[] h, byte[] password, byte[] data)
+    private static byte[] DecryptArgon(byte[] h, byte[] password, byte[] data, PbkwLimits limits)
     {
+        if (data.Length < ARGON_SALT_SIZE + 16 + XCHACHA_NONCE_SIZE + BLAKE_TAG_SIZE)
+            throw new PaserkInvalidException("Serialized key is not valid.");
+
         var body = data[..^BLAKE_TAG_SIZE];
         var t = data[^BLAKE_TAG_SIZE..];
 
         var s = body[..ARGON_SALT_SIZE];
-        var mem = (long)BinaryPrimitives.ReadUInt64BigEndian(body.AsSpan(ARGON_SALT_SIZE, 8));
-        var ops = (int)BinaryPrimitives.ReadUInt32BigEndian(body.AsSpan(ARGON_SALT_SIZE + 8, 4));
-        var para = (int)BinaryPrimitives.ReadUInt32BigEndian(body.AsSpan(ARGON_SALT_SIZE + 12, 4));
+        var mem = BinaryPrimitives.ReadUInt64BigEndian(body.AsSpan(ARGON_SALT_SIZE, 8));
+        var ops = BinaryPrimitives.ReadUInt32BigEndian(body.AsSpan(ARGON_SALT_SIZE + 8, 4));
+        var para = BinaryPrimitives.ReadUInt32BigEndian(body.AsSpan(ARGON_SALT_SIZE + 12, 4));
+
+        // The KDF runs before the tag can be verified, so the (untrusted) cost parameters
+        // must be bounded first. Argon2 also requires memory >= 8 KiB per lane.
+        if (ops < 1 || ops > (ulong)Math.Max(limits.MaxOpsLimit, 0)
+            || para < 1 || para > (ulong)Math.Max(limits.MaxParallelism, 0)
+            || mem > (ulong)Math.Max(limits.MaxMemoryLimitBytes, 0)
+            || mem / 1024 < 8UL * para)
+            throw new PaserkInvalidException("Serialized key has unsupported or excessive PBKW parameters.");
+
         var nOffset = ARGON_SALT_SIZE + 16;
         var n = body[nOffset..(nOffset + XCHACHA_NONCE_SIZE)];
         var edk = body[(nOffset + XCHACHA_NONCE_SIZE)..];
 
-        var k = Argon2id(password, s, mem, ops, para);
+        var k = Argon2id(password, s, (long)mem, (int)ops, (int)para);
         try
         {
             var ak = Blake2b(DOMAIN_AUTHENTICATION, k);
@@ -175,13 +187,23 @@ internal static class PaserkPbkw
         }
     }
 
-    private static byte[] DecryptPbkdf2(byte[] h, byte[] password, byte[] data)
+    private static byte[] DecryptPbkdf2(byte[] h, byte[] password, byte[] data, PbkwLimits limits)
     {
+        if (data.Length < PBKDF2_SALT_SIZE + 4 + AES_NONCE_SIZE + HMAC_TAG_SIZE)
+            throw new PaserkInvalidException("Serialized key is not valid.");
+
         var body = data[..^HMAC_TAG_SIZE];
         var t = data[^HMAC_TAG_SIZE..];
 
         var s = body[..PBKDF2_SALT_SIZE];
-        var i = (int)BinaryPrimitives.ReadUInt32BigEndian(body.AsSpan(PBKDF2_SALT_SIZE, 4));
+        var iterations = BinaryPrimitives.ReadUInt32BigEndian(body.AsSpan(PBKDF2_SALT_SIZE, 4));
+
+        // The KDF runs before the tag can be verified, so the (untrusted) iteration count
+        // must be bounded first.
+        if (iterations < 1 || iterations > (uint)Math.Max(limits.MaxIterations, 0))
+            throw new PaserkInvalidException("Serialized key has unsupported or excessive PBKW parameters.");
+
+        var i = (int)iterations;
         var nOffset = PBKDF2_SALT_SIZE + 4;
         var n = body[nOffset..(nOffset + AES_NONCE_SIZE)];
         var edk = body[(nOffset + AES_NONCE_SIZE)..];

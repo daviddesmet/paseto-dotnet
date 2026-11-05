@@ -453,6 +453,75 @@ public class PaserkTests
         Should.Throw<PaserkNotSupportedException>(() => Paserk.Decode(localPaserk, "pw"u8.ToArray()));
     }
 
+    // Cheap params so the valid baseline stays fast.
+    private static readonly PbkwOptions CheapPbkw = new() { MemoryLimitBytes = 8192, OpsLimit = 1, Parallelism = 1, Iterations = 1000 };
+
+    // Rewrites the big-endian cost fields of a PBKW body. Offsets per PBKW.md:
+    // v2/v4: s(16) || mem u64 || ops u32 || para u32 ...; v1/v3: s(32) || iterations u32 ...
+    private static string TamperPbkw(string paserk, Action<byte[]> mutate)
+    {
+        var idx = paserk.LastIndexOf('.') + 1;
+        var data = Paseto.Utils.EncodingHelper.FromBase64Url(paserk[idx..]);
+        mutate(data);
+        return paserk[..idx] + Paseto.Utils.EncodingHelper.ToBase64Url(data);
+    }
+
+    [Theory]
+    [InlineData(ulong.MaxValue, 1u, 1u)]          // absurd memory
+    [InlineData(268_435_456UL + 1024, 1u, 1u)]    // just over 256 MiB
+    [InlineData(8192UL, uint.MaxValue, 1u)]       // absurd ops
+    [InlineData(8192UL, 5u, 1u)]                  // ops over limit
+    [InlineData(8192UL, 0u, 1u)]                  // ops zero
+    [InlineData(8192UL, 1u, uint.MaxValue)]       // absurd parallelism
+    [InlineData(8192UL, 1u, 0u)]                  // parallelism zero
+    [InlineData(1024UL, 1u, 1u)]                  // memory below 8 KiB per lane
+    public void PwDecodeRejectsExcessiveArgonParams(ulong mem, uint ops, uint para)
+    {
+        var paserk = Paserk.Encode(Sym(ProtocolVersion.V4), PaserkType.LocalPassword, "pw"u8.ToArray(), CheapPbkw);
+        var tampered = TamperPbkw(paserk, d =>
+        {
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt64BigEndian(d.AsSpan(16, 8), mem);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(d.AsSpan(24, 4), ops);
+            System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(d.AsSpan(28, 4), para);
+        });
+
+        var ex = Should.Throw<PaserkInvalidException>(() => Paserk.Decode(tampered, "pw"u8.ToArray()));
+        ex.Message.ShouldContain("PBKW parameters");
+    }
+
+    [Theory]
+    [InlineData(0u)]
+    [InlineData(1_000_001u)]
+    [InlineData(uint.MaxValue)]
+    public void PwDecodeRejectsExcessivePbkdf2Iterations(uint iterations)
+    {
+        var paserk = Paserk.Encode(Sym(ProtocolVersion.V3), PaserkType.LocalPassword, "pw"u8.ToArray(), CheapPbkw);
+        var tampered = TamperPbkw(paserk, d => System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(d.AsSpan(32, 4), iterations));
+
+        var ex = Should.Throw<PaserkInvalidException>(() => Paserk.Decode(tampered, "pw"u8.ToArray()));
+        ex.Message.ShouldContain("PBKW parameters");
+    }
+
+    [Theory]
+    [InlineData(ProtocolVersion.V1)]
+    [InlineData(ProtocolVersion.V3)]
+    [InlineData(ProtocolVersion.V2)]
+    [InlineData(ProtocolVersion.V4)]
+    public void PwDecodeRespectsCustomLimits(ProtocolVersion version)
+    {
+        var paserk = Paserk.Encode(Sym(version), PaserkType.LocalPassword, "pw"u8.ToArray(), CheapPbkw);
+        var strict = new PbkwLimits { MaxMemoryLimitBytes = 4096, MaxOpsLimit = 0, MaxParallelism = 0, MaxIterations = 999 };
+
+        Should.Throw<PaserkInvalidException>(() => Paserk.Decode(paserk, "pw"u8.ToArray(), strict));
+        Paserk.Decode(paserk, "pw"u8.ToArray(), PbkwLimits.Default).Key.ToArray().ShouldBe(FromHexString(WrapKeyHex));
+    }
+
+    [Theory]
+    [InlineData("k4.local-pw.AAAA")]
+    [InlineData("k3.local-pw.AAAA")]
+    public void PwDecodeRejectsTruncatedBody(string paserk) =>
+        Should.Throw<PaserkInvalidException>(() => Paserk.Decode(paserk, "pw"u8.ToArray()));
+
     [Fact]
     public void WrapDecodeRejectsPasswordType()
     {
