@@ -21,11 +21,8 @@ internal class Blake2bSimd : Blake2bBase
                     v[i] = hash[i];
             }
 
-            fixed (ulong* iv = &Blake2Constants.IV[0])
-            {
-                for (var i = 0; i < 8; i++)
-                    v[i + 8] = Blake2Constants.IV[i];
-            }
+            for (var i = 0; i < 8; i++)
+                v[i + 8] = Blake2Constants.IV[i];
 
             v[12] ^= TotalSegmentsLow;
             v[13] ^= TotalSegmentsHigh;
