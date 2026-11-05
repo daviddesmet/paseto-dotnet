@@ -162,8 +162,8 @@
       },
       "NaCl.Core": {
         "type": "Transitive",
-        "resolved": "2.2.0",
-        "contentHash": "oDMMcIxu2INIz/GsHRmMEsua5DDFLSW2OIel9R/UsJZ2a8tD2TEdbtDsFp+GbD3w/VXQjc/P9Dubtoi0450SZQ==",
+        "resolved": "2.2.1",
+        "contentHash": "tPlKQvHDwTiwUINQGEHX5jT2oR23WlWWWAEL8SNoSaVFOOw2sXfKx+rGCpOcHLzvBKT9H5EQw7NgkgbJEhr9xw==",
         "dependencies": {
           "IndexRange": "1.1.1",
           "System.Memory": "4.6.3"
@@ -303,7 +303,7 @@
         "dependencies": {
           "BouncyCastle.Cryptography": "[2.7.0, )",
           "IndexRange": "[1.1.1, )",
-          "NaCl.Core": "[2.2.0, )",
+          "NaCl.Core": "[2.2.1, )",
           "System.Memory": "[4.6.3, )",
           "System.Text.Json": "[9.0.9, )"
         }
@@ -411,8 +411,8 @@
       },
       "NaCl.Core": {
         "type": "Transitive",
-        "resolved": "2.2.0",
-        "contentHash": "oDMMcIxu2INIz/GsHRmMEsua5DDFLSW2OIel9R/UsJZ2a8tD2TEdbtDsFp+GbD3w/VXQjc/P9Dubtoi0450SZQ=="
+        "resolved": "2.2.1",
+        "contentHash": "tPlKQvHDwTiwUINQGEHX5jT2oR23WlWWWAEL8SNoSaVFOOw2sXfKx+rGCpOcHLzvBKT9H5EQw7NgkgbJEhr9xw=="
       },
       "System.CodeDom": {
         "type": "Transitive",
@@ -471,7 +471,7 @@
         "type": "Project",
         "dependencies": {
           "BouncyCastle.Cryptography": "[2.7.0, )",
-          "NaCl.Core": "[2.2.0, )"
+          "NaCl.Core": "[2.2.1, )"
         }
       }
     },
@@ -577,8 +577,8 @@
       },
       "NaCl.Core": {
         "type": "Transitive",
-        "resolved": "2.2.0",
-        "contentHash": "oDMMcIxu2INIz/GsHRmMEsua5DDFLSW2OIel9R/UsJZ2a8tD2TEdbtDsFp+GbD3w/VXQjc/P9Dubtoi0450SZQ=="
+        "resolved": "2.2.1",
+        "contentHash": "tPlKQvHDwTiwUINQGEHX5jT2oR23WlWWWAEL8SNoSaVFOOw2sXfKx+rGCpOcHLzvBKT9H5EQw7NgkgbJEhr9xw=="
       },
       "System.CodeDom": {
         "type": "Transitive",
@@ -637,7 +637,7 @@
         "type": "Project",
         "dependencies": {
           "BouncyCastle.Cryptography": "[2.7.0, )",
-          "NaCl.Core": "[2.2.0, )"
+          "NaCl.Core": "[2.2.1, )"
         }
       }
     }
