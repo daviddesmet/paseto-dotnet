@@ -21,6 +21,15 @@ public class PasetoPayloadTests
         public int Zip { get; set; }
     }
 
+    private sealed class CollidingNames
+    {
+        [JsonPropertyName("a")]
+        public string First { get; set; }
+
+        [JsonPropertyName("a")]
+        public string Second { get; set; }
+    }
+
     private sealed class Claims
     {
         [JsonPropertyName("sub")]
@@ -136,5 +145,35 @@ public class PasetoPayloadTests
         var address = payload.GetClaim<Address>("address", options);
         address.City.ShouldBe("Ghent");
         address.Zip.ShouldBe(9000);
+    }
+
+    [Fact]
+    public void NullClaimValueConvertsToDefault()
+    {
+        var payload = new PasetoPayload { ["nothing"] = null };
+
+        payload.GetClaim<string>("nothing").ShouldBeNull();
+        payload.TryGetClaim<int?>("nothing", out var value).ShouldBeTrue();
+        value.ShouldBeNull();
+    }
+
+    [Fact]
+    public void TryGetClaimReturnsFalseForUnsupportedTargetType()
+    {
+        // System.Text.Json refuses to deserialize System.Type (NotSupportedException).
+        var payload = DecodeSampleToken().Payload;
+
+        payload.TryGetClaim<Type>("sub", out var value).ShouldBeFalse();
+        value.ShouldBeNull();
+    }
+
+    [Fact]
+    public void TryGetClaimReturnsFalseForInvalidTargetType()
+    {
+        // Two properties mapped to the same JSON name make System.Text.Json throw InvalidOperationException.
+        var payload = DecodeSampleToken().Payload;
+
+        payload.TryGetClaim<CollidingNames>("address", out var value).ShouldBeFalse();
+        value.ShouldBeNull();
     }
 }
